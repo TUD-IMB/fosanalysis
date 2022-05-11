@@ -16,3 +16,4 @@ To build the documentation, run `doxygen` in this directory to generate it to th
 - `Python >=3.?` (Developend under Python 3.9)
 - `brplots` for custom plotting functions and table formatting. See [brplots](https://gitlab.hrz.tu-chemnitz.de/s2374134--tu-dresden.de/brplots) for further instructions.
 - `matplotlib >=3.5.0` for plotting and drawing graphs. See [matplotlib.org](https://matplotlib.org) for the documentation.
+- `numpy` for array handling and operations. See [numpy.org](https://numpy.org) for the documentation.

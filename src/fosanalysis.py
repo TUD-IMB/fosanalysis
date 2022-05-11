@@ -5,6 +5,7 @@
 ## \date 2022
 ## \package \copydoc fos_analysis.py
 
+import numpy as np
 import scipy.signal
 import copy
 
@@ -62,7 +63,13 @@ class MeasureData():
 		Takes the arithmetic mean for each position over all records in \ref y_record_list.
 		"""
 		y_table = self.get_y_table()
-		mean_record = [sum(column)/len(column) for column in zip(*y_table)]
+		mean_record = []
+		for column in zip(*y_table):
+			column = strip_nan_entries(column)
+			if len(column) > 0:
+				mean_record.append(sum(column)/len(column))
+			else:
+				mean_record.append(float("nan"))
 		return mean_record
 
 class Record(dict):
@@ -74,20 +81,6 @@ class Record(dict):
 		self["description1"] = description1
 		self["description2"] = description2
 		self["values"] = values
-
-def find_maxima(record):
-	"""
-	https://docs.scipy.org/doc/scipy/reference/signal.html#peak-finding
-	"""
-	peaks, properties = scipy.signal.find_peaks(record)
-	return peaks
-	raise NotImplementedError()
-
-def find_minima(record):
-	"""
-	"""
-	
-	raise NotImplementedError()
 
 def crop_to_x_range(x_values: list, y_values: list, x_start: float, x_end: float, normalize: bool = False) -> tuple:
 	"""
@@ -151,3 +144,99 @@ def smooth_data(data_list: list, r: int, margins: str = "reduced"):
 	else:
 		raise RuntimeError("No such option '{}' known for `margins`.".format(margins))
 	return smooth_data
+
+def find_extrema_indizes(record: list, *args, **kwargs):
+	"""
+	Finds the local extrema in the given record and returns the according indizes using the function `scipy.signal.find_peaks()`.
+	See [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks) for further information.
+	\param record List of data.
+	\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+	\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+		By default, the parameter `"prominence"` is set to `100`.
+	\returns Returns the positions of the local minima and the maxima.
+	\retval peaks_min List of position indizes for local minima.
+	\retval peaks_max List of position indizes for local maxima.
+	"""
+	if "prominence" not in kwargs:
+		kwargs["prominence"] = 100
+	np.array(record)
+	peaks_min, properties = scipy.signal.find_peaks(-record, *args, **kwargs)
+	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
+	return peaks_min, peaks_max
+
+def find_segment_splits():
+	"""
+	"""
+	raise NotImplementedError()
+
+def split_segments():
+	"""
+	"""
+	raise NotImplementedError()
+
+def find_next_value(values, index) -> int:
+	"""
+	Finds the next index, which is not a valid entry. This means, it is none of the following: `None`, `nan`, `""`.
+	\param values List of values.
+	\param index Index to start searching.
+	\return Returns an index and the according value.
+		If `index` points to a valid entry, it is returned.
+		If no number is found until the end of the `values` list, `None`, `None` is returned.
+	"""
+	for i in range(index, len(values)):
+		entry = values[i]
+		if entry is not None and entry != "" and not np.isnan(entry):
+			return i, entry
+	return None, None
+
+def strip_nan_entries(*value_lists) -> tuple:
+	"""
+	In all given lists, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
+	\return Returns a tuple of with copies of the lists. If only a single list is given, the stripped copy returned right away.
+	"""
+	stripped_lists = []
+	delete_list = []
+	# find all NaNs
+	for candidate_list in value_lists:
+		for i, entry in enumerate(candidate_list):
+			if entry is None or entry == "" or np.isnan(entry):
+				delete_list.append(i)
+	# strip the NaNs
+	for candidate_list in value_lists:
+		stripped_lists.append([entry for i, entry in enumerate(candidate_list) if i not in delete_list])
+	return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
+
+def integrate_segment(x_values, y_values, start_index: int = None, end_index: int = None, interpolation: str = "linear"):
+	"""
+	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
+	Slots with `NaN` are ignored and it interpolated over according to `interpolation`.
+	\param x_values List of x-positions.
+	\param y_values List of y_values (matching the `x_values`).
+	\param start_index Index, where the integration should start. Defaults to the first item of `x_values` (`0`).
+	\param end_index Index, where the integration should stop. This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
+	\param interpolation Algorithm, which should be used. Available options:
+		- `"linear"`: (default) Linear interpolation is used inbetween data points.
+		- `"simson"`: \todo The Simson-rule is applied.
+	"""
+	start_index = start_index if start_index is not None else 0
+	end_index = end_index if end_index is not None else len(x_values) - 1
+	area = 0.0
+	# Prepare the segments
+	x_segment = x_values[start_index:end_index+1]
+	y_segment = y_values[start_index:end_index+1]
+	x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
+	if interpolation == "linear":
+		x_l = x_segment[0]
+		y_l = y_segment[0]
+		for x_r, y_r in zip(x_segment, y_segment):
+			h = x_r - x_l
+			# Trapezoidal area
+			area_temp = (y_l + y_r) * (h) / 2.0
+			area += area_temp
+			x_l = x_r
+			y_l = y_r
+	elif interpolation == "simson":
+		raise NotImplementedError()
+	else:
+		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
+	return area
