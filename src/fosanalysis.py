@@ -82,18 +82,20 @@ class Record(dict):
 		self["description2"] = description2
 		self["values"] = values
 
-def crop_to_x_range(x_values: list, y_values: list, x_start: float, x_end: float, normalize: bool = False) -> tuple:
+def crop_to_x_range(x_values: list, y_values: list, x_start: float = None, x_end: float = None, normalize: bool = False) -> tuple:
 	"""
 	Crops both given lists according to the values of `x_start` and `x_end`
 	\param x_values List of x-positions.
 	\param y_values List of y_values (matching the `x_values`).
-	\param x_start Length (value from the range in `x_values`) from where the excerpt should start.
-	\param x_end Length (value from the range in `x_values`) where the excerpt should end.
+	\param x_start Length (value from the range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
+	\param x_end Length (value from the range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
 	\param normalize If set to `True`, the `x_start` is substracted from the `x_values`.
 	\return Returns the cropped lists:
 	\retval x_cropped
 	\retval y_cropped
 	"""
+	x_start = x_start if x_start is not None else x_values[0]
+	x_end = x_end if x_end is not None else x_values[-1]
 	start_index = None
 	end_index = None
 	# find start index
@@ -164,15 +166,39 @@ def find_extrema_indizes(record: list, *args, **kwargs):
 	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
 	return peaks_min, peaks_max
 
-def find_segment_splits():
+def find_crack_segment_splits(x_values, y_values, method: str = "middle"):
 	"""
+	Return a list of x-positions of influence area segment borders, which separate different cracks.
+	\param x_values List of x-positions. Should be sanitized (`NaN` handled and smoothed) already.
+	\param y_values List of y_values (matching the `x_values`). Should be sanitized already.
+	\param method Method, how the width of a crack is estimated. Available options:
+		- `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
+		- `"min"`: Cracks segments are split at local strain minima.
+	"""
+	peaks_min, peaks_max = find_extrema_indizes(y_values)
+	segment_splits = [None]
+	if method == "middle":
+		prev_index = peaks_max[0]
+		for index in peaks_max[1:]:
+			segment_splits.append((x_values[prev_index] + x_values[index])/2)
+			prev_index = index
+	elif method == "min":
+			# TODO: make sure, that max are the outermost
+			if peaks_min[0] < peaks_max[0]:
+				peaks_min.pop(0)
+			if peaks_min[-1] > peaks_max[-1]:
+				peaks_min.pop(-1)
+			for i in peaks_min:
+				segment_splits.append(x_values[i])
+	segment_splits.append(None)
+	return segment_splits
+
+def calculate_crack_widths(x_values, y_values, method: str = "min"):
+	"""
+	Returns the crack widths.
 	"""
 	raise NotImplementedError()
 
-def split_segments():
-	"""
-	"""
-	raise NotImplementedError()
 
 def find_next_value(values, index) -> int:
 	"""
