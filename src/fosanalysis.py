@@ -10,6 +10,9 @@ import scipy.signal
 import copy
 
 class MeasureData():
+	"""
+	Object containts fibre optical measurement data, and provides some function to retrieve those.
+	"""
 	def __init__(self, file: str, itemsep: str = "\t", *args, **kwargs):
 		"""
 		Constructs the data object.
@@ -73,14 +76,20 @@ class MeasureData():
 		return mean_record
 
 class Record(dict):
+	"""
+	A single measurement of the fibre optical sensor.
+	"""
 	def __init__(self, record_name: str,
-						description1,
-						description2,
-						values):
+						description1: str,
+						description2: str,
+						values: list,
+						**kwargs):
 		self["record_name"] = record_name
 		self["description1"] = description1
 		self["description2"] = description2
 		self["values"] = values
+		for key in kwargs:
+			self[key] = kwargs[key]
 
 def crop_to_x_range(x_values: list, y_values: list, x_start: float = None, x_end: float = None, normalize: bool = False) -> tuple:
 	"""
@@ -102,13 +111,32 @@ def crop_to_x_range(x_values: list, y_values: list, x_start: float = None, x_end
 	for index, value in enumerate(x_values):
 		if start_index is None and value >= x_start:
 			start_index = index
-		if end_index is None and value >= x_end:
-			end_index = index
+		if end_index is None:
+			if value == x_end:
+				end_index = index + 1
+			elif value > x_end:
+				end_index = index
 	x_cropped = x_values[start_index:end_index]
 	y_cropped = y_values[start_index:end_index]
 	if normalize:
 		x_cropped = [x-x_start for x in x_cropped]
 	return x_cropped, y_cropped
+
+def limit_entry_values (values, minimum: float = None, maximum: float = None):
+	"""
+	Limit the the entries in the given list to the specified range.
+	Returns a list, which conforms to \f$\mathrm{min} \leq x \leq \mathrm{max} \forall x \in X\f$.
+	Entries, which exceed the given range are cropped to it.
+	\param y_values List of floats, which are to be cropped.
+	\param min Minimum value, for the entries. Defaults to `None`, no limit is applied.
+	\param max Maximum value, for the entries. Defaults to `None`, no limit is applied.
+	"""
+	limited = copy.deepcopy(values)
+	if min is not None:
+		limited = [max(entry, minimum) for entry in limited]
+	if max is not None:
+		limited = [min(entry, maximum) for entry in limited]
+	return limited
 
 def smooth_data(data_list: list, r: int, margins: str = "reduced"):
 	"""
@@ -166,7 +194,7 @@ def find_extrema_indizes(record: list, *args, **kwargs):
 	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
 	return peaks_min, peaks_max
 
-def find_crack_segment_splits(x_values, y_values, method: str = "middle"):
+def find_crack_segment_splits(x_values, y_values, method: str = "middle") -> list:
 	"""
 	Return a list of x-positions of influence area segment borders, which separate different cracks.
 	\param x_values List of x-positions. Should be sanitized (`NaN` handled and smoothed) already.
@@ -183,7 +211,6 @@ def find_crack_segment_splits(x_values, y_values, method: str = "middle"):
 			segment_splits.append((x_values[prev_index] + x_values[index])/2)
 			prev_index = index
 	elif method == "min":
-			# TODO: make sure, that max are the outermost
 			if peaks_min[0] < peaks_max[0]:
 				peaks_min.pop(0)
 			if peaks_min[-1] > peaks_max[-1]:
@@ -193,12 +220,18 @@ def find_crack_segment_splits(x_values, y_values, method: str = "middle"):
 	segment_splits.append(None)
 	return segment_splits
 
-def calculate_crack_widths(x_values, y_values, method: str = "min"):
+def calculate_crack_widths(x_values, y_values, method: str = "min", interpolation: str = "linear") -> list:
 	"""
 	Returns the crack widths.
 	"""
-	raise NotImplementedError()
-
+	segment_splits = find_crack_segment_splits(x_values, y_values, method=method)
+	crack_widths = []
+	prev_split = segment_splits[0]
+	for split in segment_splits[1:]:
+		x_crop, y_crop = crop_to_x_range(x_values, y_values, prev_split, split)
+		crack_widths.append(integrate_segment(x_crop, y_crop, start_index=None, end_index=None, interpolation=interpolation))
+		prev_split = split
+	return crack_widths
 
 def find_next_value(values, index) -> int:
 	"""
