@@ -189,7 +189,7 @@ def find_extrema_indizes(record: list, *args, **kwargs):
 	"""
 	if "prominence" not in kwargs:
 		kwargs["prominence"] = 100
-	np.array(record)
+	record = np.array(record)
 	peaks_min, properties = scipy.signal.find_peaks(-record, *args, **kwargs)
 	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
 	return peaks_min, peaks_max
