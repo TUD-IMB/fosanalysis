@@ -20,27 +20,27 @@ def calculate_crack_widths(x_values: list,
 	1. Find the crack segment areas, see \ref find_crack_segment_splits()
 	2. For each crack segment, the data is cropped, see \ref fosdata.crop_to_x_range().
 	3. \todo Taking shrinking/creep into account, see \ref calibrate_shrink_creep().
-	4. Taking concrete strain (subtraction of triangular areas) into account, see \ref get_concrete_strain().
+	4. Taking concrete strain (subtraction of triangular areas) into account, see \ref compensate_concrete_strain().
 	5. Integrate over the strain (compensated for shrinking and concrete strain), see fosdata.integrate_segment().
 	
 	\param x_values List of x-positions. Should be sanitized (`NaN` handled) already.
 	\param y_values List of y_values (matching the `x_values`). Should be sanitized (`NaN` handled and smoothed) already.
 	\param method Method, how the width of a crack is estimated, see \ref find_crack_segment_splits().
 	\param interpolation Algorithm, which should be used to interpolate between data points, see \ref fosdata.integrate_segment().
-	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. 
+	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. If set to `None`, no compensation for the concrete 
 	"""
 	segment_splits_location = find_crack_segment_splits(x_values, y_values, method=method)
 	crack_widths = []
 	for split in segment_splits_location:
 		x_crop, y_crop = fosdata.crop_to_x_range(x_values, y_values, split[0], split[2])
 		# TODO: Taking shrinking/creep into account
-		# TODO: compensate concrete strain 
+		y_compensated = compensate_concrete_strain(x_crop, y_crop, split, max_concrete_strain) if max_concrete_strain is not None else y_crop
 		crack_widths.append(fosdata.integrate_segment(x_crop, y_crop, start_index=None, end_index=None, interpolation=interpolation))
 		#crack_widths.append(fosdata.integrate_segment(x_values, y_values, start_index=split[0], end_index=split[2], interpolation=interpolation))
 		#prev_split = split
 	return crack_widths
 
-def get_concrete_strain(x_values: list,
+def compensate_concrete_strain(x_values: list,
 					y_values: list,
 					split: tuple,
 					max_concrete_strain: float = None
@@ -52,8 +52,22 @@ def get_concrete_strain(x_values: list,
 		- `<left_pos>` is the location of the left-hand side end of the effective length for the crack,
 		- `<crack_pos>` is the location of the crack and
 		- `<right_pos>` is the location of the right-hand side end of the effective length for the crack.
-	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. 
+	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. Defaults to 100 µm/m.
 	"""
+	max_concrete_strain = 100 if max_concrete_strain is None else max_concrete_strain
+	strain_compensated = []
+	for x, y in zip(x_values, y_values):
+		leff_l = split[1] - split[0]
+		leff_r = split[2] - split[1]
+		if x <= split[1] and (leff_l) > 0:
+			d_x = (split[1] - x)/(leff_l)
+		elif split[1] < x and (leff_r) > 0:
+			d_x = (x - split[1])/(leff_r)
+		else:
+			d_x = 0
+		y = min(y, max_concrete_strain * d_x)
+		strain_compensated.append(y)
+	return strain_compensated
 	
 	raise NotImplementedError()
 
