@@ -1,6 +1,6 @@
 
 ## \file
-## Contains the analysis structure for the analysis of the crack width based on fibre optical sensor strain
+## Contains functions, which are general pupose for the the analysis of the crack width based on fibre optical sensor strain.
 ## \author Bertram Richter
 ## \date 2022
 ## \package fosadata \copydoc fosdata.py
@@ -43,9 +43,9 @@ class MeasureData():
 						fieldname = head_entry[0][:-1]	# First entry and strip the colon (:)
 						self.header[fieldname] = head_entry[1] if len(head_entry) > 1 else None
 				else:
-					# Read in y_table
+					# Read in value table
 					record_name, description1, description2, *values = line.strip().split(itemsep)
-					values = [float(entry) for entry in values]	# convert to float
+					values = np.array([float(entry) for entry in values])	# convert to float
 					record = Record(record_name, description1, description2, values)
 					if record["record_name"] == "x-axis":
 						self.x_record = record
@@ -91,7 +91,7 @@ class Record(dict):
 		for key in kwargs:
 			self[key] = kwargs[key]
 
-def crop_to_x_range(x_values: list, y_values: list, x_start: float = None, x_end: float = None, normalize: bool = False) -> tuple:
+def crop_to_x_range(x_values: np.array, y_values: np.array, x_start: float = None, x_end: float = None, normalize: bool = False) -> tuple:
 	"""
 	Crops both given lists according to the values of `x_start` and `x_end`
 	\param x_values List of x-positions.
@@ -119,10 +119,10 @@ def crop_to_x_range(x_values: list, y_values: list, x_start: float = None, x_end
 	x_cropped = x_values[start_index:end_index]
 	y_cropped = y_values[start_index:end_index]
 	if normalize:
-		x_cropped = [x-x_start for x in x_cropped]
+		x_cropped = x_cropped - x_start
 	return x_cropped, y_cropped
 
-def find_extrema_indizes(record: list, *args, **kwargs):
+def find_extrema_indizes(record: np.array, *args, **kwargs):
 	"""
 	Finds the local extrema in the given record and returns the according indizes using the function `scipy.signal.find_peaks()`.
 	See [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks) for further information.
@@ -141,6 +141,20 @@ def find_extrema_indizes(record: list, *args, **kwargs):
 	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
 	return peaks_min, peaks_max
 
+def find_closest_value(array, x) -> tuple:
+	"""
+	Returns the index and value of the entry in `array`, that is closest to the given `x`.
+	\return `(<index>, <entry>)`
+	"""
+	d_min = np.inf
+	closest_index = None
+	for i, entry in enumerate(array):
+		d = abs(x - entry)
+		if d < d_min:
+			d_min = d
+			closest_index = i
+	return closest_index, array[closest_index]
+
 def find_next_value(values, index) -> int:
 	"""
 	Finds the next index, which is not a valid entry. This means, it is none of the following: `None`, `nan`, `""`.
@@ -156,7 +170,7 @@ def find_next_value(values, index) -> int:
 			return i, entry
 	return None, None
 
-def integrate_segment(x_values, y_values, start_index: int = None, end_index: int = None, interpolation: str = "linear"):
+def integrate_segment(x_values: np.array, y_values: np.array, start_index: int = None, end_index: int = None, interpolation: str = "linear") -> float:
 	"""
 	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
 	Slots with `NaN` are ignored and it interpolated over according to `interpolation`.
@@ -191,7 +205,7 @@ def integrate_segment(x_values, y_values, start_index: int = None, end_index: in
 		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
 	return area
 
-def limit_entry_values (values, minimum: float = None, maximum: float = None):
+def limit_entry_values (values: np.array, minimum: float = None, maximum: float = None) -> np.array:
 	"""
 	Limit the the entries in the given list to the specified range.
 	Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
@@ -205,34 +219,34 @@ def limit_entry_values (values, minimum: float = None, maximum: float = None):
 		limited = [max(entry, minimum) for entry in limited]
 	if max is not None:
 		limited = [min(entry, maximum) for entry in limited]
-	return limited
+	return np.array(limited)
 
-def smooth_data(data_list: list, r: int, margins: str = "reduced"):
+def smooth_data(data: np.array, r: int, margins: str = "reduced") -> np.array:
 	"""
 	Smoothes the record using a the mean over \f$2r + 1\f$ entries.
 	For each entry, the sliding mean extends `r` entries to both sides.
-	The margings (first and last `r` entries of `data_list`) will be treated according to the `margins` parameter.
-	\param data_list List of data to be smoothed.
+	The margings (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
+	\param data List of data to be smoothed.
 	\param r Smoothing radius.
-	\param margins Setting, how the first and last `r` entries of `data_list` will be treated.
+	\param margins Setting, how the first and last `r` entries of `data` will be treated.
 		Available options:
-		- `"reduced"`: (default) smoothing with reduced smoothing radius, such that the radius extends to the borders of `data_list`
+		- `"reduced"`: (default) smoothing with reduced smoothing radius, such that the radius extends to the borders of `data`
 		- `"flat"`:  the marginal entries get the same value applied, as the first/last fully smoothed entry.
 	"""
 	start = r
-	end = len(data_list) - r
+	end = len(data) - r
 	assert end > 0, "r is greater than the given data!"
-	smooth_data = copy.deepcopy(data_list)
+	smooth_data = copy.deepcopy(data)
 	# Smooth the middle
 	for i in range(start, end):
-		sliding_window = data_list[i-r:i+r+1]
+		sliding_window = data[i-r:i+r+1]
 		smooth_data[i] = sum(sliding_window)/len(sliding_window)
 	# Fill up the margins
 	if margins == "reduced":
 		for i in range(r):
-			sliding_window = data_list[:2*i+1]
+			sliding_window = data[:2*i+1]
 			smooth_data[i] = sum(sliding_window)/len(sliding_window)
-			sliding_window = data_list[-1-2*i:]
+			sliding_window = data[-1-2*i:]
 			smooth_data[-i-1] = sum(sliding_window)/len(sliding_window)
 	elif margins == "flat":
 		first_smooth = smooth_data[start]
@@ -242,12 +256,12 @@ def smooth_data(data_list: list, r: int, margins: str = "reduced"):
 			smooth_data[-i-1] = last_smooth
 	else:
 		raise RuntimeError("No such option '{}' known for `margins`.".format(margins))
-	return smooth_data
+	return np.array(smooth_data)
 
 def strip_nan_entries(*value_lists) -> tuple:
 	"""
-	In all given lists, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
-	\return Returns a tuple of with copies of the lists. If only a single list is given, the stripped copy returned right away.
+	In all given arrays, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
+	\return Returns a tuple of with copies of the arrays. If only a single array is given, only the stripped copy returned.
 	"""
 	stripped_lists = []
 	delete_list = []
@@ -258,6 +272,6 @@ def strip_nan_entries(*value_lists) -> tuple:
 				delete_list.append(i)
 	# strip the NaNs
 	for candidate_list in value_lists:
-		stripped_lists.append([entry for i, entry in enumerate(candidate_list) if i not in delete_list])
+		stripped_lists.append(np.array([entry for i, entry in enumerate(candidate_list) if i not in delete_list]))
 	return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
 
