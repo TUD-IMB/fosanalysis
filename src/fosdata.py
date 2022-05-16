@@ -3,7 +3,7 @@
 ## Contains the analysis structure for the analysis of the crack width based on fibre optical sensor strain
 ## \author Bertram Richter
 ## \date 2022
-## \package \copydoc fos_analysis.py
+## \package fosadata \copydoc fosdata.py
 
 import numpy as np
 import scipy.signal
@@ -122,14 +122,83 @@ def crop_to_x_range(x_values: list, y_values: list, x_start: float = None, x_end
 		x_cropped = [x-x_start for x in x_cropped]
 	return x_cropped, y_cropped
 
+def find_extrema_indizes(record: list, *args, **kwargs):
+	"""
+	Finds the local extrema in the given record and returns the according indizes using the function `scipy.signal.find_peaks()`.
+	See [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks) for further information.
+	\param record List of data.
+	\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+	\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+		By default, the parameter `"prominence"` is set to `100`.
+	\returns Returns the positions of the local minima and the maxima.
+	\retval peaks_min List of position indizes for local minima.
+	\retval peaks_max List of position indizes for local maxima.
+	"""
+	if "prominence" not in kwargs:
+		kwargs["prominence"] = 100
+	record = np.array(record)
+	peaks_min, properties = scipy.signal.find_peaks(-record, *args, **kwargs)
+	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
+	return peaks_min, peaks_max
+
+def find_next_value(values, index) -> int:
+	"""
+	Finds the next index, which is not a valid entry. This means, it is none of the following: `None`, `nan`, `""`.
+	\param values List of values.
+	\param index Index to start searching.
+	\return Returns an index and the according value.
+		If `index` points to a valid entry, it is returned.
+		If no number is found until the end of the `values` list, `None`, `None` is returned.
+	"""
+	for i in range(index, len(values)):
+		entry = values[i]
+		if entry is not None and entry != "" and not np.isnan(entry):
+			return i, entry
+	return None, None
+
+def integrate_segment(x_values, y_values, start_index: int = None, end_index: int = None, interpolation: str = "linear"):
+	"""
+	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
+	Slots with `NaN` are ignored and it interpolated over according to `interpolation`.
+	\param x_values List of x-positions.
+	\param y_values List of y_values (matching the `x_values`).
+	\param start_index Index, where the integration should start. Defaults to the first item of `x_values` (`0`).
+	\param end_index Index, where the integration should stop. This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
+	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
+		- `"linear"`: (default) Linear interpolation is used inbetween data points.
+		- `"simson"`: \todo The Simson-rule is applied.
+	"""
+	start_index = start_index if start_index is not None else 0
+	end_index = end_index if end_index is not None else len(x_values) - 1
+	area = 0.0
+	# Prepare the segments
+	x_segment = x_values[start_index:end_index+1]
+	y_segment = y_values[start_index:end_index+1]
+	x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
+	if interpolation == "linear":
+		x_l = x_segment[0]
+		y_l = y_segment[0]
+		for x_r, y_r in zip(x_segment, y_segment):
+			h = x_r - x_l
+			# Trapezoidal area
+			area_temp = (y_l + y_r) * (h) / 2.0
+			area += area_temp
+			x_l = x_r
+			y_l = y_r
+	elif interpolation == "simson":
+		raise NotImplementedError()
+	else:
+		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
+	return area
+
 def limit_entry_values (values, minimum: float = None, maximum: float = None):
 	"""
 	Limit the the entries in the given list to the specified range.
-	Returns a list, which conforms to \f$\mathrm{min} \leq x \leq \mathrm{max} \forall x \in X\f$.
+	Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
 	Entries, which exceed the given range are cropped to it.
-	\param y_values List of floats, which are to be cropped.
-	\param min Minimum value, for the entries. Defaults to `None`, no limit is applied.
-	\param max Maximum value, for the entries. Defaults to `None`, no limit is applied.
+	\param values List of floats, which are to be cropped.
+	\param minimum Minimum value, for the entries. Defaults to `None`, no limit is applied.
+	\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
 	"""
 	limited = copy.deepcopy(values)
 	if min is not None:
@@ -175,79 +244,6 @@ def smooth_data(data_list: list, r: int, margins: str = "reduced"):
 		raise RuntimeError("No such option '{}' known for `margins`.".format(margins))
 	return smooth_data
 
-def find_extrema_indizes(record: list, *args, **kwargs):
-	"""
-	Finds the local extrema in the given record and returns the according indizes using the function `scipy.signal.find_peaks()`.
-	See [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks) for further information.
-	\param record List of data.
-	\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
-	\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
-		By default, the parameter `"prominence"` is set to `100`.
-	\returns Returns the positions of the local minima and the maxima.
-	\retval peaks_min List of position indizes for local minima.
-	\retval peaks_max List of position indizes for local maxima.
-	"""
-	if "prominence" not in kwargs:
-		kwargs["prominence"] = 100
-	record = np.array(record)
-	peaks_min, properties = scipy.signal.find_peaks(-record, *args, **kwargs)
-	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
-	return peaks_min, peaks_max
-
-def find_crack_segment_splits(x_values, y_values, method: str = "middle") -> list:
-	"""
-	Return a list of x-positions of influence area segment borders, which separate different cracks.
-	\param x_values List of x-positions. Should be sanitized (`NaN` handled and smoothed) already.
-	\param y_values List of y_values (matching the `x_values`). Should be sanitized already.
-	\param method Method, how the width of a crack is estimated. Available options:
-		- `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
-		- `"min"`: Cracks segments are split at local strain minima.
-	"""
-	peaks_min, peaks_max = find_extrema_indizes(y_values)
-	segment_splits = [None]
-	if method == "middle":
-		prev_index = peaks_max[0]
-		for index in peaks_max[1:]:
-			segment_splits.append((x_values[prev_index] + x_values[index])/2)
-			prev_index = index
-	elif method == "min":
-			if peaks_min[0] < peaks_max[0]:
-				peaks_min.pop(0)
-			if peaks_min[-1] > peaks_max[-1]:
-				peaks_min.pop(-1)
-			for i in peaks_min:
-				segment_splits.append(x_values[i])
-	segment_splits.append(None)
-	return segment_splits
-
-def calculate_crack_widths(x_values, y_values, method: str = "min", interpolation: str = "linear") -> list:
-	"""
-	Returns the crack widths.
-	"""
-	segment_splits = find_crack_segment_splits(x_values, y_values, method=method)
-	crack_widths = []
-	prev_split = segment_splits[0]
-	for split in segment_splits[1:]:
-		x_crop, y_crop = crop_to_x_range(x_values, y_values, prev_split, split)
-		crack_widths.append(integrate_segment(x_crop, y_crop, start_index=None, end_index=None, interpolation=interpolation))
-		prev_split = split
-	return crack_widths
-
-def find_next_value(values, index) -> int:
-	"""
-	Finds the next index, which is not a valid entry. This means, it is none of the following: `None`, `nan`, `""`.
-	\param values List of values.
-	\param index Index to start searching.
-	\return Returns an index and the according value.
-		If `index` points to a valid entry, it is returned.
-		If no number is found until the end of the `values` list, `None`, `None` is returned.
-	"""
-	for i in range(index, len(values)):
-		entry = values[i]
-		if entry is not None and entry != "" and not np.isnan(entry):
-			return i, entry
-	return None, None
-
 def strip_nan_entries(*value_lists) -> tuple:
 	"""
 	In all given lists, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
@@ -265,37 +261,3 @@ def strip_nan_entries(*value_lists) -> tuple:
 		stripped_lists.append([entry for i, entry in enumerate(candidate_list) if i not in delete_list])
 	return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
 
-def integrate_segment(x_values, y_values, start_index: int = None, end_index: int = None, interpolation: str = "linear"):
-	"""
-	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
-	Slots with `NaN` are ignored and it interpolated over according to `interpolation`.
-	\param x_values List of x-positions.
-	\param y_values List of y_values (matching the `x_values`).
-	\param start_index Index, where the integration should start. Defaults to the first item of `x_values` (`0`).
-	\param end_index Index, where the integration should stop. This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
-	\param interpolation Algorithm, which should be used. Available options:
-		- `"linear"`: (default) Linear interpolation is used inbetween data points.
-		- `"simson"`: \todo The Simson-rule is applied.
-	"""
-	start_index = start_index if start_index is not None else 0
-	end_index = end_index if end_index is not None else len(x_values) - 1
-	area = 0.0
-	# Prepare the segments
-	x_segment = x_values[start_index:end_index+1]
-	y_segment = y_values[start_index:end_index+1]
-	x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
-	if interpolation == "linear":
-		x_l = x_segment[0]
-		y_l = y_segment[0]
-		for x_r, y_r in zip(x_segment, y_segment):
-			h = x_r - x_l
-			# Trapezoidal area
-			area_temp = (y_l + y_r) * (h) / 2.0
-			area += area_temp
-			x_l = x_r
-			y_l = y_r
-	elif interpolation == "simson":
-		raise NotImplementedError()
-	else:
-		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
-	return area
