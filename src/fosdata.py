@@ -13,7 +13,9 @@ class MeasureData():
 	"""
 	Object containts fibre optical measurement data, and provides some function to retrieve those.
 	"""
-	def __init__(self, file: str, itemsep: str = "\t", *args, **kwargs):
+	def __init__(self, file: str,
+						itemsep: str = "\t",
+						*args, **kwargs):
 		"""
 		Constructs the data object.
 		\param file Path to the file, wich is to be read in.
@@ -91,7 +93,12 @@ class Record(dict):
 		for key in kwargs:
 			self[key] = kwargs[key]
 
-def crop_to_x_range(x_values: np.array, y_values: np.array, x_start: float = None, x_end: float = None, normalize: bool = False) -> tuple:
+def crop_to_x_range(x_values: np.array,
+					y_values: np.array,
+					x_start: float = None,
+					x_end: float = None,
+					normalize: bool = False,
+					) -> tuple:
 	"""
 	Crops both given lists according to the values of `x_start` and `x_end`
 	\param x_values List of x-positions.
@@ -170,7 +177,12 @@ def find_next_value(values, index) -> int:
 			return i, entry
 	return None, None
 
-def integrate_segment(x_values: np.array, y_values: np.array, start_index: int = None, end_index: int = None, interpolation: str = "linear") -> float:
+def integrate_segment(x_values: np.array,
+					y_values: np.array,
+					start_index: int = None,
+					end_index: int = None,
+					interpolation: str = "linear",
+					) -> float:
 	"""
 	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
 	Slots with `NaN` are ignored and it interpolated over according to `interpolation`.

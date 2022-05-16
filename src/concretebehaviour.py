@@ -10,11 +10,11 @@ import scipy.signal
 import fosdata
 
 def calculate_crack_widths(x_values: np.array,
-							y_values: np.array,
-							max_concrete_strain: float = None,
-							method: str = "middle",
-							interpolation: str = "linear",
-							) -> np.array:
+					y_values: np.array,
+					max_concrete_strain: float = None,
+					method: str = "middle",
+					interpolation: str = "linear",
+					) -> np.array:
 	"""
 	Returns the crack widths.
 	The following is done:
@@ -50,6 +50,7 @@ def compensate_concrete_strain(x_values: np.array,
 					max_concrete_strain: float = None
 					) -> np.array:
 	"""
+	Compensates for the strain, that does not contribute to a crack, but is locatend in the uncracked concrete.
 	\param x_values List of x-positions. Should be sanitized (`NaN` handled) already.
 	\param y_values List of y_values (matching the `x_values`). Should be sanitized (`NaN` handled and smoothed) already.
 	\param split Crack area with effective length, a tuple like `(<left_pos>, <crack_pos>, <right_pos>)` where:
@@ -57,6 +58,7 @@ def compensate_concrete_strain(x_values: np.array,
 		- `<crack_pos>` is the location of the crack and
 		- `<right_pos>` is the location of the right-hand side end of the effective length for the crack.
 	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. Defaults to 100 µm/m.
+	\return An array with the compensation values for each measuring point is returned.
 	"""
 	max_concrete_strain = 100 if max_concrete_strain is None else max_concrete_strain
 	strain_compensated = []
@@ -105,13 +107,24 @@ def calibrate_shrink_creep(
 	else:
 		raise NotImplementedError()
 
-def filter_cracks(y_values: np.array, peak_index_list: list, max_concrete_strain: float) -> list:
+def filter_cracks(y_values: np.array,
+					peak_index_list: list,
+					max_concrete_strain: float,
+					*properties_lists) -> list:
 	"""
 	Returns a list of peak indexes, for which all entries of `y_values` exceed the given `max_concrete_strain`, making them all plausible/most likely real cracks.
+	\param y_values List of strain values. Should be sanitized (`NaN` handled and smoothed) already.
+	\param peak_index_list List of peak indexes in `y_values`.
+	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. Defaults to 100 µm/m.
+	\param properties_lists \todo also filter property lists
 	"""
+	max_concrete_strain = 100 if max_concrete_strain is None else max_concrete_strain
 	return [peak_index for peak_index in peak_index_list if y_values[peak_index] >= max_concrete_strain]
 
-def find_crack_segment_splits(x_values: np.array, y_values: np.array, method: str = "middle", *args, **kwargs) -> list:
+def find_crack_segment_splits(x_values: np.array,
+					y_values: np.array,
+					method: str = "middle",
+					*args, **kwargs) -> list:
 	"""
 	Return a list of x-positions of influence area segment borders, which separate different cracks.
 	\param x_values List of x-positions. Should be sanitized (`NaN` handled) already.
@@ -129,16 +142,13 @@ def find_crack_segment_splits(x_values: np.array, y_values: np.array, method: st
 	"""
 	if "prominence" not in kwargs:
 		kwargs["prominence"] = 100
-	record = np.array(y_values)
-	#peaks_min, min_properties = scipy.signal.find_peaks(-record, *args, **kwargs)
-	peaks_max, max_properties = scipy.signal.find_peaks(record, *args, **kwargs)
-	#segment_splits_index = []
-	segment_splits_pos = []
+	peaks_max, max_properties = scipy.signal.find_peaks(y_values, *args, **kwargs)
 	segment_left = max_properties["left_bases"]
 	segment_right = max_properties["right_bases"]
+	## TODO: filter_cracks()
+	segment_splits_pos = []
 	for peak_number, (left_index, peak_index, right_index) in enumerate(zip(segment_left, peaks_max, segment_right)):
 		split = [x_values[left_index], x_values[peak_index], x_values[right_index]]
-		#segment_splits_pos.append([x_values[left_index], x_values[peak_index], x_values[right_index]])
 		if method == "middle":
 			# Limit the effective length by the middle between two cracks
 			if peak_number > 0:
