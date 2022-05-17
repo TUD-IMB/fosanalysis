@@ -14,40 +14,41 @@ def calculate_crack_widths(x_values: np.array,
 					max_concrete_strain: float = None,
 					method: str = "middle",
 					interpolation: str = "linear",
-					) -> np.array:
+					shrink_compensation: np.array = None,
+					*args, **kwargs) -> np.array:
 	"""
 	Returns the crack widths.
 	The following is done:
-	1. Find the crack segment areas, see \ref find_crack_segment_splits()
+	1. Find the crack segment areas, see \ref find_crack_segment_splits().
 	2. For each crack segment, the data is cropped, see \ref fosdata.crop_to_x_range().
-	3. \todo Taking shrinking/creep into account, see \ref calibrate_shrink_creep().
-	
-	4. Taking concrete strain (subtraction of triangular areas) into account, see \ref compensate_concrete_strain().
+	3. Shrinking/creep is taken into account, according to `shrink_compensation` see \ref calibrate_shrink_creep().
+	4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref compensate_tension_stiffening().
 	5. Integrate over the strain (compensated for shrinking and concrete strain), see fosdata.integrate_segment().
 	
 	\param x_values List of x-positions. Should be sanitized (`NaN` handled) already.
 	\param y_values List of y_values (matching the `x_values`). Should be sanitized (`NaN` handled and smoothed) already.
 	\param method Method, how the width of a crack is estimated, see \ref find_crack_segment_splits().
 	\param interpolation Algorithm, which should be used to interpolate between data points, see \ref fosdata.integrate_segment().
-	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. If set to `None`, no compensation for the concrete 
+	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. If set to `None`, no compensation for the concrete
+	\param shrink_compensation Array of compensation values to account for concrete shrinking. Use \ref calibrate_shrink_creep() to determine the array.
+	\return Returns an array of crack widths.
 	"""
-	segment_splits_location = find_crack_segment_splits(x_values, y_values, method=method)
+	segment_splits_location = find_crack_segment_splits(x_values, y_values, method=method, **kwargs)
 	crack_widths = []
+	if shrink_compensation is not None:
+		y_values = y_values + shrink_compensation
 	for split in segment_splits_location:
-		x_crop, y_crop = fosdata.crop_to_x_range(x_values, y_values, split[0], split[2])
-		# TODO: Taking shrinking/creep into account
+		x_seg, y_seg = fosdata.crop_to_x_range(x_values, y_values, split[0], split[2])
 		if max_concrete_strain is not None:
-			y_compensated = compensate_concrete_strain(x_crop, y_crop, split, max_concrete_strain)
-		else:
-			y_compensated = y_crop
-		crack_widths.append(fosdata.integrate_segment(x_crop, y_compensated, start_index=None, end_index=None, interpolation=interpolation))
+			y_seg = y_seg - compensate_tension_stiffening(x_seg, y_seg, split, max_concrete_strain)
+		crack_widths.append(fosdata.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=interpolation))
 		#crack_widths.append(fosdata.integrate_segment(x_values, y_values, start_index=split[0], end_index=split[2], interpolation=interpolation))
 	return np.array(crack_widths)
 
-def compensate_concrete_strain(x_values: np.array,
+def compensate_tension_stiffening(x_values: np.array,
 					y_values: np.array,
 					split: tuple,
-					max_concrete_strain: float = None
+					max_concrete_strain: float = None,
 					) -> np.array:
 	"""
 	Compensates for the strain, that does not contribute to a crack, but is locatend in the uncracked concrete.
@@ -123,29 +124,33 @@ def filter_cracks(y_values: np.array,
 
 def find_crack_segment_splits(x_values: np.array,
 					y_values: np.array,
+					max_concrete_strain: float = None,
 					method: str = "middle",
 					*args, **kwargs) -> list:
 	"""
 	Return a list of x-positions of influence area segment borders, which separate different cracks.
 	\param x_values List of x-positions. Should be sanitized (`NaN` handled) already.
 	\param y_values List of y_values (matching the `x_values`). Should be sanitized (`NaN` handled and smoothed) already.
+	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. Defaults to 100 µm/m.
 	\param method Method, how the width of a crack is estimated. Available options:
 		- `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
 		- `"min"`: Crack segments are split at local strain minima.
 	\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
 	\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
 		By default, the parameter `"prominence"` is set to `100`.
+		By default, the parameter `"height"` is set to `max_concrete_strain`.
 	\return Returns a list of tuples like `(<left_pos>, <crack_pos>, <right_pos>)` where:
 		- `<left_pos>` is the location of the left-hand side end of the effective length for the crack,
 		- `<crack_pos>` is the location of the crack and
 		- `<right_pos>` is the location of the right-hand side end of the effective length for the crack.
 	"""
+	max_concrete_strain = 100 if max_concrete_strain is None else max_concrete_strain
+	kwargs["height"] = max_concrete_strain
 	if "prominence" not in kwargs:
 		kwargs["prominence"] = 100
 	peaks_max, max_properties = scipy.signal.find_peaks(y_values, *args, **kwargs)
 	segment_left = max_properties["left_bases"]
 	segment_right = max_properties["right_bases"]
-	## TODO: filter_cracks()
 	segment_splits_pos = []
 	for peak_number, (left_index, peak_index, right_index) in enumerate(zip(segment_left, peaks_max, segment_right)):
 		split = [x_values[left_index], x_values[peak_index], x_values[right_index]]

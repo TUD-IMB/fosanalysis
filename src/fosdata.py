@@ -93,6 +93,59 @@ class Record(dict):
 		for key in kwargs:
 			self[key] = kwargs[key]
 
+class Crack():
+	"""
+	Implements a crack with all necessary properties.
+	"""
+	def __init__(self,
+						number: int = None,
+						location: float = None,
+						leff_l: float = None,
+						leff_r: float = None,
+						width: float = None,
+						max_strain: float = None,
+						):
+		## Number of the crack, counted in ascending order along the x-axis.
+		self.number = number
+		## Absolute location along the fibre optical sensor.
+		self.location = location
+		## Left-hand side part of the effective length of the crack as distance to \ref location.
+		self.leff_l = leff_l
+		## Right-hand side part of the effective length of the crack as distance to \ref location.
+		self.leff_r = leff_r
+		## The opening width of the crack. The width is calculated by integrating the strain over the effective length. 
+		self.width = width
+		## The strain in the fibre-optical sensor at the \ref location. 
+		self.max_strain = max_strain
+	@property
+	def leff(self):
+		"""
+		Returns the length of the effective length.
+		"""
+		return self.leff_r - self.leff_l
+	@property
+	def segment(self):
+		"""
+		Returns the absolute influence segment of the crack.
+		"""
+		return self.location - self.leff_l, self.location + self.leff_r
+
+class CrackList(list):
+	"""
+	List of \ref Crack.
+	"""
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		#raise NotImplementedError()
+	def get_crack_widths(self):
+		return [crack.width for crack in self]
+	def get_crack_locations(self):
+		return [crack.location for crack in self]
+	def get_leff_l(self):
+		return [crack.leff_l for crack in self]
+	def get_leff_r(self):
+		return [crack.leff_r for crack in self]
+
 def crop_to_x_range(x_values: np.array,
 					y_values: np.array,
 					x_start: float = None,
@@ -101,6 +154,7 @@ def crop_to_x_range(x_values: np.array,
 					) -> tuple:
 	"""
 	Crops both given lists according to the values of `x_start` and `x_end`
+	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 	\param x_values List of x-positions.
 	\param y_values List of y_values (matching the `x_values`).
 	\param x_start Length (value from the range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
@@ -237,7 +291,8 @@ def smooth_data(data: np.array, r: int, margins: str = "reduced") -> np.array:
 	"""
 	Smoothes the record using a the mean over \f$2r + 1\f$ entries.
 	For each entry, the sliding mean extends `r` entries to both sides.
-	The margings (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
+	The margins (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
+	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 	\param data List of data to be smoothed.
 	\param r Smoothing radius.
 	\param margins Setting, how the first and last `r` entries of `data` will be treated.
