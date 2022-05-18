@@ -48,7 +48,10 @@ class MeasureData():
 					# Read in value table
 					record_name, description1, description2, *values = line.strip().split(itemsep)
 					values = np.array([float(entry) for entry in values])	# convert to float
-					record = Record(record_name, description1, description2, values)
+					record = Record(record_name=record_name,
+									description1=description1,
+									description2=description2,
+									values=values)
 					if record["record_name"] == "x-axis":
 						self.x_record = record
 					else: 
@@ -82,22 +85,66 @@ class Record(dict):
 	A single measurement of the fibre optical sensor.
 	"""
 	def __init__(self, record_name: str,
-						description1: str,
-						description2: str,
 						values: list,
 						**kwargs):
+		super().__init__()
 		self["record_name"] = record_name
-		self["description1"] = description1
-		self["description2"] = description2
 		self["values"] = values
 		for key in kwargs:
 			self[key] = kwargs[key]
+
+class Specimen():
+	"""
+	Hold the measuring data
+	"""
+	def __init__(self,
+					x_values: np.array,
+					y_values: np.array,
+					start_pos: float,
+					end_pos: float,
+					max_concrete_strain: float = 100,
+					smoothing_radius: int = 5,
+					crack_peak_prominence: float = 150,
+					calibrate_shrink: bool = True,
+					x_inst: np.array = None,
+					y_inst: np.array = None,
+					crack_segment_method: str = "middle",
+					*args, **kwargs):
+		"""
+		\todo Run crack calulation automatically.
+		"""
+		super().__init__()
+		# TODO: save all properties
+		# TODO: eliminate NaNs
+		
+		# TODO: smooth
+		# TODO: crop and save
+		# TODO: identify cracks
+		# TODO: calculate crack widths
+		
+		## List of cracks, see \ref Crack for documentation.
+		self.crack_list = []
+		y_smooth = smooth_data(y_values, r=smoothing_radius)
+		x_crop, y_crop = crop_to_x_range(x_values, y_smooth, x_start=start_pos, x_end=end_pos)
+		##
+		self.x = x_crop
+		##
+		self.x = y_crop
+	def get_crack_widths(self):
+		return [crack.width for crack in self.crack_list]
+	def get_crack_locations(self):
+		return [crack.location for crack in self.crack_list]
+	def get_leff_l(self):
+		return [crack.leff_l for crack in self.crack_list]
+	def get_leff_r(self):
+		return [crack.leff_r for crack in self.crack_list]
 
 class Crack():
 	"""
 	Implements a crack with all necessary properties.
 	"""
 	def __init__(self,
+						index: int = None,
 						number: int = None,
 						location: float = None,
 						leff_l: float = None,
@@ -105,6 +152,9 @@ class Crack():
 						width: float = None,
 						max_strain: float = None,
 						):
+		super().__init__()
+		## Position index in the specimen.
+		self.index = index
 		## Number of the crack, counted in ascending order along the x-axis.
 		self.number = number
 		## Absolute location along the fibre optical sensor.
@@ -129,22 +179,6 @@ class Crack():
 		Returns the absolute influence segment of the crack.
 		"""
 		return self.location - self.leff_l, self.location + self.leff_r
-
-class CrackList(list):
-	"""
-	List of \ref Crack.
-	"""
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		#raise NotImplementedError()
-	def get_crack_widths(self):
-		return [crack.width for crack in self]
-	def get_crack_locations(self):
-		return [crack.location for crack in self]
-	def get_leff_l(self):
-		return [crack.leff_l for crack in self]
-	def get_leff_r(self):
-		return [crack.leff_r for crack in self]
 
 def crop_to_x_range(x_values: np.array,
 					y_values: np.array,

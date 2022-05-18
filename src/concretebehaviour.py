@@ -42,7 +42,6 @@ def calculate_crack_widths(x_values: np.array,
 		if max_concrete_strain is not None:
 			y_seg = y_seg - compensate_tension_stiffening(x_seg, y_seg, split, max_concrete_strain)
 		crack_widths.append(fosdata.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=interpolation))
-		#crack_widths.append(fosdata.integrate_segment(x_values, y_values, start_index=split[0], end_index=split[2], interpolation=interpolation))
 	return np.array(crack_widths)
 
 def compensate_tension_stiffening(x_values: np.array,
@@ -84,7 +83,7 @@ def calibrate_shrink_creep(
 					method = "mean_min",
 					*args, **kwargs) -> np.array:
 	"""
-	The influence of concrete creep and shrinking is eliminated.
+	The influence of concrete creep and shrinking is calculated.
 	\param x_inst Array of x-locations for instantaneous strains.
 	\param y_inst Array of instantaneous strains.
 	\param x_inf Array of x-locations for strains after a long period of time.
@@ -94,33 +93,21 @@ def calibrate_shrink_creep(
 	\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
 	\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
 	"""
+	# TODO: crop all arrays to the union of both x_inst and x_inf
 	peaks_min, peaks_max = fosdata.find_extrema_indizes(y_inst, *args, **kwargs)
 	# Get x positions and y-values for instantanious deformation
 	y_min_inst = np.array([y_inst[i] for i in peaks_min])
 	x_min_inst = np.array([x_inst[i] for i in peaks_min])
 	# Get x positions and y-values for deformation after a long time
 	x_min_inf_index = [fosdata.find_closest_value(x_inf, min_pos)[0] for min_pos in x_min_inst]
+	x_min_inf = [fosdata.find_closest_value(x_inf, min_pos)[1] for min_pos in x_min_inst]
 	y_min_inf = np.array([y_inf[i] for i in x_min_inf_index])
 	# Taking the difference
 	min_diff = y_min_inf - y_min_inst
 	if method == "mean_min":
-		return np.array([np.mean(min_diff)]*len(y_inst))
+		return np.array([np.mean(min_diff)]*len(y_inf))
 	else:
 		raise NotImplementedError()
-
-def filter_cracks(y_values: np.array,
-					peak_index_list: list,
-					max_concrete_strain: float,
-					*properties_lists) -> list:
-	"""
-	Returns a list of peak indexes, for which all entries of `y_values` exceed the given `max_concrete_strain`, making them all plausible/most likely real cracks.
-	\param y_values List of strain values. Should be sanitized (`NaN` handled and smoothed) already.
-	\param peak_index_list List of peak indexes in `y_values`.
-	\param max_concrete_strain Maximum strain in [µm/m] in the concrete, before a crack opens. Defaults to 100 µm/m.
-	\param properties_lists \todo also filter property lists
-	"""
-	max_concrete_strain = 100 if max_concrete_strain is None else max_concrete_strain
-	return [peak_index for peak_index in peak_index_list if y_values[peak_index] >= max_concrete_strain]
 
 def find_crack_segment_splits(x_values: np.array,
 					y_values: np.array,
