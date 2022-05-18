@@ -98,46 +98,236 @@ class Specimen():
 	Hold the measuring data
 	"""
 	def __init__(self,
-					x_values: np.array,
-					y_values: np.array,
-					start_pos: float,
-					end_pos: float,
-					max_concrete_strain: float = 100,
-					smoothing_radius: int = 5,
-					crack_peak_prominence: float = 150,
-					calibrate_shrink: bool = True,
-					x_inst: np.array = None,
-					y_inst: np.array = None,
-					crack_segment_method: str = "middle",
-					*args, **kwargs):
+						x: np.array,
+						strain: np.array,
+						start_pos: float,
+						end_pos: float,
+						max_concrete_strain: float = 100,
+						smoothing_radius: int = 5,
+						smoothing_margins: str = "reduced",
+						interpolation : str = "linear",
+						crack_peak_prominence: float = 150,
+						crack_segment_method: str = "middle",
+						use_shrink_compensation: bool = False,
+						use_shrink_compensation_method: str = "mean_min",
+						shrink_calibration_kwargs: dict = None,
+						x_inst: np.array = None,
+						strain_inst: np.array = None,
+						use_tension_stiffening: bool = True,
+						suppress_negative_strain: bool = True,
+						*args, **kwargs):
 		"""
-		\todo Run crack calulation automatically.
+		\todo Document the parameters
 		"""
-		super().__init__()
-		# TODO: save all properties
-		# TODO: eliminate NaNs
-		
-		# TODO: smooth
-		# TODO: crop and save
-		# TODO: identify cracks
-		# TODO: calculate crack widths
-		
-		## List of cracks, see \ref Crack for documentation.
-		self.crack_list = []
-		y_smooth = smooth_data(y_values, r=smoothing_radius)
-		x_crop, y_crop = crop_to_x_range(x_values, y_smooth, x_start=start_pos, x_end=end_pos)
-		##
+		super().__init__(*args, **kwargs)
+		## Original list of location data (x-axis) for the current experiment.
+		self._x_orig = x
+		## Original list of strain data (y-axis) for the current experiment.
+		self._strain_orig = strain
+		## Original list of location data (x-axis) for the current initial load experiment.
+		self._x_inst_orig = x_inst
+		## Original list of strain data (y-axis) for the initial load experiment.
+		self._strain_inst_orig = strain_inst
+		## The starting position specifies the length of the sensor, before entering the specimen.
+		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
+		self.start_pos = start_pos
+		## The end position specifies the length of the sensor, when leaving the specimen. 
+		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
+		self.end_pos = end_pos
+		## Smoothing radius for smoothing \ref strain and \ref strain_inst.
+		## Smoothes the record using a the mean over \f$2r + 1\f$ entries.
+		## For each entry, the sliding mean extends `r` entries to both sides.
+		## The margins (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
+		## In general, if both smoothing and cropping are to be applied, smooth first, crop second.
+		self.smoothing_radius = smoothing_radius
+		## Setting, how the first and last \ref smoothing_radius entries of \ref strain and \ref strain_inst will be treated.
+		## Available options:
+		## - `"reduced"`: (default) smoothing with reduced smoothing radius, such that the radius extends to the borders of the data.
+		## - `"flat"`:  the marginal entries get the same value applied, as the first/last fully smoothed entry.
+		self.smoothing_margins = smoothing_margins
+		## Algorithm, which should be used to interpolate between data points.
+		## Defaults to `"linear"`.
+		##See \ref integrate_segment() for available options.
+		self.interpolation = interpolation
+		## Maximum strain in concrete, before a crack opens.
+		## Strains below this value are not considered cracked.
+		## Is also as the `height` option for [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
+		self.max_concrete_strain = max_concrete_strain
+		## Switch, whether the tension stiffening effect in the concrete is taken into account.
+		self.use_tension_stiffening = use_tension_stiffening
+		## The prominence of the strain peaks over their surrounding data to be considered a crack.
+		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
+		self.crack_peak_prominence = crack_peak_prominence
+		## Switch, whether shrinkage of concrete should be taken into account.
+		## For this to work, also \ref x_inst and \ref strain_inst need to be provided.
+		self.use_shrink_compensation = use_shrink_compensation
+		## Array of calibration values for the  specimen.
+		## If \ref use_shrink_compensation is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref compensate_shrink_creep().
+		## Else, it defaults to `np.zeros` of the same length as \ref strain.
+		self.shrink_calibration_values = None
+		## Method, how to calculate the shrinkage calibration. Available options:
+		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.
+		## 	Afterwards the mean over the differences is taken.
+		self.use_shrink_compensation_method = use_shrink_compensation_method
+		## Location data (x-axis) for the initial load experiment.
+		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
+		self.x_inst = x_inst
+		## Strain data (y-axis) for the initial load experiment.
+		## The data is smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
+		self.strain_inst = strain_inst
+		## Keyword argument dictionary for the identification of strain minima for the calibration of shrinkage. Will be passed to `scipy.signal.find_peaks()`.
+		## By default, `"prominence"` is set to `100`.
+		self.shrink_calibration_kwargs = shrink_calibration_kwargs if shrink_calibration_kwargs is not None else {"prominence": 100}
+		## Method, how the width of a crack is estimated. Available options:
+		## - `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
+		## - `"min"`: Crack segments are split at local strain minima.
+		self.crack_segment_method = crack_segment_method
+		# Sanitize the x and strain data
+		x_strip, strain_strip = strip_nan_entries(x, strain)
+		strain_smooth = smooth_data(strain_strip, r=self.smoothing_radius)
+		x_crop, strain_crop = crop_to_x_range(x_strip, strain_smooth, x_start=self.start_pos, x_end=self.end_pos)
+		## Location data of the specimen in accordance to \ref strain.
+		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x = x_crop
-		##
-		self.x = y_crop
+		## Strain data of the specimen in accordance to \ref x.
+		## The data is smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
+		self.strain = strain_crop
+		## List of cracks, see \ref Crack for documentation.
+		self.crack_list = None
 	def get_crack_widths(self):
+		""" Returns a list with the widths of all cracks. """
 		return [crack.width for crack in self.crack_list]
+	def get_crack_max_strain(self):
+		""" Returns a list with the peak strains of all cracks. """
+		return [crack.max_strain for crack in self.crack_list]
 	def get_crack_locations(self):
+		""" Returns a list with the locations of all cracks. """
 		return [crack.location for crack in self.crack_list]
 	def get_leff_l(self):
+		""" Returns a list with the left-hand side border of effective length of all cracks. """
 		return [crack.leff_l for crack in self.crack_list]
 	def get_leff_r(self):
+		""" Returns a list with the right-hand side border of effective length of all cracks. """
 		return [crack.leff_r for crack in self.crack_list]
+	def identify_cracks(self,
+						method: str = None,
+						*args, **kwargs) -> list:
+		"""
+		Return a list of x-positions of influence area segment borders, which separate different cracks.
+		\param method \copybrief crack_segment_method. Use it to specify a different method than \ref crack_segment_method. 
+		\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+		\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+		\return Returns a list of \ref Crack objects.
+		"""
+		method = method if method is not None else self.crack_segment_method
+		peaks_max, max_properties = scipy.signal.find_peaks(self.strain, height= self.max_concrete_strain, prominence=self.crack_peak_prominence, *args, **kwargs)
+		segment_left = max_properties["left_bases"]
+		segment_right = max_properties["right_bases"]
+		crack_list = []
+		for peak_number, (left_index, peak_index, right_index) in enumerate(zip(segment_left, peaks_max, segment_right)):
+			crack = Crack(location=self.x[peak_index],
+						leff_l=self.x[left_index],
+						leff_r=self.x[right_index],
+						number=peak_number,
+						index = peak_index,
+						max_strain=self.strain[peak_index],
+						)
+			if method == "middle":
+				# Limit the effective length by the middle between two cracks
+				if peak_number > 0:
+					# Left split margin
+					middle = (crack_list[-1].location + crack.location)/2
+					crack.leff_l = max(middle, crack.leff_l)
+					crack_list[-1].leff_r = min(middle, crack_list[-1].leff_r)
+			elif method == "min":
+				## Set the limits to the local minima
+				if peak_number > 0:
+					left_peak_index = crack_list[-1].index
+					right_peak_index = crack.index
+					left_valley = self.strain[left_peak_index:right_peak_index]
+					min_index = np.argmin(left_valley) + left_peak_index
+					crack.leff_l = self.x[min_index]
+					crack_list[-1].leff_r = self.x[min_index]
+			else:
+				raise NotImplementedError("No such option '{}' known for `method`.".format(method))
+			crack_list.append(crack)
+		self.crack_list = crack_list
+		return crack_list
+	def calculate_crack_widths(self, *args, **kwargs) -> np.array:
+		"""
+		Returns the crack widths.
+		The following is done:
+		1. Find the crack segment areas, see \ref identify_cracks().
+		3. Shrinking/creep is taken into account, according to \ref use_shrink_compensation see \ref compensate_shrink_creep().
+		4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref compensate_tension_stiffening().
+		2. For each crack segment, the strain is integrated using fosdata.integrate_segment().
+		
+		\return Returns an array of crack widths.
+		"""
+		if self.crack_list is None:
+			self.identify_cracks()
+		self.compensate_shrink_creep()
+		self.compensate_tension_stiffening()
+		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values 
+		strain = np.maximum(strain, np.zeros(len(strain)))
+		for crack in self.crack_list:
+			x_seg, y_seg = crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
+			crack.width = integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
+		return self.get_crack_widths()
+	def compensate_shrink_creep(self, *args, **kwargs) -> np.array:
+		"""
+		The influence of concrete creep and shrinking is calculated.
+		\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
+		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
+		"""
+		self.shrink_calibration_values = np.zeros(len(self.strain))
+		if self.use_shrink_compensation:
+			if self.x_inst is not None and self.strain_inst is not None:
+				self.x_inst, self.strain_inst = strip_nan_entries(self._x_inst_orig, self._strain_inst_orig)
+				self.x_inst, self.strain_inst = crop_to_x_range(self.x_inst, self.strain_inst, x_start=self.start_pos, x_end=self.end_pos)
+				self.strain_inst = smooth_data(self.strain_inst, r=self.smoothing_radius, margins=self.smoothing_margins)
+			else:
+				raise ValueError("Can not calibrate shrink without both `x_inst` and `strain_inst`! Please provide both!")
+			
+			shrink_calibration_kwargs = {}
+			shrink_calibration_kwargs.update(self.shrink_calibration_kwargs)
+			shrink_calibration_kwargs.update(**kwargs)
+			peaks_min = scipy.signal.find_peaks(self.strain_inst, *args, shrink_calibration_kwargs)
+			# Get x positions and y-values for instantanious deformation
+			y_min_inst = np.array([self.strain_inst[i] for i in peaks_min])
+			x_min_inst = np.array([self.x_inst[i] for i in peaks_min])
+			# Get x positions and y-values for deformation after a long time
+			x_min_inf_index = [find_closest_value(self.x, min_pos)[0] for min_pos in x_min_inst]
+			y_min_inf = np.array([self.strain[i] for i in x_min_inf_index])
+			if self.use_shrink_compensation_method == "mean_min":
+				min_diff = y_min_inf - y_min_inst
+				self.shrink_calibration_values = np.array([np.mean(min_diff)]*len(self.strain))
+			else:
+				raise NotImplementedError()
+		return self.shrink_calibration_values
+	def compensate_tension_stiffening(self) -> np.array:
+		"""
+		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
+		\return An array with the compensation values for each measuring point is returned.
+		"""
+		tension_stiffening_values = np.zeros(len(self.strain))
+		if self.use_tension_stiffening:
+			if self.crack_list is None:
+				self.identify_cracks()
+			for i, (x, y) in enumerate(zip(self.x, self.strain)):
+				for crack in self.crack_list:
+					if crack.location is None:
+						raise ValueError("Location of crack is `None`: {}".format(crack))
+					if crack.leff_l <= x < crack.location and crack.d_l > 0.0:
+						d_x = (crack.location - x)/(crack.d_l)
+						tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
+					elif crack.location < x <= crack.leff_r and crack.d_r > 0.0:
+						d_x = (x - crack.location)/(crack.d_r)
+						tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
+					else:
+						pass
+		self.tension_stiffening_values = tension_stiffening_values
+		return tension_stiffening_values
 
 class Crack():
 	"""
@@ -159,9 +349,9 @@ class Crack():
 		self.number = number
 		## Absolute location along the fibre optical sensor.
 		self.location = location
-		## Left-hand side part of the effective length of the crack as distance to \ref location.
+		## Absolute location left-hand side end of its effective length.
 		self.leff_l = leff_l
-		## Right-hand side part of the effective length of the crack as distance to \ref location.
+		## Absolute location right-hand side end of its effective length.
 		self.leff_r = leff_r
 		## The opening width of the crack. The width is calculated by integrating the strain over the effective length. 
 		self.width = width
@@ -174,11 +364,19 @@ class Crack():
 		"""
 		return self.leff_r - self.leff_l
 	@property
+	def d_l(self):
+		"""" Distance from the crack position to the left-hand side end of its effective length. """
+		return self.location - self.leff_l
+	@property
+	def d_r(self):
+		"""" Distance from the crack position to the right-hand side end of its effective length. """
+		return self.leff_r - self.location
+	@property
 	def segment(self):
 		"""
 		Returns the absolute influence segment of the crack.
 		"""
-		return self.location - self.leff_l, self.location + self.leff_r
+		return self.leff_l, self.leff_r
 
 def crop_to_x_range(x_values: np.array,
 					y_values: np.array,
@@ -280,7 +478,6 @@ def integrate_segment(x_values: np.array,
 	\param end_index Index, where the integration should stop. This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
 	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
 		- `"linear"`: (default) Linear interpolation is used inbetween data points.
-		- `"simson"`: \todo The Simson-rule is applied.
 	"""
 	start_index = start_index if start_index is not None else 0
 	end_index = end_index if end_index is not None else len(x_values) - 1
@@ -299,8 +496,6 @@ def integrate_segment(x_values: np.array,
 			area += area_temp
 			x_l = x_r
 			y_l = y_r
-	elif interpolation == "simson":
-		raise NotImplementedError()
 	else:
 		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
 	return area
