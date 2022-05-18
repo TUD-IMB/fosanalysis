@@ -292,7 +292,7 @@ class Specimen():
 		self.calculate_tension_stiffening_compensation()
 		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values 
 		if self.suppress_compression:
-			strain = np.maximum(strain, np.zeros(len(strain)))
+			strain = limit_entry_values(strain, 0,0, None)
 		for crack in self.crack_list:
 			x_seg, y_seg = crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
 			crack.width = integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
@@ -350,7 +350,7 @@ class Specimen():
 					else:
 						pass
 		if self.suppress_compression:
-			tension_stiffening_values = np.maximum(tension_stiffening_values, np.zeros(len(tension_stiffening_values)))
+			tension_stiffening_values = limit_entry_values(tension_stiffening_values, 0,0, None)
 		self.tension_stiffening_values = tension_stiffening_values
 		return tension_stiffening_values
 
@@ -440,25 +440,6 @@ def crop_to_x_range(x_values: np.array,
 		x_cropped = x_cropped - x_start
 	return x_cropped, y_cropped
 
-def find_extrema_indizes(record: np.array, *args, **kwargs):
-	"""
-	Finds the local extrema in the given record and returns the according indizes using the function `scipy.signal.find_peaks()`.
-	See [scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks) for further information.
-	\param record List of data.
-	\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
-	\param **kwargs Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
-		By default, the parameter `"prominence"` is set to `100`.
-	\returns Returns the positions of the local minima and the maxima.
-	\retval peaks_min List of position indizes for local minima.
-	\retval peaks_max List of position indizes for local maxima.
-	"""
-	if "prominence" not in kwargs:
-		kwargs["prominence"] = 100
-	record = np.array(record)
-	peaks_min, properties = scipy.signal.find_peaks(-record, *args, **kwargs)
-	peaks_max, properties = scipy.signal.find_peaks(record, *args, **kwargs)
-	return peaks_min, peaks_max
-
 def find_closest_value(array, x) -> tuple:
 	"""
 	Returns the index and value of the entry in `array`, that is closest to the given `x`.
@@ -472,21 +453,6 @@ def find_closest_value(array, x) -> tuple:
 			d_min = d
 			closest_index = i
 	return closest_index, array[closest_index]
-
-def find_next_value(values, index) -> int:
-	"""
-	Finds the next index, which is not a valid entry. This means, it is none of the following: `None`, `nan`, `""`.
-	\param values List of values.
-	\param index Index to start searching.
-	\return Returns an index and the according value.
-		If `index` points to a valid entry, it is returned.
-		If no number is found until the end of the `values` list, `None`, `None` is returned.
-	"""
-	for i in range(index, len(values)):
-		entry = values[i]
-		if entry is not None and entry != "" and not np.isnan(entry):
-			return i, entry
-	return None, None
 
 def integrate_segment(x_values: np.array,
 					y_values: np.array,
