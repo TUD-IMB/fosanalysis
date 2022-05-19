@@ -177,7 +177,7 @@ class Specimen():
 		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
 		self.crack_peak_prominence = crack_peak_prominence
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			x_inst_crop, strain_inst_crop = self._strip_smooth_crop(self._strain_inst_orig, self._strain_inst_orig)
+			x_inst_crop, strain_inst_crop = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
 		## Location data (x-axis) for the initial load experiment.
 		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x_inst = x_inst_crop
@@ -325,7 +325,7 @@ class Specimen():
 		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
 		"""
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			self.x_inst, self.strain_inst = self._strip_smooth_crop(self._strain_inst_orig, self._strain_inst_orig)
+			self.x_inst, self.strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
 		else:
 			raise ValueError("Can not calibrate shrink without both `x_inst` and `strain_inst`! Please provide both!")
 		compensate_shrink_kwargs = {}
