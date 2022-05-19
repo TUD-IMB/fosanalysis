@@ -107,7 +107,7 @@ class Specimen():
 						compensate_shrink_method: str = "mean_min",
 						compensate_shrink_kwargs: dict = None,
 						compensate_tension_stiffening: bool = True,
-						crack_peak_prominence: float = 150,
+						crack_peak_prominence: float = 100,
 						crack_segment_method: str = "middle",
 						max_concrete_strain: float = 100,
 						smoothing_radius: int = 5,
@@ -138,7 +138,7 @@ class Specimen():
 		\param *args Additional positional arguments. They are ignored.
 		\param **kwargs Additional keyword arguments. They are ignored.
 		"""
-		super().__init__(*args, **kwargs)
+		super().__init__()
 		## Original list of location data (x-axis) for the current experiment.
 		self._x_orig = x
 		## Original list of strain data (y-axis) for the current experiment.
@@ -170,52 +170,71 @@ class Specimen():
 		self.interpolation = interpolation
 		## Maximum strain in concrete, before a crack opens.
 		## Strains below this value are not considered cracked.
-		## Is also as the `height` option for [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
+		## It is used as the `height` option for [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
+		## Also, this is the treshhold for the calculation of tension stiffening by \ref compensate_tension_stiffening().
 		self.max_concrete_strain = max_concrete_strain
-		## Switch, whether the tension stiffening effect in the concrete is taken into account.
-		self.compensate_tension_stiffening = compensate_tension_stiffening
 		## The prominence of the strain peaks over their surrounding data to be considered a crack.
 		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
 		self.crack_peak_prominence = crack_peak_prominence
-		## Switch, whether shrinkage of concrete should be taken into account.
-		## For this to work, also \ref x_inst and \ref strain_inst need to be provided.
-		self.compensate_shrink = compensate_shrink
-		## Array of calibration values for the  specimen.
-		## If \ref compensate_shrink is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref calculate_shrink_compensation().
-		## Else, it defaults to `np.zeros` of the same length as \ref strain.
-		self.shrink_calibration_values = None
-		## Method, how to calculate the shrinkage calibration. Available options:
-		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.
-		## 	Afterwards the mean over the differences is taken.
-		self.compensate_shrink_method = compensate_shrink_method
+		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
+			x_inst_crop, strain_inst_crop = self._strip_smooth_crop(self._strain_inst_orig, self._strain_inst_orig)
 		## Location data (x-axis) for the initial load experiment.
 		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
-		self.x_inst = x_inst
+		self.x_inst = x_inst_crop
 		## Strain data (y-axis) for the initial load experiment.
 		## The data is smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
-		self.strain_inst = strain_inst
-		## Keyword argument dictionary for the identification of strain minima for the calibration of shrinkage. Will be passed to `scipy.signal.find_peaks()`.
-		## By default, `"prominence"` is set to `100`.
-		self.compensate_shrink_kwargs = compensate_shrink_kwargs if compensate_shrink_kwargs is not None else {"prominence": 100}
+		self.strain_inst = strain_inst_crop
 		## Method, how the width of a crack is estimated. Available options:
 		## - `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
 		## - `"min"`: Crack segments are split at local strain minima.
 		self.crack_segment_method = crack_segment_method
 		# Sanitize the x and strain data
-		x_strip, strain_strip = strip_nan_entries(x, strain)
-		strain_smooth = smooth_data(strain_strip, r=self.smoothing_radius)
-		x_crop, strain_crop = crop_to_x_range(x_strip, strain_smooth, x_start=self.start_pos, x_end=self.end_pos)
+		x_crop, strain_crop = self._strip_smooth_crop(x, strain)
 		## Location data of the specimen in accordance to \ref strain.
-		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
+		## The data is stripped of any `NaN` entries and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x = x_crop
 		## Strain data of the specimen in accordance to \ref x.
-		## The data is smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
+		## The data is stripped of any `NaN` entries, smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.strain = strain_crop
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
+		## Switch, whether shrinkage of concrete should be taken into account.
+		## For this to work, also \ref x_inst and \ref strain_inst need to be provided.
+		self.compensate_shrink = compensate_shrink
+		## Keyword argument dictionary for the identification of strain minima for the calibration of shrinkage. Will be passed to `scipy.signal.find_peaks()`.
+		## By default, `"prominence"` is set to `100`.
+		self.compensate_shrink_kwargs = compensate_shrink_kwargs if compensate_shrink_kwargs is not None else {"prominence": 100}
+		## Method, how to calculate the shrinkage calibration. Available options:
+		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.
+		## 	Afterwards the mean over the differences is taken.
+		self.compensate_shrink_method = compensate_shrink_method
+		## Array of calibration values for the  specimen.
+		## If \ref compensate_shrink is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref calculate_shrink_compensation().
+		## Else, it defaults to `np.zeros` of the same length as \ref strain.
+		self.shrink_calibration_values = np.zeros(len(self.strain))
+		## Switch, whether the tension stiffening effect in the concrete is taken into account.
+		self.compensate_tension_stiffening = compensate_tension_stiffening
+		## Array of the tension stiffening.
+		## While integrating the crack width, it is subtracted from the strain values.
+		self.tension_stiffening_values = np.zeros(len(self.strain))
 		## List of cracks, see \ref Crack for documentation.
 		self.crack_list = None
+	def _strip_smooth_crop(self, x, y):
+		"""
+		Sanitize the given arrays.
+		Firstly, `NaN`s are stripped.
+		Secondly, `y` is smoothed (see \ref smoothing_radius and \ref smoothing_margins).
+		Finally, both `x` and `y` are cropped to \ref start_pos and \ref end_pos.
+		\return Returns copies of `x` and `y`.
+		"""
+		if x is not None and y is not None and len(x) == len(y):
+			x, y = strip_nan_entries(x, y)
+			y = smooth_data(y, r=self.smoothing_radius, margins=self.smoothing_margins)
+			x, y = crop_to_x_range(x, y, x_start=self.start_pos, x_end=self.end_pos)
+			return x, y
+		else:
+			raise ValueError("Either x or y is None or they differ in lengths.")
 	def get_crack_widths(self) -> list:
 		""" Returns a list with the widths of all cracks. """
 		return [crack.width for crack in self.crack_list]
@@ -280,19 +299,21 @@ class Specimen():
 		Returns the crack widths.
 		The following is done:
 		1. Find the crack segment areas, see \ref identify_cracks().
-		3. Shrinking/creep is taken into account, according to \ref compensate_shrink see \ref calculate_shrink_compensation().
-		4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref calculate_tension_stiffening_compensation().
-		2. For each crack segment, the strain is integrated using fosdata.integrate_segment().
+		3. Shrinking/creep is taken into account, according to \ref compensate_shrink, see \ref calculate_shrink_compensation().
+		4. Taking tension stiffening (subtraction of triangular areas) into account according to \ref compensate_tension_stiffening, see \ref calculate_tension_stiffening_compensation().
+		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
 		
-		\return Returns an array of crack widths.
+		\return Returns an list of crack widths.
 		"""
 		if self.crack_list is None:
 			self.identify_cracks()
-		self.calculate_shrink_compensation()
-		self.calculate_tension_stiffening_compensation()
+		if self.compensate_shrink:
+			self.calculate_shrink_compensation()
+		if self.compensate_tension_stiffening:
+			self.calculate_tension_stiffening_compensation()
 		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values 
 		if self.suppress_compression:
-			strain = limit_entry_values(strain, 0,0, None)
+			strain = limit_entry_values(strain, 0.0, None)
 		for crack in self.crack_list:
 			x_seg, y_seg = crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
 			crack.width = integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
@@ -303,37 +324,32 @@ class Specimen():
 		\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
 		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
 		"""
-		self.shrink_calibration_values = np.zeros(len(self.strain))
-		if self.compensate_shrink:
-			if self.x_inst is not None and self.strain_inst is not None:
-				self.x_inst, self.strain_inst = strip_nan_entries(self._x_inst_orig, self._strain_inst_orig)
-				self.x_inst, self.strain_inst = crop_to_x_range(self.x_inst, self.strain_inst, x_start=self.start_pos, x_end=self.end_pos)
-				self.strain_inst = smooth_data(self.strain_inst, r=self.smoothing_radius, margins=self.smoothing_margins)
-			else:
-				raise ValueError("Can not calibrate shrink without both `x_inst` and `strain_inst`! Please provide both!")
-			
-			compensate_shrink_kwargs = {}
-			compensate_shrink_kwargs.update(self.compensate_shrink_kwargs)
-			compensate_shrink_kwargs.update(**kwargs)
-			peaks_min = scipy.signal.find_peaks(self.strain_inst, *args, compensate_shrink_kwargs)
-			# Get x positions and y-values for instantanious deformation
-			y_min_inst = np.array([self.strain_inst[i] for i in peaks_min])
-			x_min_inst = np.array([self.x_inst[i] for i in peaks_min])
-			# Get x positions and y-values for deformation after a long time
-			x_min_inf_index = [find_closest_value(self.x, min_pos)[0] for min_pos in x_min_inst]
-			y_min_inf = np.array([self.strain[i] for i in x_min_inf_index])
-			if self.compensate_shrink_method == "mean_min":
-				min_diff = y_min_inf - y_min_inst
-				self.shrink_calibration_values = np.array([np.mean(min_diff)]*len(self.strain))
-			else:
-				raise NotImplementedError()
+		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
+			self.x_inst, self.strain_inst = self._strip_smooth_crop(self._strain_inst_orig, self._strain_inst_orig)
+		else:
+			raise ValueError("Can not calibrate shrink without both `x_inst` and `strain_inst`! Please provide both!")
+		compensate_shrink_kwargs = {}
+		compensate_shrink_kwargs.update(self.compensate_shrink_kwargs)
+		compensate_shrink_kwargs.update(**kwargs)
+		peaks_min, properties = scipy.signal.find_peaks(-self.strain_inst, *args, **compensate_shrink_kwargs)
+		# Get x positions and y-values for instantanious deformation
+		y_min_inst = np.array([self.strain_inst[i] for i in peaks_min])
+		x_min_inst = np.array([self.x_inst[i] for i in peaks_min])
+		# Get x positions and y-values for deformation after a long time
+		x_min_inf_index = [find_closest_value(self.x, min_pos)[0] for min_pos in x_min_inst]
+		y_min_inf = np.array([self.strain[i] for i in x_min_inf_index])
+		if self.compensate_shrink_method == "mean_min":
+			min_diff = y_min_inf - y_min_inst
+			self.shrink_calibration_values = np.full(len(self.strain), np.mean(min_diff))
+		else:
+			raise NotImplementedError()
 		return self.shrink_calibration_values
 	def calculate_tension_stiffening_compensation(self) -> np.array:
 		"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		\return An array with the compensation values for each measuring point is returned.
 		"""
-		tension_stiffening_values = np.zeros(len(self.strain))
+		self.tension_stiffening_values = np.zeros(len(self.strain))
 		if self.compensate_tension_stiffening:
 			if self.crack_list is None:
 				self.identify_cracks()
@@ -343,16 +359,15 @@ class Specimen():
 						raise ValueError("Location of crack is `None`: {}".format(crack))
 					if crack.leff_l <= x < crack.location and crack.d_l > 0.0:
 						d_x = (crack.location - x)/(crack.d_l)
-						tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
+						self.tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
 					elif crack.location < x <= crack.leff_r and crack.d_r > 0.0:
 						d_x = (x - crack.location)/(crack.d_r)
-						tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
+						self.tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
 					else:
 						pass
 		if self.suppress_compression:
-			tension_stiffening_values = limit_entry_values(tension_stiffening_values, 0,0, None)
-		self.tension_stiffening_values = tension_stiffening_values
-		return tension_stiffening_values
+			self.tension_stiffening_values = limit_entry_values(self.tension_stiffening_values, 0.0, None)
+		return self.tension_stiffening_values
 
 class Crack():
 	"""
@@ -501,9 +516,9 @@ def limit_entry_values (values: np.array, minimum: float = None, maximum: float 
 	\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
 	"""
 	limited = copy.deepcopy(values)
-	if min is not None:
+	if minimum is not None:
 		limited = [max(entry, minimum) for entry in limited]
-	if max is not None:
+	if maximum is not None:
 		limited = [min(entry, maximum) for entry in limited]
 	return np.array(limited)
 
