@@ -3,7 +3,7 @@
 ## Contains functions, which are general pupose for the the analysis of the crack width based on fibre optical sensor strain.
 ## \author Bertram Richter
 ## \date 2022
-## \package fosaanalysis \copydoc fosanalysis.py
+## \package fosanalysis \copydoc fosanalysis.py
 
 import numpy as np
 import scipy.signal
@@ -177,16 +177,18 @@ class Specimen():
 		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
 		self.crack_peak_prominence = crack_peak_prominence
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			x_inst_crop, strain_inst_crop = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
+			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
 		## Location data (x-axis) for the initial load experiment.
 		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
-		self.x_inst = x_inst_crop
+		self.x_inst = x_inst
 		## Strain data (y-axis) for the initial load experiment.
 		## The data is smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
-		self.strain_inst = strain_inst_crop
+		self.strain_inst = strain_inst
 		## Method, how the width of a crack is estimated. Available options:
 		## - `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
+		## - `"middle_limit"`: Crack segments are split in the middle inbetween local strain maxima or the end of peak, whichever is closer to the cracks location.
 		## - `"min"`: Crack segments are split at local strain minima.
+		## - `"min_limit"`: Crack segments are split at local strain minima or the end of peak, whichever is closer to the cracks location.
 		self.crack_segment_method = crack_segment_method
 		# Sanitize the x and strain data
 		x_crop, strain_crop = self._strip_smooth_crop(x, strain)
@@ -278,6 +280,13 @@ class Specimen():
 				if peak_number > 0:
 					# Left split margin
 					middle = (crack_list[-1].location + crack.location)/2
+					crack.leff_l = middle
+					crack_list[-1].leff_r = middle
+			elif method == "middle_limit":
+				# Limit the effective length by the middle between two cracks
+				if peak_number > 0:
+					# Left split margin
+					middle = (crack_list[-1].location + crack.location)/2
 					crack.leff_l = max(middle, crack.leff_l)
 					crack_list[-1].leff_r = min(middle, crack_list[-1].leff_r)
 			elif method == "min":
@@ -289,6 +298,15 @@ class Specimen():
 					min_index = np.argmin(left_valley) + left_peak_index
 					crack.leff_l = self.x[min_index]
 					crack_list[-1].leff_r = self.x[min_index]
+			elif method == "min_limit":
+				## Set the limits to the local minima
+				if peak_number > 0:
+					left_peak_index = crack_list[-1].index
+					right_peak_index = crack.index
+					left_valley = self.strain[left_peak_index:right_peak_index]
+					min_index = np.argmin(left_valley) + left_peak_index
+					crack.leff_l = max(self.x[min_index], crack.leff_l)
+					crack_list[-1].leff_r = min(self.x[min_index], crack_list[-1].leff_r)
 			else:
 				raise NotImplementedError("No such option '{}' known for `method`.".format(method))
 			crack_list.append(crack)
@@ -475,6 +493,7 @@ def integrate_segment(x_values: np.array,
 					start_index: int = None,
 					end_index: int = None,
 					interpolation: str = "linear",
+					strip_nans: bool = False,
 					) -> float:
 	"""
 	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
@@ -485,6 +504,7 @@ def integrate_segment(x_values: np.array,
 	\param end_index Index, where the integration should stop. This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
 	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
 		- `"linear"`: (default) Linear interpolation is used inbetween data points.
+	\param strip_nans Switch, whether it must be assumed, that the segment contains `NaN`s. Defaults to `False`.
 	"""
 	start_index = start_index if start_index is not None else 0
 	end_index = end_index if end_index is not None else len(x_values) - 1
@@ -492,7 +512,8 @@ def integrate_segment(x_values: np.array,
 	# Prepare the segments
 	x_segment = x_values[start_index:end_index+1]
 	y_segment = y_values[start_index:end_index+1]
-	x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
+	if strip_nans:
+		x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
 	if interpolation == "linear":
 		x_l = x_segment[0]
 		y_l = y_segment[0]
