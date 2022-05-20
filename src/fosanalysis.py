@@ -3,7 +3,7 @@
 ## Contains functions, which are general pupose for the the analysis of the crack width based on fibre optical sensor strain.
 ## \author Bertram Richter
 ## \date 2022
-## \package fosadata \copydoc fosdata.py
+## \package fosaanalysis \copydoc fosanalysis.py
 
 import numpy as np
 import scipy.signal
@@ -422,16 +422,17 @@ def crop_to_x_range(x_values: np.array,
 					y_values: np.array,
 					x_start: float = None,
 					x_end: float = None,
-					normalize: bool = False,
+					offset: float = None,
 					) -> tuple:
 	"""
 	Crops both given lists according to the values of `x_start` and `x_end`
 	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 	\param x_values List of x-positions.
 	\param y_values List of y_values (matching the `x_values`).
-	\param x_start Length (value from the range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
-	\param x_end Length (value from the range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
-	\param normalize If set to `True`, the `x_start` is substracted from the `x_values`.
+	\param x_start Length (value from the original range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
+	\param x_end Length (value from the original range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
+	\param offset If explicitly set, the zero point of `x_cropped` is set to `offset` after the cropping: `x_cropped = x_cropped - x_start + offset`.
+		If left `None` (default), the zero point of `x_cropped` is unchanged.
 	\return Returns the cropped lists:
 	\retval x_cropped
 	\retval y_cropped
@@ -451,8 +452,8 @@ def crop_to_x_range(x_values: np.array,
 				end_index = index
 	x_cropped = x_values[start_index:end_index]
 	y_cropped = y_values[start_index:end_index]
-	if normalize:
-		x_cropped = x_cropped - x_start
+	if offset is not None:
+		x_cropped = x_cropped - x_start + offset
 	return x_cropped, y_cropped
 
 def find_closest_value(array, x) -> tuple:
