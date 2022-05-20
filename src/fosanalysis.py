@@ -8,6 +8,7 @@
 import numpy as np
 import scipy.signal
 import copy
+from pip._internal import self_outdated_check
 
 class MeasureData():
 	"""
@@ -100,8 +101,10 @@ class Specimen():
 	def __init__(self,
 						x: np.array,
 						strain: np.array,
-						start_pos: float,
-						end_pos: float,
+						start_pos: float = None,
+						end_pos: float = None,
+						offset: float = None,
+						length: float = None,
 						interpolation : str = "linear",
 						compensate_shrink: bool = False,
 						compensate_shrink_method: str = "mean_min",
@@ -122,6 +125,8 @@ class Specimen():
 		\param strain \copybrief strain For more, see \ref strain.
 		\param start_pos \copybrief start_pos For more, see \ref start_pos.
 		\param end_pos \copybrief end_pos For more, see \ref end_pos.
+		\param length \copybrief length For more, see \ref length.
+		\param offset \copybrief offset For more, see \ref offset.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
 		\param compensate_shrink \copybrief compensate_shrink For more, see \ref compensate_shrink.
 		\param compensate_shrink_method \copybrief compensate_shrink_method For more, see \ref compensate_shrink_method.
@@ -149,10 +154,16 @@ class Specimen():
 		self._strain_inst_orig = strain_inst
 		## The starting position specifies the length of the sensor, before entering the specimen.
 		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
+		## Defaults to `None` (no cropping is done).
 		self.start_pos = start_pos
 		## The end position specifies the length of the sensor, when leaving the specimen. 
 		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
+		## Defaults to `None` (no cropping is done).
 		self.end_pos = end_pos
+		## Offset used according to the same parameter of \ref crop_to_x_range().
+		self.offset = offset
+		## Length of the specimen, used according to the same parameter of \ref crop_to_x_range().
+		self.length = length 
 		## Smoothing radius for smoothing \ref strain and \ref strain_inst.
 		## Smoothes the record using a the mean over \f$2r + 1\f$ entries.
 		## For each entry, the sliding mean extends `r` entries to both sides.
@@ -177,7 +188,7 @@ class Specimen():
 		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
 		self.crack_peak_prominence = crack_peak_prominence
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
+			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig, length=self.length, offset=self.offset)
 		## Location data (x-axis) for the initial load experiment.
 		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x_inst = x_inst
@@ -233,7 +244,7 @@ class Specimen():
 		if x is not None and y is not None and len(x) == len(y):
 			x, y = strip_nan_entries(x, y)
 			y = smooth_data(y, r=self.smoothing_radius, margins=self.smoothing_margins)
-			x, y = crop_to_x_range(x, y, x_start=self.start_pos, x_end=self.end_pos)
+			x, y = crop_to_x_range(x, y, x_start=self.start_pos, x_end=self.end_pos, length=self.length, offset=self.offset)
 			return x, y
 		else:
 			raise ValueError("Either x or y is None or they differ in lengths.")
@@ -440,6 +451,7 @@ def crop_to_x_range(x_values: np.array,
 					y_values: np.array,
 					x_start: float = None,
 					x_end: float = None,
+					length: float = None,
 					offset: float = None,
 					) -> tuple:
 	"""
@@ -449,14 +461,16 @@ def crop_to_x_range(x_values: np.array,
 	\param y_values List of y_values (matching the `x_values`).
 	\param x_start Length (value from the original range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
 	\param x_end Length (value from the original range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
-	\param offset If explicitly set, the zero point of `x_cropped` is set to `offset` after the cropping: `x_cropped = x_cropped - x_start + offset`.
+	\param x_length Length of the data excerpt. If set, it is used to determine the `x_end`.
+		If both `x_length` and `x_end` are provided, `x_end` takes precedence.
+	\param offset If explicitly set, the zero point of `x_cropped`is shifted to `offset` after the cropping: `x_cropped = x_cropped - x_start + offset`.
 		If left `None` (default), the zero point of `x_cropped` is unchanged.
 	\return Returns the cropped lists:
 	\retval x_cropped
 	\retval y_cropped
 	"""
 	x_start = x_start if x_start is not None else x_values[0]
-	x_end = x_end if x_end is not None else x_values[-1]
+	x_end = x_end if x_end is not None else x_start + length if length is not None else x_values[-1]
 	start_index = None
 	end_index = None
 	# find start index
