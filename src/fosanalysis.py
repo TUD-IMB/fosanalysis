@@ -8,11 +8,10 @@
 import numpy as np
 import scipy.signal
 import copy
-from pip._internal import self_outdated_check
 
-class MeasureData():
+class SensorData():
 	"""
-	Object containts fibre optical measurement data, and provides some function to retrieve those.
+	Object containts fibre optical sensor data, and provides some function to retrieve those.
 	"""
 	def __init__(self, file: str,
 						itemsep: str = "\t",
@@ -49,7 +48,7 @@ class MeasureData():
 					# Read in value table
 					record_name, description1, description2, *values = line.strip().split(itemsep)
 					values = np.array([float(entry) for entry in values])	# convert to float
-					record = Record(record_name=record_name,
+					record = SensorRecord(record_name=record_name,
 									description1=description1,
 									description2=description2,
 									values=values)
@@ -81,9 +80,9 @@ class MeasureData():
 				mean_record.append(float("nan"))
 		return mean_record
 
-class Record(dict):
+class SensorRecord(dict):
 	"""
-	A single measurement of the fibre optical sensor.
+	A single record of the fibre optical sensor.
 	"""
 	def __init__(self, record_name: str,
 						values: list,
@@ -94,7 +93,7 @@ class Record(dict):
 		for key in kwargs:
 			self[key] = kwargs[key]
 
-class Specimen():
+class Measurement():
 	"""
 	Hold the measuring data
 	"""
@@ -120,7 +119,7 @@ class Specimen():
 						suppress_compression: bool = True,
 						*args, **kwargs):
 		"""
-		Constructs a specimen object.
+		Constructs a measurement object.
 		\param x \copybrief x For more, see \ref x.
 		\param strain \copybrief strain For more, see \ref strain.
 		\param start_pos \copybrief start_pos For more, see \ref start_pos.
@@ -152,17 +151,17 @@ class Specimen():
 		self._x_inst_orig = x_inst
 		## Original list of strain data (y-axis) for the initial load experiment.
 		self._strain_inst_orig = strain_inst
-		## The starting position specifies the length of the sensor, before entering the specimen.
+		## The starting position specifies the length of the sensor, before entering the measurement area.
 		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
 		## Defaults to `None` (no cropping is done).
 		self.start_pos = start_pos
-		## The end position specifies the length of the sensor, when leaving the specimen. 
+		## The end position specifies the length of the sensor, when leaving the measurement area. 
 		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
 		## Defaults to `None` (no cropping is done).
 		self.end_pos = end_pos
 		## Offset used according to the same parameter of \ref crop_to_x_range().
 		self.offset = offset
-		## Length of the specimen, used according to the same parameter of \ref crop_to_x_range().
+		## Length of the measurement area, used according to the same parameter of \ref crop_to_x_range().
 		self.length = length 
 		## Smoothing radius for smoothing \ref strain and \ref strain_inst.
 		## Smoothes the record using a the mean over \f$2r + 1\f$ entries.
@@ -188,7 +187,7 @@ class Specimen():
 		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
 		self.crack_peak_prominence = crack_peak_prominence
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig, length=self.length, offset=self.offset)
+			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
 		## Location data (x-axis) for the initial load experiment.
 		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x_inst = x_inst
@@ -203,10 +202,10 @@ class Specimen():
 		self.crack_segment_method = crack_segment_method
 		# Sanitize the x and strain data
 		x_crop, strain_crop = self._strip_smooth_crop(x, strain)
-		## Location data of the specimen in accordance to \ref strain.
+		## Location data of the measurement area in accordance to \ref strain.
 		## The data is stripped of any `NaN` entries and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x = x_crop
-		## Strain data of the specimen in accordance to \ref x.
+		## Strain data in the measurement area in accordance to \ref x.
 		## The data is stripped of any `NaN` entries, smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.strain = strain_crop
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
@@ -222,7 +221,7 @@ class Specimen():
 		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.
 		## 	Afterwards the mean over the differences is taken.
 		self.compensate_shrink_method = compensate_shrink_method
-		## Array of calibration values for the  specimen.
+		## Array of calibration values for the shrinking in the measurement area.
 		## If \ref compensate_shrink is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref calculate_shrink_compensation().
 		## Else, it defaults to `np.zeros` of the same length as \ref strain.
 		self.shrink_calibration_values = np.zeros(len(self.strain))
@@ -412,7 +411,7 @@ class Crack():
 						max_strain: float = None,
 						):
 		super().__init__()
-		## Position index in the specimen.
+		## Position index in the measurement area.
 		self.index = index
 		## Number of the crack, counted in ascending order along the x-axis.
 		self.number = number
