@@ -26,9 +26,9 @@ class SensorData():
 		super().__init__()
 		## Dictionary containting header information.
 		self.header = {}
-		## \ref Record, which contains the x-axis (location) values.
+		## \ref SensorRecord, which contains the x-axis (location) values.
 		self.x_record = None
-		## List of \ref Record, which contain the strain values.
+		## List of \ref SensorRecord, which contain the strain values.
 		self.y_record_list = []
 		in_header = True
 		with open(file) as f:
@@ -460,8 +460,8 @@ def crop_to_x_range(x_values: np.array,
 	\param y_values List of y_values (matching the `x_values`).
 	\param x_start Length (value from the original range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
 	\param x_end Length (value from the original range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
-	\param x_length Length of the data excerpt. If set, it is used to determine the `x_end`.
-		If both `x_length` and `x_end` are provided, `x_end` takes precedence.
+	\param length Length of the data excerpt. If set, it is used to determine the `x_end`.
+		If both `length` and `x_end` are provided, `x_end` takes precedence.
 	\param offset If explicitly set, the zero point of `x_cropped`is shifted to `offset` after the cropping: `x_cropped = x_cropped - x_start + offset`.
 		If left `None` (default), the zero point of `x_cropped` is unchanged.
 	\return Returns the cropped lists:
