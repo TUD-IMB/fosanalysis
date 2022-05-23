@@ -1,4 +1,4 @@
-Calculation of crack width through strain measures by fibre optical sensors
+This project provides a framework for crack width calculation through strain measurement by fibre optical sensors.
 
 # Installation and Building documentation
 In order to use this framework, make sure, that:
@@ -14,6 +14,5 @@ To build the documentation, run `doxygen` in this directory to generate it to th
 
 # Dependencies
 - `Python >=3.?` (Developend under Python 3.9)
-- `brplots` for custom plotting functions and table formatting. See [brplots](https://gitlab.hrz.tu-chemnitz.de/s2374134--tu-dresden.de/brplots) for further instructions.
-- `matplotlib >=3.5.0` for plotting and drawing graphs. See [matplotlib.org](https://matplotlib.org) for the documentation.
+- `scipy` peak identification. See [scipy.org](https://scipy.org) for the documentation.
 - `numpy` for array handling and operations. See [numpy.org](https://numpy.org) for the documentation.
