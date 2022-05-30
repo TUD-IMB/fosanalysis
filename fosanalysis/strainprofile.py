@@ -107,7 +107,7 @@ class StrainProfile(ABC):
 		## Maximum strain in concrete, before a crack opens.
 		## Strains below this value are not considered cracked.
 		## It is used as the `height` option for [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
-		## Also, this is the treshhold for the calculation of tension stiffening by \ref compensate_tension_stiffening().
+		## Also, this is the treshhold for the calculation of tension stiffening by \ref calculate_tension_stiffening().
 		self.max_concrete_strain = max_concrete_strain
 		## Smoothing radius for smoothing \ref strain and \ref strain_inst.
 		## Smoothes the record using a the mean over \f$2r + 1\f$ entries.
@@ -255,20 +255,28 @@ class StrainProfile(ABC):
 		The following is done:
 		1. Find the crack positions, see \ref identify_crack_positions().
 		2. Find the effective lengths of the crack, see \ref set_crack_effective_lengths().
-		3. Shrinking/creep is taken into account, according to \ref compensate_shrink, see \ref calculate_shrink_compensation().
-		4. Taking tension stiffening (subtraction of triangular areas) into account according to \ref compensate_tension_stiffening, see \ref calculate_tension_stiffening_compensation().
+		3. Shrinking/creep is taken into account, see \ref calculate_shrink_compensation().
+		4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref calculate_tension_stiffening().
 		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
 		
 		\return Returns an list of crack widths.
+		
+		\todo unified algorithm for both \ref Concrete and \ref Rebar
 		"""
 		if self.crack_list is None:
 			self.identify_crack_positions()
 			self.set_crack_effective_lengths()
 	@abstractmethod
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
+		"""
+		\todo document
+		"""
 		raise NotImplementedError()
 	@abstractmethod
-	def calculate_tension_stiffening_compensation(self) -> np.array:
+	def calculate_tension_stiffening(self) -> np.array:
+		"""
+		\todo document
+		"""
 		raise NotImplementedError()
 	def get_crack(self, x):
 		"""
@@ -334,12 +342,13 @@ class Concrete(StrainProfile):
 	def calculate_crack_widths(self)->list:
 		"""
 		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+		\copydetails StrainProfile.calculate_crack_widths()
 		"""
 		super().calculate_crack_widths()
 		if self.compensate_shrink:
 			self.calculate_shrink_compensation()
 		if self.compensate_tension_stiffening:
-			self.calculate_tension_stiffening_compensation()
+			self.calculate_tension_stiffening()
 		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
 		if self.suppress_compression:
 			strain = fosutils.limit_entry_values(strain, 0.0, None)
@@ -373,7 +382,7 @@ class Concrete(StrainProfile):
 		else:
 			raise NotImplementedError()
 		return self.shrink_calibration_values
-	def calculate_tension_stiffening_compensation(self) -> np.array:
+	def calculate_tension_stiffening(self) -> np.array:
 		"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		\return An array with the compensation values for each measuring point is returned.
@@ -425,8 +434,20 @@ class Rebar(StrainProfile):
 	def calculate_crack_widths(self)->list:
 		"""
 		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to \cite Berrocal_2021_Crackmonitoringin.
+		\copydetails StrainProfile.calculate_crack_widths()
 		"""
 		super().calculate_crack_widths()
+		raise NotImplementedError()
+	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
+		"""
+		\todo implement and document
+		"""
+		raise NotImplementedError()
+	def calculate_tension_stiffening(self) -> np.array:
+		"""
+		\todo implement (second term of the Eq. 4 in \cite Berrocal_2021_Crackmonitoringin
+		\todo document
+		"""
 		raise NotImplementedError()
 
 class Crack():
