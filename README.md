@@ -3,7 +3,7 @@ This project provides a framework for crack width calculation through strain mea
 # Installation and Building documentation
 In order to use this framework, make sure, that:
 - the dependencies as stated below are correctly installed (follow the instruction of the packages),
-- the `src` directory is in your `$PYTHONPATH`, for the modules to be importable.
+- the `fosanalysis` directory is in your `$PYTHONPATH`, for the modules to be importable.
 
 To build the documentation, run `doxygen` in this directory to generate it to the directory `./Documentation`
 

@@ -5,13 +5,14 @@
 ## \date 2022
 ## \package strainprofile \copydoc strainprofile.py
 
+from abc import ABC, abstractmethod
 import numpy as np
 import scipy.signal
 import fosutils
 
-class StrainProfile():
+class StrainProfile(ABC):
 	"""
-	Hold the measuring data
+	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	"""
 	def __init__(self,
 						x: np.array,
@@ -30,7 +31,6 @@ class StrainProfile():
 						max_concrete_strain: float = 100,
 						smoothing_radius: int = 5,
 						smoothing_margins: str = "reduced",
-						strain_type: str = "concrete",
 						suppress_compression: bool = True,
 						x_inst: np.array = None,
 						strain_inst: np.array = None,
@@ -53,7 +53,6 @@ class StrainProfile():
 		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
 		\param smoothing_radius \copybrief smoothing_radius For more, see \ref smoothing_radius.
 		\param smoothing_margins \copybrief smoothing_margins For more, see \ref smoothing_margins.
-		\param strain_type \copybrief strain_type For more, see \ref strain_type.
 		\param suppress_compression \copybrief suppress_compression For more, see \ref suppress_compression.
 		\param x_inst \copybrief x_inst For more, see \ref x_inst.
 		\param strain_inst \copybrief strain_inst For more, see \ref strain_inst.
@@ -125,13 +124,7 @@ class StrainProfile():
 		## - `"reduced"`: (default) smoothing with reduced smoothing radius, such that the radius extends to the borders of the data.
 		## - `"flat"`:  the marginal entries get the same value applied, as the first/last fully smoothed entry.
 		self.smoothing_margins = smoothing_margins
-		## This setting indicates the senor placement and influences the crack width calculation algorithm. Available options:
-		## - `"concrete"`: (default) The sensor is assumed to be embedded directly in the concrete, thus measuring the strains in the concrete (and open cracks).
-		## 	The calculation is based on the algorithm shown in \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
-		## - `"rebar"`: The sensor is assumed to be attached to the steel rebars, thus measuring the strain of the reinforcement.
-		## 	The calculation is based on the algorithm shown in \cite Berrocal_2021_Crackmonitoringin.
-		self.strain_type = strain_type
-				## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
+		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
@@ -259,6 +252,7 @@ class StrainProfile():
 			else:
 				raise ValueError("No such option '{}' known for `method`.".format(method))
 		return self.crack_list
+	@abstractmethod
 	def calculate_crack_widths(self, strain_type: str = None) -> list:
 		"""
 		Returns the crack widths.
@@ -277,30 +271,6 @@ class StrainProfile():
 		if self.crack_list is None:
 			self.identify_crack_positions()
 			self.set_crack_effective_lengths()
-		strain_type = strain_type if strain_type is not None else self.strain_type
-		if strain_type == "concrete":
-			self._calculate_crack_widths_concrete()
-		elif strain_type == "rebar":
-			self._calculate_crack_widths_rebar()
-		else:
-			raise ValueError("No such option '{}' known for `strain_type`.".format(strain_type))
-		return self.get_crack_widths()
-	def _calculate_crack_widths_concrete(self):
-		"""
-		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to the `"concrete"` option in \ref strain_type.
-		"""
-		if self.compensate_shrink:
-			self.calculate_shrink_compensation()
-		if self.compensate_tension_stiffening:
-			self.calculate_tension_stiffening_compensation()
-		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
-		if self.suppress_compression:
-			strain = fosutils.limit_entry_values(strain, 0.0, None)
-		for crack in self.crack_list:
-			x_seg, y_seg = fosutils.crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
-			crack.width = fosutils.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
-	def _calculate_crack_widths_rebar(self, *args, **kwargs) -> list:
-		raise NotImplementedError()
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
 		"""
 		The influence of concrete creep and shrinking is calculated.
@@ -362,7 +332,7 @@ class StrainProfile():
 		return None
 	def add_crack(self, location: float, leff_l: float = None, leff_r: float = None):
 		"""
-		Use this function to manually add a crack at the `x` position to \ref crack_list after an intial crack identification.
+		Use this function to manually add a crack to \ref crack_list at the closest measuring point to `x` after an intial crack identification.
 		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
 		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
 		\param location Location in the measurement.
@@ -391,6 +361,56 @@ class StrainProfile():
 		self.crack_list.pop(number)
 		self.set_crack_effective_lengths()
 		self.calculate_crack_widths()
+
+class Concrete(StrainProfile):
+	"""
+	The strain profile is assumed to be from a sensor embedded directly in the concrete.
+	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	"""
+	def __init__(self,
+				*args, **kwargs):
+		"""
+		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
+		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
+		\todo Default settings.
+		"""
+		super().__init__(*args, **kwargs)
+	def calculate_crack_widths(self)->list:
+		"""
+		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+		"""
+		super().calculate_crack_widths()
+		if self.compensate_shrink:
+			self.calculate_shrink_compensation()
+		if self.compensate_tension_stiffening:
+			self.calculate_tension_stiffening_compensation()
+		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
+		if self.suppress_compression:
+			strain = fosutils.limit_entry_values(strain, 0.0, None)
+		for crack in self.crack_list:
+			x_seg, y_seg = fosutils.crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
+			crack.width = fosutils.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
+		return self.get_crack_widths()
+
+class Rebar(StrainProfile):
+	"""
+	The strain profile is assumed to be from a sensor attached to a reinforcement rebar.
+	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin.
+	"""
+	def __init__(self,
+				*args, **kwargs):
+		"""
+		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
+		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
+		\todo Default settings.
+		"""
+		super().__init__(*args, **kwargs)
+	def calculate_crack_widths(self)->list:
+		"""
+		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to \cite Berrocal_2021_Crackmonitoringin.
+		"""
+		super().calculate_crack_widths()
+		raise NotImplementedError()
 
 class Crack():
 	"""
