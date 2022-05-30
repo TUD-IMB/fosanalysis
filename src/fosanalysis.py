@@ -231,6 +231,7 @@ class Measurement():
 		## While integrating the crack width, it is subtracted from the strain values.
 		self.tension_stiffening_values = np.zeros(len(self.strain))
 		## List of cracks, see \ref Crack for documentation.
+		## To restart the calculation again, set to `None` and run \ref calculate_crack_widths() afterwards.
 		self.crack_list = None
 	def _strip_smooth_crop(self, x, y):
 		"""
@@ -287,7 +288,6 @@ class Measurement():
 			crack = Crack(location=self.x[peak_index],
 						leff_l=self.x[left_index],
 						leff_r=self.x[right_index],
-						number=peak_number,
 						index = peak_index,
 						max_strain=self.strain[peak_index],
 						)
@@ -304,21 +304,21 @@ class Measurement():
 		for i, crack in enumerate(self.crack_list):
 			if method == "middle":
 				# Limit the effective length by the middle between two cracks
-				if crack.number > 0:
+				if i > 0:
 					# Left split margin
 					middle = (self.crack_list[i-1].location + crack.location)/2
 					crack.leff_l = middle
 					self.crack_list[i-1].leff_r = middle
 			elif method == "middle_limit":
 				# Limit the effective length by the middle between two cracks
-				if crack.number > 0:
+				if i > 0:
 					# Left split margin
 					middle = (self.crack_list[i-1].location + crack.location)/2
 					crack.leff_l = max(middle, crack.leff_l)
 					self.crack_list[i-1].leff_r = min(middle, self.crack_list[i-1].leff_r)
 			elif method == "min":
-				## Set the limits to the local minima
-				if crack.number > 0:
+				# Set the limits to the local minima
+				if i > 0:
 					left_peak_index = self.crack_list[i-1].index
 					right_peak_index = crack.index
 					left_valley = self.strain[left_peak_index:right_peak_index]
@@ -326,8 +326,8 @@ class Measurement():
 					crack.leff_l = self.x[min_index]
 					self.crack_list[i-1].leff_r = self.x[min_index]
 			elif method == "min_limit":
-				## Set the limits to the local minima
-				if crack.number > 0:
+				# Set the limits to the local minima
+				if i > 0:
 					left_peak_index = self.crack_list[i-1].index
 					right_peak_index = crack.index
 					left_valley = self.strain[left_peak_index:right_peak_index]
@@ -413,6 +413,46 @@ class Measurement():
 		if self.suppress_compression:
 			self.tension_stiffening_values = limit_entry_values(self.tension_stiffening_values, 0.0, None)
 		return self.tension_stiffening_values
+	def get_crack(self, x):
+		"""
+		Get the \ref Crack, for which holds: \f$l_{\mathrm{eff,l}} < x \leq l_{\mathrm{eff,r}}\f$.
+		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
+		"""
+		for crack in self.crack_list:
+			if crack.leff_l < x <= crack.leff_r:
+				return crack
+		return None
+	def add_crack(self, location: float, leff_l: float = None, leff_r: float = None):
+		"""
+		Use this function to manually add a crack at the `x` position to \ref crack_list after an intial crack identification.
+		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
+		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
+		\param location Location in the measurement.
+		\param leff_l Left limit of the cracks effective length. Defaults to the beginning of \ref x.
+		\param leff_r Right limit of the cracks effective length. Defaults to the end of \ref x.
+		"""
+		index, x_pos = find_closest_value(self.x, location)
+		crack = Crack(location=x_pos,
+						index = index,
+						leff_l = leff_l,
+						leff_r = leff_r,
+						max_strain=self.strain[index],
+						)
+		# Fallback for 
+		crack.leff_l = crack.leff_l if crack.leff_l is not None else self.x[0]
+		crack.leff_r = crack.leff_r if crack.leff_r is not None else self.x[-1]
+		self.crack_list.append(crack)
+		self.set_crack_effective_lengths()
+		self.calculate_crack_widths()
+	def delete_crack(self, number: int):
+		"""
+		Deletes the crack from \ref crack_list at the given index.
+		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
+		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
+		"""
+		self.crack_list.pop(number)
+		self.set_crack_effective_lengths()
+		self.calculate_crack_widths()
 
 class Crack():
 	"""
@@ -420,7 +460,6 @@ class Crack():
 	"""
 	def __init__(self,
 						index: int = None,
-						number: int = None,
 						location: float = None,
 						leff_l: float = None,
 						leff_r: float = None,
@@ -430,8 +469,6 @@ class Crack():
 		super().__init__()
 		## Position index in the measurement area.
 		self.index = index
-		## Number of the crack, counted in ascending order along the x-axis.
-		self.number = number
 		## Absolute location along the fibre optical sensor.
 		self.location = location
 		## Absolute location left-hand side end of its effective length.
