@@ -247,6 +247,13 @@ class Measurement():
 			return x, y
 		else:
 			raise ValueError("Either x or y is None or they differ in lengths.")
+	def _sort_cracks(self):
+		"""
+		Sort the list of cracks.
+		"""
+		orig_order = [crack.location for crack in self.crack_list]
+		index_list = np.argsort(orig_order)
+		self.crack_list = [self.crack_list[i] for i in index_list]
 	def get_crack_widths(self) -> list:
 		""" Returns a list with the widths of all cracks. """
 		return [crack.width for crack in self.crack_list]
@@ -262,21 +269,20 @@ class Measurement():
 	def get_leff_r(self) -> list:
 		""" Returns a list with the right-hand side border of effective length of all cracks. """
 		return [crack.leff_r for crack in self.crack_list]
-	def identify_cracks(self,
-						method: str = None,
+	def identify_crack_positions(self,
 						*args, **kwargs) -> list:
 		"""
-		Return a list of x-positions of influence area segment borders, which separate different cracks.
-		\param method \copybrief crack_segment_method. Use it to specify a different method than \ref crack_segment_method. 
+		Identifies the positions of cracks using `scipy.signal.find_peaks()` and save them to \ref crack_list \ref Crack objects.
+		Those \ref Crack objects are still incomplete.
+		Their effective lengths may need to be recalculated using \ref set_crack_effective_lengths() and the widths using \ref calculate_crack_widths().
 		\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
 		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
 		\return Returns a list of \ref Crack objects.
 		"""
-		method = method if method is not None else self.crack_segment_method
 		peaks_max, max_properties = scipy.signal.find_peaks(self.strain, height= self.max_concrete_strain, prominence=self.crack_peak_prominence, *args, **kwargs)
 		segment_left = max_properties["left_bases"]
 		segment_right = max_properties["right_bases"]
-		crack_list = []
+		self.crack_list = []
 		for peak_number, (left_index, peak_index, right_index) in enumerate(zip(segment_left, peaks_max, segment_right)):
 			crack = Crack(location=self.x[peak_index],
 						leff_l=self.x[left_index],
@@ -285,48 +291,58 @@ class Measurement():
 						index = peak_index,
 						max_strain=self.strain[peak_index],
 						)
+			self.crack_list.append(crack)
+		return self.crack_list
+	def set_crack_effective_lengths(self, method: str = None) -> list:
+		"""
+		Specify the effective length of all cracks according to `method`.
+		\param method \copybrief crack_segment_method. Use it to specify a different method than \ref crack_segment_method. 
+		\return Returns a list of \ref Crack objects.
+		"""
+		method = method if method is not None else self.crack_segment_method
+		self._sort_cracks()
+		for i, crack in enumerate(self.crack_list):
 			if method == "middle":
 				# Limit the effective length by the middle between two cracks
-				if peak_number > 0:
+				if crack.number > 0:
 					# Left split margin
-					middle = (crack_list[-1].location + crack.location)/2
+					middle = (self.crack_list[i-1].location + crack.location)/2
 					crack.leff_l = middle
-					crack_list[-1].leff_r = middle
+					self.crack_list[i-1].leff_r = middle
 			elif method == "middle_limit":
 				# Limit the effective length by the middle between two cracks
-				if peak_number > 0:
+				if crack.number > 0:
 					# Left split margin
-					middle = (crack_list[-1].location + crack.location)/2
+					middle = (self.crack_list[i-1].location + crack.location)/2
 					crack.leff_l = max(middle, crack.leff_l)
-					crack_list[-1].leff_r = min(middle, crack_list[-1].leff_r)
+					self.crack_list[i-1].leff_r = min(middle, self.crack_list[i-1].leff_r)
 			elif method == "min":
 				## Set the limits to the local minima
-				if peak_number > 0:
-					left_peak_index = crack_list[-1].index
+				if crack.number > 0:
+					left_peak_index = self.crack_list[i-1].index
 					right_peak_index = crack.index
 					left_valley = self.strain[left_peak_index:right_peak_index]
 					min_index = np.argmin(left_valley) + left_peak_index
 					crack.leff_l = self.x[min_index]
-					crack_list[-1].leff_r = self.x[min_index]
+					self.crack_list[i-1].leff_r = self.x[min_index]
 			elif method == "min_limit":
 				## Set the limits to the local minima
-				if peak_number > 0:
-					left_peak_index = crack_list[-1].index
+				if crack.number > 0:
+					left_peak_index = self.crack_list[i-1].index
 					right_peak_index = crack.index
 					left_valley = self.strain[left_peak_index:right_peak_index]
 					min_index = np.argmin(left_valley) + left_peak_index
 					crack.leff_l = max(self.x[min_index], crack.leff_l)
-					crack_list[-1].leff_r = min(self.x[min_index], crack_list[-1].leff_r)
+					self.crack_list[i-1].leff_r = min(self.x[min_index], self.crack_list[i-1].leff_r)
 			else:
 				raise NotImplementedError("No such option '{}' known for `method`.".format(method))
-			crack_list.append(crack)
-		self.crack_list = crack_list
-		return crack_list
+		return self.crack_list
 	def calculate_crack_widths(self, *args, **kwargs) -> list:
 		"""
 		Returns the crack widths.
 		The following is done:
-		1. Find the crack segment areas, see \ref identify_cracks().
+		1. Find the crack positions, see \ref identify_crack_positions().
+		2. Find the effective lengths of the crack, see \ref set_crack_effective_lengths().
 		3. Shrinking/creep is taken into account, according to \ref compensate_shrink, see \ref calculate_shrink_compensation().
 		4. Taking tension stiffening (subtraction of triangular areas) into account according to \ref compensate_tension_stiffening, see \ref calculate_tension_stiffening_compensation().
 		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
@@ -334,12 +350,13 @@ class Measurement():
 		\return Returns an list of crack widths.
 		"""
 		if self.crack_list is None:
-			self.identify_cracks()
+			self.identify_crack_positions()
+			self.set_crack_effective_lengths()
 		if self.compensate_shrink:
 			self.calculate_shrink_compensation()
 		if self.compensate_tension_stiffening:
 			self.calculate_tension_stiffening_compensation()
-		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values 
+		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
 		if self.suppress_compression:
 			strain = limit_entry_values(strain, 0.0, None)
 		for crack in self.crack_list:
