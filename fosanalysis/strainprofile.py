@@ -1,99 +1,15 @@
 
 ## \file
-## Contains functions, which are general pupose for the the analysis of the crack width based on fibre optical sensor strain.
+## Contains class definitions for strain profiles and cracks.
 ## \author Bertram Richter
 ## \date 2022
-## \package fosanalysis \copydoc fosanalysis.py
+## \package strainprofile \copydoc strainprofile.py
 
 import numpy as np
 import scipy.signal
-import copy
+import fosutils
 
-class SensorData():
-	"""
-	Object containts fibre optical sensor data, and provides some function to retrieve those.
-	"""
-	def __init__(self, file: str,
-						itemsep: str = "\t",
-						*args, **kwargs):
-		"""
-		Constructs the data object.
-		\param file Path to the file, wich is to be read in.
-		\param itemsep Item separator used in the file. Will be used to split the several entries.
-		\param *args Additional positional arguments. Will be ignored.
-		\param **kwargs Additional keyword arguments. Will be ignored.
-		"""
-		super().__init__()
-		## Dictionary containting header information.
-		self.header = {}
-		## \ref SensorRecord, which contains the x-axis (location) values.
-		self.x_record = None
-		## List of \ref SensorRecord, which contain the strain values.
-		self.y_record_list = []
-		in_header = True
-		with open(file) as f:
-			for line in f:
-				line_list = line.strip().split(itemsep)
-				if in_header:
-					# Find the header to body separator 
-					if line_list[0] == "----------------------------------------":
-						# Switch reading modes from header to data
-						in_header = False
-					else:
-						# Read in header data
-						head_entry = line.strip().split(itemsep)
-						fieldname = head_entry[0][:-1]	# First entry and strip the colon (:)
-						self.header[fieldname] = head_entry[1] if len(head_entry) > 1 else None
-				else:
-					# Read in value table
-					record_name, description1, description2, *values = line.strip().split(itemsep)
-					values = np.array([float(entry) for entry in values])	# convert to float
-					record = SensorRecord(record_name=record_name,
-									description1=description1,
-									description2=description2,
-									values=values)
-					if record["record_name"] == "x-axis":
-						self.x_record = record
-					else: 
-						self.y_record_list.append(record)
-	def get_x_values(self) -> list:
-		"""
-		Returns the values of the x-axis record (location data). 
-		"""
-		return self.x_record["values"]
-	def get_y_table(self) -> list:
-		"""
-		Returns the table of the strain data.
-		"""
-		return [record["values"] for record in self.y_record_list]
-	def mean_over_y_records(self) -> list:
-		"""
-		Takes the arithmetic mean for each position over all records in \ref y_record_list.
-		"""
-		y_table = self.get_y_table()
-		mean_record = []
-		for column in zip(*y_table):
-			column = strip_nan_entries(column)
-			if len(column) > 0:
-				mean_record.append(sum(column)/len(column))
-			else:
-				mean_record.append(float("nan"))
-		return mean_record
-
-class SensorRecord(dict):
-	"""
-	A single record of the fibre optical sensor.
-	"""
-	def __init__(self, record_name: str,
-						values: list,
-						**kwargs):
-		super().__init__()
-		self["record_name"] = record_name
-		self["values"] = values
-		for key in kwargs:
-			self[key] = kwargs[key]
-
-class Measurement():
+class StrainProfile():
 	"""
 	Hold the measuring data
 	"""
@@ -250,9 +166,9 @@ class Measurement():
 		\return Returns copies of `x` and `y`.
 		"""
 		if x is not None and y is not None and len(x) == len(y):
-			x, y = strip_nan_entries(x, y)
-			y = smooth_data(y, r=self.smoothing_radius, margins=self.smoothing_margins)
-			x, y = crop_to_x_range(x, y, x_start=self.start_pos, x_end=self.end_pos, length=self.length, offset=self.offset)
+			x, y = fosutils.strip_nan_entries(x, y)
+			y = fosutils.smooth_data(y, r=self.smoothing_radius, margins=self.smoothing_margins)
+			x, y = fosutils.crop_to_x_range(x, y, x_start=self.start_pos, x_end=self.end_pos, length=self.length, offset=self.offset)
 			return x, y
 		else:
 			raise ValueError("Either x or y is None or they differ in lengths.")
@@ -379,10 +295,10 @@ class Measurement():
 			self.calculate_tension_stiffening_compensation()
 		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
 		if self.suppress_compression:
-			strain = limit_entry_values(strain, 0.0, None)
+			strain = fosutils.limit_entry_values(strain, 0.0, None)
 		for crack in self.crack_list:
-			x_seg, y_seg = crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
-			crack.width = integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
+			x_seg, y_seg = fosutils.crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
+			crack.width = fosutils.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
 	def _calculate_crack_widths_rebar(self, *args, **kwargs) -> list:
 		raise NotImplementedError()
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
@@ -403,7 +319,7 @@ class Measurement():
 		y_min_inst = np.array([self.strain_inst[i] for i in peaks_min])
 		x_min_inst = np.array([self.x_inst[i] for i in peaks_min])
 		# Get x positions and y-values for deformation after a long time
-		x_min_inf_index = [find_closest_value(self.x, min_pos)[0] for min_pos in x_min_inst]
+		x_min_inf_index = [fosutils.find_closest_value(self.x, min_pos)[0] for min_pos in x_min_inst]
 		y_min_inf = np.array([self.strain[i] for i in x_min_inf_index])
 		if self.compensate_shrink_method == "mean_min":
 			min_diff = y_min_inf - y_min_inst
@@ -433,7 +349,7 @@ class Measurement():
 					else:
 						pass
 		if self.suppress_compression:
-			self.tension_stiffening_values = limit_entry_values(self.tension_stiffening_values, 0.0, None)
+			self.tension_stiffening_values = fosutils.limit_entry_values(self.tension_stiffening_values, 0.0, None)
 		return self.tension_stiffening_values
 	def get_crack(self, x):
 		"""
@@ -453,7 +369,7 @@ class Measurement():
 		\param leff_l Left limit of the cracks effective length. Defaults to the beginning of \ref x.
 		\param leff_r Right limit of the cracks effective length. Defaults to the end of \ref x.
 		"""
-		index, x_pos = find_closest_value(self.x, location)
+		index, x_pos = fosutils.find_closest_value(self.x, location)
 		crack = Crack(location=x_pos,
 						index = index,
 						leff_l = leff_l,
@@ -521,195 +437,3 @@ class Crack():
 		Returns the absolute influence segment of the crack.
 		"""
 		return self.leff_l, self.leff_r
-
-def crop_to_x_range(x_values: np.array,
-					y_values: np.array,
-					x_start: float = None,
-					x_end: float = None,
-					length: float = None,
-					offset: float = None,
-					) -> tuple:
-	"""
-	Crops both given lists according to the values of `x_start` and `x_end`
-	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
-	\param x_values List of x-positions.
-	\param y_values List of y_values (matching the `x_values`).
-	\param x_start Length (value from the original range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
-	\param x_end Length (value from the original range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
-	\param length Length of the data excerpt. If set, it is used to determine the `x_end`.
-		If both `length` and `x_end` are provided, `x_end` takes precedence.
-	\param offset If explicitly set, the zero point of `x_cropped`is shifted to `offset` after the cropping: `x_cropped = x_cropped - x_start + offset`.
-		If left `None` (default), the zero point of `x_cropped` is unchanged.
-	\return Returns the cropped lists:
-	\retval x_cropped
-	\retval y_cropped
-	"""
-	x_start = x_start if x_start is not None else x_values[0]
-	x_end = x_end if x_end is not None else x_start + length if length is not None else x_values[-1]
-	start_index = None
-	end_index = None
-	# find start index
-	for index, value in enumerate(x_values):
-		if start_index is None and value >= x_start:
-			start_index = index
-		if end_index is None:
-			if value == x_end:
-				end_index = index + 1
-			elif value > x_end:
-				end_index = index
-	x_cropped = x_values[start_index:end_index]
-	y_cropped = y_values[start_index:end_index]
-	if offset is not None:
-		x_cropped = x_cropped - x_start + offset
-	return x_cropped, y_cropped
-
-def find_closest_value(array, x) -> tuple:
-	"""
-	Returns the index and value of the entry in `array`, that is closest to the given `x`.
-	\return `(<index>, <entry>)`
-	"""
-	d_min = np.inf
-	closest_index = None
-	for i, entry in enumerate(array):
-		d = abs(x - entry)
-		if d < d_min:
-			d_min = d
-			closest_index = i
-	return closest_index, array[closest_index]
-
-def integrate_segment(x_values: np.array,
-					y_values: np.array,
-					start_index: int = None,
-					end_index: int = None,
-					integration_constant: float = 0.0,
-					interpolation: str = "linear",
-					strip_nans: bool = True,
-					) -> float:
-	"""
-	Calculates integral over the given segment (indicated by `start_index` and `end_index`) \f$F(x)|_{a}^{b} = \int_{a}^{b} f(x) dx + C\f$.
-	This is a convenience wrapper around \ref antiderivative().
-	\param x_values List of x-positions.
-	\param y_values List of y_values (matching the `x_values`).
-	\param start_index Index, where the integration should start (index of \f$a\f$). Defaults to the first item of `x_values` (`0`).
-	\param end_index Index, where the integration should stop (index of \f$b\f$). This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
-	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
-		- `"linear"`: (default) Linear interpolation is used inbetween data points.
-	\param integration_constant The interpolation constant \f$C\f$.
-	\param strip_nans Switch, whether it must be assumed, that the segment contains `NaN`s. Defaults to `True`.
-	"""
-	start_index = start_index if start_index is not None else 0
-	end_index = end_index if end_index is not None else len(x_values) - 1
-	# Prepare the segments
-	x_segment = x_values[start_index:end_index+1]
-	y_segment = y_values[start_index:end_index+1]
-	if strip_nans:
-		x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
-	F = antiderivative(x_values=x_segment,
-						y_values=y_segment,
-						integration_constant=integration_constant,
-						interpolation=interpolation)
-	return F[-1]
-
-def antiderivative(x_values: np.array,
-					y_values: np.array,
-					integration_constant: float = 0.0,
-					interpolation: str = "linear",
-					) -> np.array:
-	"""
-	Calculates the antiderivative \f$F(x) = \int f(x) dx + C\f$ to the given function over the given segment (indicated by `start_index` and `end_index`).
-	The given values are assumed to be sanitized (`NaN`s are stripped already).
-	\param x_values List of x-positions.
-	\param y_values List of y_values (matching the `x_values`).
-	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
-		- `"linear"`: (default) Linear interpolation is used inbetween data points.
-	\param integration_constant The interpolation constant \f$C\f$.
-	"""
-	F = []
-	area = integration_constant
-	# Prepare the segments
-	if interpolation == "linear":
-		x_l = x_values[0]
-		y_l = y_values[0]
-		for x_r, y_r in zip(x_values, y_values):
-			h = x_r - x_l
-			# Trapezoidal area
-			area_temp = (y_l + y_r) * (h) / 2.0
-			area += area_temp
-			F.append(area)
-			x_l = x_r
-			y_l = y_r
-	else:
-		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
-	return np.array(F)
-
-def limit_entry_values (values: np.array, minimum: float = None, maximum: float = None) -> np.array:
-	"""
-	Limit the the entries in the given list to the specified range.
-	Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
-	Entries, which exceed the given range are cropped to it.
-	\param values List of floats, which are to be cropped.
-	\param minimum Minimum value, for the entries. Defaults to `None`, no limit is applied.
-	\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
-	"""
-	limited = copy.deepcopy(values)
-	if minimum is not None:
-		limited = [max(entry, minimum) for entry in limited]
-	if maximum is not None:
-		limited = [min(entry, maximum) for entry in limited]
-	return np.array(limited)
-
-def smooth_data(data: np.array, r: int, margins: str = "reduced") -> np.array:
-	"""
-	Smoothes the record using a the mean over \f$2r + 1\f$ entries.
-	For each entry, the sliding mean extends `r` entries to both sides.
-	The margins (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
-	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
-	\param data List of data to be smoothed.
-	\param r Smoothing radius.
-	\param margins Setting, how the first and last `r` entries of `data` will be treated.
-		Available options:
-		- `"reduced"`: (default) smoothing with reduced smoothing radius, such that the radius extends to the borders of `data`
-		- `"flat"`:  the marginal entries get the same value applied, as the first/last fully smoothed entry.
-	"""
-	start = r
-	end = len(data) - r
-	assert end > 0, "r is greater than the given data!"
-	smooth_data = copy.deepcopy(data)
-	# Smooth the middle
-	for i in range(start, end):
-		sliding_window = data[i-r:i+r+1]
-		smooth_data[i] = sum(sliding_window)/len(sliding_window)
-	# Fill up the margins
-	if margins == "reduced":
-		for i in range(r):
-			sliding_window = data[:2*i+1]
-			smooth_data[i] = sum(sliding_window)/len(sliding_window)
-			sliding_window = data[-1-2*i:]
-			smooth_data[-i-1] = sum(sliding_window)/len(sliding_window)
-	elif margins == "flat":
-		first_smooth = smooth_data[start]
-		last_smooth = smooth_data[end-1]
-		for i in range(r):
-			smooth_data[i] = first_smooth
-			smooth_data[-i-1] = last_smooth
-	else:
-		raise RuntimeError("No such option '{}' known for `margins`.".format(margins))
-	return np.array(smooth_data)
-
-def strip_nan_entries(*value_lists) -> tuple:
-	"""
-	In all given arrays, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
-	\return Returns a tuple of with copies of the arrays. If only a single array is given, only the stripped copy returned.
-	"""
-	stripped_lists = []
-	delete_list = []
-	# find all NaNs
-	for candidate_list in value_lists:
-		for i, entry in enumerate(candidate_list):
-			if entry is None or entry == "" or np.isnan(entry):
-				delete_list.append(i)
-	# strip the NaNs
-	for candidate_list in value_lists:
-		stripped_lists.append(np.array([entry for i, entry in enumerate(candidate_list) if i not in delete_list]))
-	return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
-
