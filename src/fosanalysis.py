@@ -505,41 +505,66 @@ def integrate_segment(x_values: np.array,
 					y_values: np.array,
 					start_index: int = None,
 					end_index: int = None,
+					integration_constant: float = 0.0,
 					interpolation: str = "linear",
-					strip_nans: bool = False,
+					strip_nans: bool = True,
 					) -> float:
 	"""
-	Calculated the integral over the given segment (indicated by `start_index` and `end_index`).
-	Slots with `NaN` are ignored and it interpolated over according to `interpolation`.
+	Calculates integral over the given segment (indicated by `start_index` and `end_index`) \f$F(x)|_{a}^{b} = \int_{a}^{b} f(x) dx + C\f$.
+	This is a convenience wrapper around \ref antiderivative().
 	\param x_values List of x-positions.
 	\param y_values List of y_values (matching the `x_values`).
-	\param start_index Index, where the integration should start. Defaults to the first item of `x_values` (`0`).
-	\param end_index Index, where the integration should stop. This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
+	\param start_index Index, where the integration should start (index of \f$a\f$). Defaults to the first item of `x_values` (`0`).
+	\param end_index Index, where the integration should stop (index of \f$b\f$). This index is included. Defaults to the first item of `x_values` (`len(x_values) -1`).
 	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
 		- `"linear"`: (default) Linear interpolation is used inbetween data points.
-	\param strip_nans Switch, whether it must be assumed, that the segment contains `NaN`s. Defaults to `False`.
+	\param integration_constant The interpolation constant \f$C\f$.
+	\param strip_nans Switch, whether it must be assumed, that the segment contains `NaN`s. Defaults to `True`.
 	"""
 	start_index = start_index if start_index is not None else 0
 	end_index = end_index if end_index is not None else len(x_values) - 1
-	area = 0.0
 	# Prepare the segments
 	x_segment = x_values[start_index:end_index+1]
 	y_segment = y_values[start_index:end_index+1]
 	if strip_nans:
 		x_segment, y_segment = strip_nan_entries(x_segment, y_segment)
+	F = antiderivative(x_values=x_segment,
+						y_values=y_segment,
+						integration_constant=integration_constant,
+						interpolation=interpolation)
+	return F[-1]
+
+def antiderivative(x_values: np.array,
+					y_values: np.array,
+					integration_constant: float = 0.0,
+					interpolation: str = "linear",
+					) -> np.array:
+	"""
+	Calculates the antiderivative \f$F(x) = \int f(x) dx + C\f$ to the given function over the given segment (indicated by `start_index` and `end_index`).
+	The given values are assumed to be sanitized (`NaN`s are stripped already).
+	\param x_values List of x-positions.
+	\param y_values List of y_values (matching the `x_values`).
+	\param interpolation Algorithm, which should be used to interpolate between data points. Available options:
+		- `"linear"`: (default) Linear interpolation is used inbetween data points.
+	\param integration_constant The interpolation constant \f$C\f$.
+	"""
+	F = []
+	area = integration_constant
+	# Prepare the segments
 	if interpolation == "linear":
-		x_l = x_segment[0]
-		y_l = y_segment[0]
-		for x_r, y_r in zip(x_segment, y_segment):
+		x_l = x_values[0]
+		y_l = y_values[0]
+		for x_r, y_r in zip(x_values, y_values):
 			h = x_r - x_l
 			# Trapezoidal area
 			area_temp = (y_l + y_r) * (h) / 2.0
 			area += area_temp
+			F.append(area)
 			x_l = x_r
 			y_l = y_r
 	else:
 		raise RuntimeError("No such option '{}' known for `interpolation`.".format(interpolation))
-	return area
+	return np.array(F)
 
 def limit_entry_values (values: np.array, minimum: float = None, maximum: float = None) -> np.array:
 	"""
