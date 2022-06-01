@@ -24,6 +24,7 @@ class StrainProfile(ABC):
 						compensate_shrink: bool = False,
 						compensate_shrink_method: str = "mean_min",
 						compensate_shrink_kwargs: dict = None,
+						compensate_tension_stiffening: bool = True,
 						crack_peak_prominence: float = 100,
 						crack_segment_method: str = "middle",
 						interpolation : str = "linear",
@@ -45,6 +46,7 @@ class StrainProfile(ABC):
 		\param compensate_shrink \copybrief compensate_shrink For more, see \ref compensate_shrink.
 		\param compensate_shrink_method \copybrief compensate_shrink_method For more, see \ref compensate_shrink_method.
 		\param compensate_shrink_kwargs \copybrief compensate_shrink_kwargs For more, see \ref compensate_shrink_kwargs.
+		\param compensate_tension_stiffening \copybrief compensate_tension_stiffening For more, see \ref compensate_tension_stiffening.
 		\param crack_peak_prominence \copybrief crack_peak_prominence For more, see \ref crack_peak_prominence.
 		\param crack_segment_method \copybrief crack_segment_method For more, see \ref crack_segment_method.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
@@ -88,6 +90,8 @@ class StrainProfile(ABC):
 		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.
 		## 	Afterwards the mean over the differences is taken.
 		self.compensate_shrink_method = compensate_shrink_method
+		## Switch, whether the tension stiffening effect in the concrete is taken into account.
+		self.compensate_tension_stiffening = compensate_tension_stiffening
 		## List of cracks, see \ref Crack for documentation.
 		## To restart the calculation again, set to `None` and run \ref calculate_crack_widths() afterwards.
 		self.crack_list = None
@@ -193,7 +197,7 @@ class StrainProfile(ABC):
 		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
 		\return Returns a list of \ref Crack objects.
 		"""
-		peaks_max, max_properties = scipy.signal.find_peaks(self.strain, height= self.max_concrete_strain, prominence=self.crack_peak_prominence, *args, **kwargs)
+		peaks_max, max_properties = scipy.signal.find_peaks(self.strain, height=self.max_concrete_strain, prominence=self.crack_peak_prominence, *args, **kwargs)
 		segment_left = max_properties["left_bases"]
 		segment_right = max_properties["right_bases"]
 		self.crack_list = []
@@ -248,7 +252,6 @@ class StrainProfile(ABC):
 			else:
 				raise ValueError("No such option '{}' known for `method`.".format(method))
 		return self.crack_list
-	@abstractmethod
 	def calculate_crack_widths(self) -> list:
 		"""
 		Returns the crack widths.
@@ -260,21 +263,37 @@ class StrainProfile(ABC):
 		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
 		
 		\return Returns an list of crack widths.
-		
-		\todo unified algorithm for both \ref Concrete and \ref Rebar
 		"""
 		if self.crack_list is None:
 			self.identify_crack_positions()
 			self.set_crack_effective_lengths()
+		if self.compensate_shrink:
+			self.calculate_shrink_compensation()
+		if self.compensate_tension_stiffening:
+			self.calculate_tension_stiffening()
+		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
+		if self.suppress_compression:
+			strain = fosutils.limit_entry_values(strain, 0.0, None)
+		for crack in self.crack_list:
+			x_seg, y_seg = fosutils.crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
+			crack.width = fosutils.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
+		return self.get_crack_widths()
 	@abstractmethod
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
 		"""
-		\todo document
+		Calculate the shrink influence of the concrete and stores it in \ref shrink_calibration_values.
+		It is required to provide the following attributes:
+		- \ref x,
+		- \ref strain,
+		- \ref x_inst,
+		- \ref strain_inst,
+		- set \ref compensate_shrink to `True`.
 		"""
 		raise NotImplementedError()
 	@abstractmethod
 	def calculate_tension_stiffening(self) -> np.array:
 		"""
+		This method calculates the shrink influence of the concrete and stores it in \ref shrink_calibration_values.
 		\todo document
 		"""
 		raise NotImplementedError()
@@ -325,37 +344,16 @@ class Concrete(StrainProfile):
 	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
 	"""
 	def __init__(self,
-						compensate_tension_stiffening: bool = True,
 						crack_peak_prominence: float = 100,
 						*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor embedded in concrete.
-		\param compensate_tension_stiffening \copybrief compensate_tension_stiffening For more, see \ref compensate_tension_stiffening.
 		\param crack_peak_prominence \copybrief crack_peak_prominence Defaults to `100.0`. For more, see \ref crack_peak_prominence.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
 		\todo Default settings.
 		"""
 		super().__init__(*args, **kwargs)
-		## Switch, whether the tension stiffening effect in the concrete is taken into account.
-		self.compensate_tension_stiffening = compensate_tension_stiffening
-	def calculate_crack_widths(self)->list:
-		"""
-		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
-		\copydetails StrainProfile.calculate_crack_widths()
-		"""
-		super().calculate_crack_widths()
-		if self.compensate_shrink:
-			self.calculate_shrink_compensation()
-		if self.compensate_tension_stiffening:
-			self.calculate_tension_stiffening()
-		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
-		if self.suppress_compression:
-			strain = fosutils.limit_entry_values(strain, 0.0, None)
-		for crack in self.crack_list:
-			x_seg, y_seg = fosutils.crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
-			crack.width = fosutils.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
-		return self.get_crack_widths()
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
 		"""
 		The influence of concrete creep and shrinking is calculated.
@@ -410,34 +408,39 @@ class Concrete(StrainProfile):
 class Rebar(StrainProfile):
 	"""
 	The strain profile is assumed to be from a sensor attached to a reinforcement rebar.
-	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin.
+	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin using the following calculation:
+	\f[
+		\omega{}_{\mathrm{cr},i} = \int_{l_{\mathrm{eff,l},i}}^{l_{\mathrm{eff,r},i}} \varepsilon^{\mathrm{DOFS}}(x) - \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right) \mathrm{d}x
+	\f]
+	Where \f$ \omega{}_{\mathrm{cr},i} \f$ is the \f$i\f$th crack and
+	- \f$ \varepsilon^{\mathrm{DOFS}}(x) \f$ is the strain reported by the sensor,
+	- \f$ \hat{\varepsilon}(x) \f$ the linear interpolation of the strain between crack positions,
+	- \f$ \alpha \f$: \copydoc alpha
+	- \f$ \rho \f$: \copydoc rho
 	"""
 	def __init__(self,
 						alpha: float,
 						rho: float,
-						crack_peak_prominence: float = 100,
+						crack_peak_prominence: float = 50,
+						crack_segment_method: str = "min",
 						*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor attached to a reinforcement rebar.
 		\param alpha \copybrief alpha For more, see \ref alpha.
 		\param rho \copybrief rho For more, see \ref rho.
-		\param crack_peak_prominence \copybrief crack_peak_prominence Defaults to `100.0`. For more, see \ref crack_peak_prominence.
+		\param crack_peak_prominence \copybrief crack_peak_prominence Defaults to `50.0`. For more, see \ref crack_peak_prominence.
+		\param crack_segment_method \copybrief crack_segment_method For more, see \ref crack_segment_method.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
 		\todo Default settings.
 		"""
-		super().__init__(*args, **kwargs)
+		super().__init__(crack_peak_prominence=crack_peak_prominence,
+						crack_segment_method=crack_segment_method,
+						*args, **kwargs)
 		## Ratio of Young's moduli of steel to concrete \f$ \alpha = \frac{E_{\mathrm{s}}}{E_{\mathrm{c}}} \f$.
 		self.alpha = alpha
 		## Reinforcement ratio of steel to concrete \f$ \rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}} \f$.
 		self.rho = rho
-	def calculate_crack_widths(self)->list:
-		"""
-		Calculates the crack widths assuming, the sensor is embedded directly in the concrete according to \cite Berrocal_2021_Crackmonitoringin.
-		\copydetails StrainProfile.calculate_crack_widths()
-		"""
-		super().calculate_crack_widths()
-		raise NotImplementedError()
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
 		"""
 		\todo implement and document
@@ -445,10 +448,30 @@ class Rebar(StrainProfile):
 		raise NotImplementedError()
 	def calculate_tension_stiffening(self) -> np.array:
 		"""
-		\todo implement (second term of the Eq. 4 in \cite Berrocal_2021_Crackmonitoringin
-		\todo document
+		The statical influence of the concrete is computed as the according to second term of the crack width intergration equation, see \ref Rebar.
+		The values of outside of the outermost cracks are extrapolated according to the neighboring field.
 		"""
-		raise NotImplementedError()
+		assert len(self.crack_list) > 1
+		# Linear Interpolation between peaks
+		for n_valley in range(1, len(self.crack_list)):
+			left_peak = self.crack_list[n_valley-1].index
+			right_peak = self.crack_list[n_valley].index
+			dx = self.x[right_peak] - self.x[left_peak]
+			dy = self.strain[right_peak] - self.strain[left_peak]
+			for i in range(left_peak, right_peak):
+				self.tension_stiffening_values[i] = self.strain[left_peak] + (self.x[i] - self.x[left_peak])/(dx) * dy
+			# Linear extrapolation left of first peak
+			if n_valley == 1:
+				for i in range(left_peak):
+					self.tension_stiffening_values[i] = self.strain[left_peak] + (self.x[i] - self.x[left_peak])/(dx) * dy
+			# Linear extrapolation right of last peak
+			if n_valley == len(self.crack_list) - 1:
+				for i in range(left_peak, len(self.x)):
+					self.tension_stiffening_values[i] = self.strain[left_peak] + (self.x[i] - self.x[left_peak])/(dx) * dy
+		# Difference of steel strain to the linear interpolation
+		self.tension_stiffening_values = self.tension_stiffening_values - self.strain
+		# Reduce by rho  and alpha
+		self.tension_stiffening_values = self.tension_stiffening_values * self.alpha * self.rho
 
 class Crack():
 	"""
