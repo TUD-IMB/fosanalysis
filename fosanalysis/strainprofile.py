@@ -306,37 +306,50 @@ class StrainProfile(ABC):
 			if crack.leff_l < x <= crack.leff_r:
 				return crack
 		return None
-	def add_crack(self, location: float, leff_l: float = None, leff_r: float = None):
+	def add_cracks(self,
+						*cracks: tuple,
+						recalculate: bool = True,
+						):
 		"""
 		Use this function to manually add a crack to \ref crack_list at the closest measuring point to `x` after an intial crack identification.
 		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
 		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
-		\param location Location in the measurement.
-		\param leff_l Left limit of the cracks effective length. Defaults to the beginning of \ref x.
-		\param leff_r Right limit of the cracks effective length. Defaults to the end of \ref x.
+		\param cracks A Tuple of \ref Crack objects or numbers (mix is allowed).
+			In case of a number, it is assumed to be the (approximate) position of the crack. The added \ref Crack object will be put at the closest entry of the data.
+			In case of a \ref Crack object (e.g. imported from another \ref StrainProfile), it is assumed to be a fully specified and valid
+			This means, all attributes are set and its \ref Crack.index is in range of \ref x.
+		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
+			Set to `False`, if you want to suppress a recalculation, until you are finished with modifying \ref crack_list. 
 		"""
-		index, x_pos = fosutils.find_closest_value(self.x, location)
-		crack = Crack(location=x_pos,
-						index = index,
-						leff_l = leff_l,
-						leff_r = leff_r,
-						max_strain=self.strain[index],
-						)
-		# Fallback for 
-		crack.leff_l = crack.leff_l if crack.leff_l is not None else self.x[0]
-		crack.leff_r = crack.leff_r if crack.leff_r is not None else self.x[-1]
-		self.crack_list.append(crack)
-		self.set_crack_effective_lengths()
-		self.calculate_crack_widths()
-	def delete_crack(self, number: int):
+		for crack in cracks:
+			if not isinstance(crack, Crack):
+				index, x_pos = fosutils.find_closest_value(self.x, crack)
+				crack = Crack(location=x_pos,
+								index = index,
+								max_strain=self.strain[index],
+								)
+			self.crack_list.append(crack)
+		if recalculate:
+			self.set_crack_effective_lengths()
+			self.calculate_crack_widths()
+	def delete_cracks(self,
+						*cracks: tuple,
+						recalculate: bool = True,
+						) -> list:
 		"""
 		Deletes the crack from \ref crack_list at the given index.
 		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
 		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
+		\param cracks Integer or tuple
+		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 		"""
-		self.crack_list.pop(number)
-		self.set_crack_effective_lengths()
-		self.calculate_crack_widths()
+		
+		delete_cracks = [self.crack_list[i] for i in cracks if i in range(len(self.crack_list))]
+		self.crack_list = [self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks]
+		if recalculate:
+			self.set_crack_effective_lengths()
+			self.calculate_crack_widths()
+		return delete_cracks
 
 class Concrete(StrainProfile):
 	"""
