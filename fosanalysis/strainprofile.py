@@ -343,17 +343,15 @@ class Concrete(StrainProfile):
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
 	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
 	"""
-	def __init__(self,
-						crack_peak_prominence: float = 100,
-						*args, **kwargs):
+	def __init__(self,*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor embedded in concrete.
-		\param crack_peak_prominence \copybrief crack_peak_prominence Defaults to `100.0`. For more, see \ref crack_peak_prominence.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
-		\todo Default settings.
 		"""
-		super().__init__(*args, **kwargs)
+		default_values = {}
+		default_values.update(kwargs)
+		super().__init__(*args, **default_values)
 	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
 		"""
 		The influence of concrete creep and shrinking is calculated.
@@ -421,22 +419,24 @@ class Rebar(StrainProfile):
 	def __init__(self,
 						alpha: float,
 						rho: float,
-						crack_peak_prominence: float = 50,
-						crack_segment_method: str = "min",
 						*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor attached to a reinforcement rebar.
 		\param alpha \copybrief alpha For more, see \ref alpha.
 		\param rho \copybrief rho For more, see \ref rho.
-		\param crack_peak_prominence \copybrief crack_peak_prominence Defaults to `50.0`. For more, see \ref crack_peak_prominence.
-		\param crack_segment_method \copybrief crack_segment_method For more, see \ref crack_segment_method.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
-		\todo Default settings.
+		
+		Special default values:
+		- \ref crack_peak_prominence defaults to `50.0`. For more, see \ref crack_peak_prominence.
+		- \ref crack_segment_method defaults to `"min"`. For more, see \ref crack_segment_method.
 		"""
-		super().__init__(crack_peak_prominence=crack_peak_prominence,
-						crack_segment_method=crack_segment_method,
-						*args, **kwargs)
+		default_values = {
+			"crack_peak_prominence": 50,
+			"crack_segment_method": "min",
+			}
+		default_values.update(kwargs)
+		super().__init__(*args, **default_values)
 		## Ratio of Young's moduli of steel to concrete \f$ \alpha = \frac{E_{\mathrm{s}}}{E_{\mathrm{c}}} \f$.
 		self.alpha = alpha
 		## Reinforcement ratio of steel to concrete \f$ \rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}} \f$.
