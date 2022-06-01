@@ -6,6 +6,7 @@
 ## \package strainprofile \copydoc strainprofile.py
 
 from abc import ABC, abstractmethod
+import copy
 import numpy as np
 import scipy.signal
 import fosutils
@@ -315,14 +316,21 @@ class StrainProfile(ABC):
 		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
 		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
 		\param cracks A Tuple of \ref Crack objects or numbers (mix is allowed).
-			In case of a number, it is assumed to be the (approximate) position of the crack. The added \ref Crack object will be put at the closest entry of the data.
-			In case of a \ref Crack object (e.g. imported from another \ref StrainProfile), it is assumed to be a fully specified and valid
-			This means, all attributes are set and its \ref Crack.index is in range of \ref x.
+			In case of a number, it is assumed to be the (approximate) position of the crack. The added \ref Crack object will be put at the closest entry of \ref x.
+			In case of a \ref Crack object (e.g. imported from another \ref StrainProfile), a copy is placed at the closest measuring of \ref x to \ref Crack.location.
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 			Set to `False`, if you want to suppress a recalculation, until you are finished with modifying \ref crack_list. 
 		"""
 		for crack in cracks:
-			if not isinstance(crack, Crack):
+			if isinstance(crack, Crack):
+				crack = copy.deepcopy(crack)
+				index, x_pos = fosutils.find_closest_value(self.x, crack.location)
+				crack.index = index
+				crack.location = x_pos
+				crack.max_strain=self.strain[index]
+				crack.leff_l = crack.leff_l if crack.leff_l is not None and crack.leff_l < crack.location else None
+				crack.leff_r = crack.leff_r if crack.leff_r is not None and crack.leff_r > crack.location else None
+			else: 
 				index, x_pos = fosutils.find_closest_value(self.x, crack)
 				crack = Crack(location=x_pos,
 								index = index,
