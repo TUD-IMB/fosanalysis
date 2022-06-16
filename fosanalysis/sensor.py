@@ -5,10 +5,25 @@
 ## \date 2022
 ## \package sensor \copydoc sensor.py
 
+from abc import ABC, abstractmethod
 import numpy as np
 import fosutils
 
-class ODiSI():
+
+class Sensor(ABC):
+	"""
+	Abstract base class for a sensor.
+	"""
+	@abstractmethod
+	def __init__(self, *args, **kwargs):
+		"""
+		Constructs a Sensor object.
+		\param *args Additional positional arguments. Will be ignored.
+		\param **kwargs Additional keyword arguments. Will be ignored.
+		"""
+		super().__init__(*args, **kwargs)
+	
+class ODiSI(Sensor):
 	"""
 	Object containts fibre optical sensor data exported by the Luna Inc Optical Distributed Sensor Interrogator (ODiSI), and provides some function to retrieve those.
 	"""
@@ -19,10 +34,10 @@ class ODiSI():
 		Constructs the data object.
 		\param file Path to the file, wich is to be read in.
 		\param itemsep Item separator used in the file. Will be used to split the several entries.
-		\param *args Additional positional arguments. Will be ignored.
-		\param **kwargs Additional keyword arguments. Will be ignored.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
-		super().__init__()
+		super().__init__(*args, **kwargs)
 		## Dictionary containting header information.
 		self.header = {}
 		## \ref SensorRecord, which contains the x-axis (location) values.
