@@ -86,8 +86,9 @@ def find_closest_value(array, x) -> tuple:
 	Returns the index and value of the entry in `array`, that is closest to the given `x`.
 	\return `(<index>, <entry>)`
 	"""
-	d_min = np.inf
-	closest_index = None
+	assert len(array) > 0
+	d_min = abs(x - array[0])
+	closest_index = 0
 	for i, entry in enumerate(array):
 		d = abs(x - entry)
 		if d < d_min:
