@@ -11,6 +11,22 @@ import numpy as np
 
 import fosutils
 
+class SensorRecord(dict):
+	"""
+	A single record of the fibre optical sensor.
+	"""
+	def __init__(self,
+				values: list,
+				**kwargs):
+		"""
+		Constructs a SensorRecord object.
+		As a dictinary, such an object may hold further information.
+		\param values The actual values of the record.
+		\param **kwargs Any other properties can be passes as `kwargs`, such as `name`, or `timestamp`.
+		"""
+		super().__init__()
+		self["values"] = values
+		self.update(kwargs)
 
 class Sensor(ABC):
 	"""
@@ -82,12 +98,12 @@ class ODiSI(Sensor):
 					else: 
 						record["timestamp"] = datetime.datetime.fromisoformat(record_name)
 						self.y_record_list.append(record)
-	def get_tare(self) -> list:
+	def get_tare(self) -> np.array:
 		"""
 		Returns the values of the tare record (calibration data). 
 		"""
 		return self.tare["values"]
-	def get_x_values(self) -> list:
+	def get_x_values(self) -> np.array:
 		"""
 		Returns the values of the x-axis record (location data). 
 		"""
@@ -102,14 +118,14 @@ class ODiSI(Sensor):
 		Get the time stamps of all records in \ref y_record_list.
 		"""
 		return [record["timestamp"] for record in self.y_record_list]
-	def get_record_from_time_stamp(self, time_stamp: datetime.datetime):
+	def get_record_from_time_stamp(self, time_stamp: datetime.datetime) -> SensorRecord:
 		"""
 		Get the record, which is closest to the given time_stamp.
 		\return Returns the full record,which time stamp is closest to the given `time_stamp`.
 		"""
 		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(), time_stamp)
 		return self.y_record_list[index]
-	def get_time_series(self, x: float):
+	def get_time_series(self, x: float) -> np.array:
 		"""
 		Get the strain time series for a fixed position.
 		Therefore, the closed x-value to the given position is found and the according strain values are collected.
@@ -121,9 +137,9 @@ class ODiSI(Sensor):
 		time_stamps = self.get_time_stamps()
 		x_values = self.get_x_values()
 		index, x_value = fosutils.find_closest_value(x_values, x)
-		time_series = [values[index] for values in self.get_y_table()]
+		time_series = np.array([values[index] for values in self.get_y_table()])
 		return time_stamps, time_series, x_value
-	def mean_over_y_records(self) -> list:
+	def mean_over_y_records(self) -> np.array:
 		"""
 		Takes the arithmetic mean for each position over all records in \ref y_record_list.
 		"""
@@ -135,21 +151,6 @@ class ODiSI(Sensor):
 				mean_record.append(sum(column)/len(column))
 			else:
 				mean_record.append(float("nan"))
-		return mean_record
+		return np.array(mean_record)
 
-class SensorRecord(dict):
-	"""
-	A single record of the fibre optical sensor.
-	"""
-	def __init__(self,
-				values: list,
-				**kwargs):
-		"""
-		Constructs a SensorRecord object.
-		As a dictinary, such an object may hold further information.
-		\param values The actual values of the record.
-		\param **kwargs Any other properties can be passes as `kwargs`, such as `name`, or `timestamp`.
-		"""
-		super().__init__()
-		self["values"] = values
-		self.update(kwargs)
+
