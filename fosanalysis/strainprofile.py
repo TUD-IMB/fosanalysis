@@ -214,7 +214,7 @@ class StrainProfile(ABC):
 	def set_crack_effective_lengths(self, method: str = None) -> list:
 		"""
 		Specify the effective length of all cracks according to `method`.
-		\param method \copybrief crack_segment_method. Use it to specify a different method than \ref crack_segment_method. 
+		\param method \copybrief crack_segment_method Use it to specify a different method than \ref crack_segment_method. 
 		\return Returns a list of \ref Crack objects.
 		"""
 		method = method if method is not None else self.crack_segment_method
@@ -314,8 +314,8 @@ class StrainProfile(ABC):
 		"""
 		Use this function to manually add a crack to \ref crack_list at the closest measuring point to `x` after an intial crack identification.
 		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
-		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
-		\param cracks A Tuple of \ref Crack objects or numbers (mix is allowed).
+		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
+		\param cracks Any number of \ref Crack objects or numbers (mix is allowed).
 			In case of a number, it is assumed to be the (approximate) position of the crack. The added \ref Crack object will be put at the closest entry of \ref x.
 			In case of a \ref Crack object (e.g. imported from another \ref StrainProfile), a copy is placed at the closest measuring of \ref x to \ref Crack.location.
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
@@ -345,13 +345,12 @@ class StrainProfile(ABC):
 						recalculate: bool = True,
 						) -> list:
 		"""
-		Deletes the crack from \ref crack_list at the given index.
-		It assumes, that \ref identify_crack_positions() is run beforehand at least once.
-		Afterwards, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run.
-		\param cracks Integer or tuple
+		Use this function to manually delete cracks from \ref crack_list, that were wrongfully identified automatically by \ref identify_crack_positions().
+		After the deletion, \ref set_crack_effective_lengths() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
+		\param cracks Any number of integers (list indexes) of the cracks that should be deleted.
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
+		\return Returns a list of the deleted \ref Crack objects. 
 		"""
-		
 		delete_cracks = [self.crack_list[i] for i in cracks if i in range(len(self.crack_list))]
 		self.crack_list = [self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks]
 		if recalculate:
