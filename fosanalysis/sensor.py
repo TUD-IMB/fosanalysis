@@ -121,10 +121,10 @@ class ODiSI(Sensor):
 	def get_record_from_time_stamp(self, time_stamp: datetime.datetime) -> SensorRecord:
 		"""
 		Get the record, which is closest to the given time_stamp.
-		\return Returns the full record,which time stamp is closest to the given `time_stamp`.
+		\return Returns the full record, which time stamp is closest to the given `time_stamp` and the corresponding index.
 		"""
 		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(), time_stamp)
-		return self.y_record_list[index]
+		return self.y_record_list[index], index
 	def get_time_series(self, x: float) -> np.array:
 		"""
 		Get the strain time series for a fixed position.
@@ -139,11 +139,15 @@ class ODiSI(Sensor):
 		index, x_value = fosutils.find_closest_value(x_values, x)
 		time_series = np.array([values[index] for values in self.get_y_table()])
 		return time_stamps, time_series, x_value
-	def mean_over_y_records(self) -> np.array:
+	def mean_over_y_records(self, start: int = None, end: int = None) -> np.array:
 		"""
 		Takes the arithmetic mean for each position over all records in \ref y_record_list.
+		During the operation, `NaN` entries are stripped.
+		If a column consists entirely of `NaN`, nan is written to the returned array.
+		\param start Index of the first record to be taken into account for taking the mean. Defaults to `None` (no restriction).
+		\param end Index of the first record not to be taken into account for taking the mean anymore. Defaults to `None` (no restriction).
 		"""
-		y_table = self.get_y_table()
+		y_table = self.get_y_table()[start:end]
 		mean_record = []
 		for column in zip(*y_table):
 			column = fosutils.strip_nan_entries(column)
