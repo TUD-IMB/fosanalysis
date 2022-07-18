@@ -22,7 +22,7 @@ import fosanalysis
 
 After that, data can be imported from a demonstration file.
 This file contains artificial data in the format of a file, that was exported by the Luna Inc ODiSI Software.
-To (re-)generate this file, the script \ref generatedemofile needs to be run once.
+To (re-)generate this file, the script \ref examples.generatedemofile needs to be run once.
 
 ```.py
 sensordata = fosanalysis.sensor.ODiSI("data/demofile.tsv")
