@@ -108,11 +108,13 @@ class ODiSI(Sensor):
 		Returns the values of the x-axis record (location data). 
 		"""
 		return self.x_record["values"]
-	def get_y_table(self) -> list:
+	def get_y_table(self, record_list: list = None) -> list:
 		"""
 		Returns the table of the strain data.
+		\param record_list List of records, defaults to \ref y_record_list.
 		"""
-		return [record["values"] for record in self.y_record_list]
+		record_list = record_list if record_list is not None else self.y_record_list
+		return [record["values"] for record in record_list]
 	def get_time_stamps(self):
 		"""
 		Get the time stamps of all records in \ref y_record_list.
@@ -125,6 +127,23 @@ class ODiSI(Sensor):
 		"""
 		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(), time_stamp)
 		return self.y_record_list[index], index
+	def get_record_slice(self, start = None, end = None) -> list:
+		"""
+		Get a portion of the records in the table and return is as a list of \ref SensorRecord.
+		Both `start` and `end` can be of the following types and combined arbitrarily:
+		- `int`: Index of the record according to Python indexing logic.
+		- `datetime.datetime`: The record closest to the given `datetime.datetime` is chosen.
+		
+		\param start The first record to be included.
+			Defaults to `None` (no restriction).
+		\param end The first record to not be included anymore.
+			Defaults to `None` (no restriction).
+		"""
+		if isinstance(end, datetime.date):
+			tmp_record, end = self.get_record_from_time_stamp(end)
+		if isinstance(start, datetime.date):
+			tmp_record, start = self.get_record_from_time_stamp(start)
+		return self.y_record_list()[start:end]
 	def get_time_series(self, x: float) -> np.array:
 		"""
 		Get the strain time series for a fixed position.
@@ -139,15 +158,14 @@ class ODiSI(Sensor):
 		index, x_value = fosutils.find_closest_value(x_values, x)
 		time_series = np.array([values[index] for values in self.get_y_table()])
 		return time_stamps, time_series, x_value
-	def mean_over_y_records(self, start: int = None, end: int = None) -> np.array:
+	def mean_over_y_records(self, start = None, end = None) -> np.array:
 		"""
-		Takes the arithmetic mean for each position over all records in \ref y_record_list.
+		Takes the arithmetic mean for each position over all records in the slice and return the strain values as `np.array`.
 		During the operation, `NaN` entries are stripped.
 		If a column consists entirely of `NaN`, nan is written to the returned array.
-		\param start Index of the first record to be taken into account for taking the mean. Defaults to `None` (no restriction).
-		\param end Index of the first record not to be taken into account for taking the mean anymore. Defaults to `None` (no restriction).
+		\copydetails get_record_slice()
 		"""
-		y_table = self.get_y_table()[start:end]
+		y_table = self.get_y_table(self.get_record_slice(start=start, end=end))
 		mean_record = []
 		for column in zip(*y_table):
 			column = fosutils.strip_nan_entries(column)
@@ -156,5 +174,4 @@ class ODiSI(Sensor):
 			else:
 				mean_record.append(float("nan"))
 		return np.array(mean_record)
-
 
