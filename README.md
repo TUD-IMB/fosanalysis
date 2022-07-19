@@ -22,8 +22,8 @@ If you use this framework, please cite this paper (not yet published):
 \todo Publish the paper.
 
 ```
-@article{Richter2022_Towardsanautomaticdetection,
-  author  = {Bertram Richter, Max Herbers},
+@unpublished{Richter2022_Towardsanautomaticdetection,
+  author  = {Bertram Richter, Max Herbers, Katarzyna Zdanowicz, Daniel Gebauer, Martin Claßen, Steffen Marx},
   title   = {Towards an automatic detection and analysis of cracks with distributed fibre optic sensors},
   date    = {2022},
 }
