@@ -17,17 +17,24 @@ class SensorRecord(dict):
 	A single record of the fibre optical sensor.
 	"""
 	def __init__(self,
-				values: list,
+				data: list,
 				**kwargs):
 		"""
 		Constructs a SensorRecord object.
 		As a dictinary, such an object may hold further information.
-		\param values The actual values of the record.
+		\param data The actual data of the record.
 		\param **kwargs Any other properties can be passes as `kwargs`, such as `name`, or `timestamp`.
 		"""
 		super().__init__()
-		self["values"] = values
+		self["data"] = data
 		self.update(kwargs)
+	def to_tsv(self, itemsep: str = "\t") -> str:
+		"""
+		This function returns the TSV (tab separated values) representation of this record.
+		\param itemsep Separation character. Defaults to `"\t"` (tab).
+		"""
+		data_str = [str(data) for data in self["data"]]
+		return itemsep.join([self["record_name"], self["message_type"], self["sensor_type"], *data_str])
 
 class ODiSI6100TSVFile():
 	"""
@@ -35,11 +42,13 @@ class ODiSI6100TSVFile():
 	"""
 	def __init__(self, file: str,
 						itemsep: str = "\t",
+						start_index: int = None,
 						*args, **kwargs):
 		"""
 		Constructs the object containing the imported data.
 		\param file Path to the file, wich is to be read in.
 		\param itemsep Item separator used in the file. Will be used to split the several entries.
+		\param start_index Start index of the data. This can be used to omit additional data in the beginning. Defaults to `None` (no restriction).
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
@@ -48,7 +57,7 @@ class ODiSI6100TSVFile():
 		self.file = file
 		## Dictionary containting header information.
 		self.header = {}
-		## \ref SensorRecord, which contains the tare values values.
+		## \ref SensorRecord, which contains the tare data values.
 		## This is only set, if \ref file contains such a line.
 		self.tare = None
 		## \ref SensorRecord, which contains the x-axis (location) values.
@@ -71,18 +80,22 @@ class ODiSI6100TSVFile():
 						self.header[fieldname] = head_entry[1] if len(head_entry) > 1 else None
 				else:
 					# Read in value table
-					record_name, description1, description2, *values = line.strip().split(itemsep)
-					values = np.array([float(entry) for entry in values])	# convert to float
+					record_name, message_type, sensor_type, *data = line.strip().split(itemsep)
+					data = data[start_index:None]			#
+					if record_name != "Gage/segment name":
+						data = np.array([float(entry) for entry in data])	# convert to float
 					record = SensorRecord(
 										record_name=record_name,
-										description1=description1,
-										description2=description2,
-										values=values,
+										message_type=message_type,
+										sensor_type=sensor_type,
+										data=data,
 										)
 					if record["record_name"] == "x-axis":
 						self.x_record = record
 					elif record["record_name"] == "Tare":
 						self.tare = record
+					elif record["record_name"] == "Gage/segment name":
+						self.gage_names = record
 					else: 
 						record["timestamp"] = datetime.datetime.fromisoformat(record_name)
 						self.y_record_list.append(record)
@@ -90,19 +103,19 @@ class ODiSI6100TSVFile():
 		"""
 		Returns the values of the tare record (calibration data). 
 		"""
-		return self.tare["values"]
+		return self.tare["data"]
 	def get_x_values(self) -> np.array:
 		"""
 		Returns the values of the x-axis record (location data). 
 		"""
-		return self.x_record["values"]
+		return self.x_record["data"]
 	def get_y_table(self, record_list: list = None) -> list:
 		"""
 		Returns the table of the strain data.
 		\param record_list List of records, defaults to \ref y_record_list.
 		"""
 		record_list = record_list if record_list is not None else self.y_record_list
-		return [record["values"] for record in record_list]
+		return [record["data"] for record in record_list]
 	def get_time_stamps(self):
 		"""
 		Get the time stamps of all records in \ref y_record_list.
@@ -144,7 +157,7 @@ class ODiSI6100TSVFile():
 		time_stamps = self.get_time_stamps()
 		x_values = self.get_x_values()
 		index, x_value = fosutils.find_closest_value(x_values, x)
-		time_series = np.array([values[index] for values in self.get_y_table()])
+		time_series = np.array([data[index] for data in self.get_y_table()])
 		return time_stamps, time_series, x_value
 	def mean_over_y_records(self, start = None, end = None) -> np.array:
 		"""
