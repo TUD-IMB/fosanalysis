@@ -8,7 +8,6 @@
 from abc import ABC, abstractmethod
 import datetime
 import numpy as np
-
 import fosutils
 
 class SensorRecord(dict):
@@ -143,7 +142,7 @@ class ODiSI(Sensor):
 			tmp_record, end = self.get_record_from_time_stamp(end)
 		if isinstance(start, datetime.date):
 			tmp_record, start = self.get_record_from_time_stamp(start)
-		return self.y_record_list()[start:end]
+		return self.y_record_list[start:end]
 	def get_time_series(self, x: float) -> np.array:
 		"""
 		Get the strain time series for a fixed position.

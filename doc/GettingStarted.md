@@ -13,10 +13,10 @@ The module `fosutils` serves as a library, which contains various utility functi
 
 ## Getting Started
 Assuming a successful installation, the script to get started begins with importing the necessary modules.
-Here, `brplotviz` is used for result visualization which is an ease of use wrapper around `matplotlib`.
+We use `matplotlib` for visualization.
 
 ```.py
-import brplotviz
+import matplotlib.pyplot as plt
 import fosanalysis
 ```
 
@@ -47,7 +47,8 @@ These two objects are arrays of floating point numbers, ready to be exported (pr
 Let's take a look at it.
 
 ```.py
-brplotviz.plot.single_line(x, strain, "Raw strain data")
+plt.plot(x, strain, color="k")
+plt.show()
 ```
 
 We want to process it further and calculate crack.
@@ -99,14 +100,20 @@ cracks_right = measurement.get_leff_r()
 Finally, we can plot the results.
 
 ```.py
-brplotviz.plot.mixed_graphs([
-	(measurement.x, measurement.strain, "strain", "line"),
-	(measurement.x, measurement.tension_stiffening_values, "ts", "line"),
-	(cracks_location, cracks_widths, "crack_width", "scatter"),
-	(cracks_location, cracks_strain, "peak", "scatter"),
-	(cracks_left, cracks_strain, "left", "scatter"),
-	(cracks_right, cracks_strain, "right", "scatter"),
-	])
+fig, ax1 = plt.subplots()
+ax1.set_xlabel('x [m]')
+ax1.set_ylabel('FOS strain [µm/m]')
+ax2 = ax1.twinx()
+ax2.set_ylabel('Crack with [µm]', color="red")
+ax2.tick_params(axis ='y', labelcolor = 'red') 
+st = ax1.plot(measurement.x, measurement.strain, color="k", label="strain")
+ts = ax1.plot(measurement.x, measurement.tension_stiffening_values, color="k", linestyle="--", label="ts")
+cloc = ax1.plot(cracks_location, cracks_strain, color="k", linestyle="", marker="v", label="peak")
+cleft = ax1.plot(cracks_left, cracks_strain, color="k", linestyle="", marker=">", label="left")
+cright = ax1.plot(cracks_right, cracks_strain, color="k", linestyle="", marker="<", label="right")
+cwidth = ax2.plot(cracks_location, cracks_widths, color="red", linestyle="", marker="o", label="crack width")
+ax2.legend(loc="best", handles=st+ts+cloc+cleft+cright+cwidth)
+plt.show()
 ```
 
 For the full script, see \ref examples.gettingstarted.

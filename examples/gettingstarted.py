@@ -6,8 +6,11 @@
 ## \package examples.gettingstarted \copydoc gettingstarted.py
 
 # Importing necessary modules
-import brplotviz
+import matplotlib.pyplot as plt
 import fosanalysis
+
+plt.rcParams['axes.grid'] = True
+plt.rcParams['axes.axisbelow'] = True
 
 # Loading data from file
 sensordata = fosanalysis.sensor.ODiSI("data/demofile.tsv")
@@ -19,7 +22,8 @@ strain = sensordata.mean_over_y_records()
 #strain = sensordata.get_record_from_time_stamp(datetime.datetime.today())
 
 # View the data
-brplotviz.plot.single_line(x, strain, "Raw strain data")
+plt.plot(x, strain, color="k")
+plt.show()
 
 # Generating object for crack width calculation
 measurement = fosanalysis.strainprofile.Concrete(x=x,
@@ -49,11 +53,17 @@ cracks_location = measurement.get_crack_locations()
 cracks_right = measurement.get_leff_r()
 
 # Plot preparation and plotting
-brplotviz.plot.mixed_graphs([
-	(measurement.x, measurement.strain, "strain", "line"),
-	(measurement.x, measurement.tension_stiffening_values, "ts", "line"),
-	(cracks_location, cracks_widths, "crack_width", "scatter"),
-	(cracks_location, cracks_strain, "peak", "scatter"),
-	(cracks_left, cracks_strain, "left", "scatter"),
-	(cracks_right, cracks_strain, "right", "scatter"),
-	])
+fig, ax1 = plt.subplots()
+ax1.set_xlabel('x [m]')
+ax1.set_ylabel('FOS strain [µm/m]')
+ax2 = ax1.twinx()
+ax2.set_ylabel('Crack with [µm]', color="red")
+ax2.tick_params(axis ='y', labelcolor = 'red') 
+st = ax1.plot(measurement.x, measurement.strain, color="k", label="strain")
+ts = ax1.plot(measurement.x, measurement.tension_stiffening_values, color="k", linestyle="--", label="ts")
+cloc = ax1.plot(cracks_location, cracks_strain, color="k", linestyle="", marker="v", label="peak")
+cleft = ax1.plot(cracks_left, cracks_strain, color="k", linestyle="", marker=">", label="left")
+cright = ax1.plot(cracks_right, cracks_strain, color="k", linestyle="", marker="<", label="right")
+cwidth = ax2.plot(cracks_location, cracks_widths, color="red", linestyle="", marker="o", label="crack width")
+ax2.legend(loc="best", handles=st+ts+cloc+cleft+cright+cwidth)
+plt.show()
