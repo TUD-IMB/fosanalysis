@@ -1,4 +1,3 @@
-
 ## \file
 ## This script shows how to interact with `fosanalysis` and is the resulting script of [Getting Started](doc/GettingStarted.md).
 ## \author Bertram Richter
@@ -9,8 +8,8 @@
 import matplotlib.pyplot as plt
 import fosanalysis
 
-plt.rcParams['axes.grid'] = True
-plt.rcParams['axes.axisbelow'] = True
+# Global plot settings
+plt.rcParams.update({"svg.fonttype": "none", "font.size": 10, "axes.grid": True, "axes.axisbelow": True})
 
 # Loading data from file
 sensordata = fosanalysis.sensor.ODiSI("data/demofile.tsv")
@@ -57,7 +56,7 @@ fig, ax1 = plt.subplots()
 ax1.set_xlabel('x [m]')
 ax1.set_ylabel('FOS strain [µm/m]')
 ax2 = ax1.twinx()
-ax2.set_ylabel('Crack with [µm]', color="red")
+ax2.set_ylabel('Crack width [µm]', color="red")
 ax2.tick_params(axis ='y', labelcolor = 'red') 
 st = ax1.plot(measurement.x, measurement.strain, color="k", label="strain")
 ts = ax1.plot(measurement.x, measurement.tension_stiffening_values, color="k", linestyle="--", label="ts")
