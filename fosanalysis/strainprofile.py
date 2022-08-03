@@ -30,9 +30,11 @@ class StrainProfile(ABC):
 						crack_segment_method: str = "middle",
 						interpolation : str = "linear",
 						max_concrete_strain: float = 100,
+						name: str = "",
 						smoothing_radius: int = 5,
 						smoothing_margins: str = "reduced",
 						suppress_compression: bool = True,
+						tare: np.array = None,
 						x_inst: np.array = None,
 						strain_inst: np.array = None,
 						*args, **kwargs):
@@ -52,9 +54,11 @@ class StrainProfile(ABC):
 		\param crack_segment_method \copybrief crack_segment_method For more, see \ref crack_segment_method.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
 		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
+		\param name \copybrief name For more, see \ref name.
 		\param smoothing_radius \copybrief smoothing_radius For more, see \ref smoothing_radius.
 		\param smoothing_margins \copybrief smoothing_margins For more, see \ref smoothing_margins.
 		\param suppress_compression \copybrief suppress_compression For more, see \ref suppress_compression.
+		\param tare \copybrief tare For more, see \ref tare.
 		\param x_inst \copybrief x_inst For more, see \ref x_inst.
 		\param strain_inst \copybrief strain_inst For more, see \ref strain_inst.
 		\param *args Additional positional arguments. They are ignored.
@@ -119,6 +123,8 @@ class StrainProfile(ABC):
 		## For each entry, the sliding mean extends `r` entries to both sides.
 		## The margins (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
 		## In general, if both smoothing and cropping are to be applied, smooth first, crop second.
+		## Name of the strain profile.
+		self.name = name
 		self.smoothing_radius = smoothing_radius
 		## Setting, how the first and last \ref smoothing_radius entries of \ref strain and \ref strain_inst will be treated.
 		## Available options:
@@ -137,13 +143,17 @@ class StrainProfile(ABC):
 		## The data is smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.strain_inst = strain_inst
 		# Sanitize the x and strain data
-		x_crop, strain_crop = self._strip_smooth_crop(x, strain)
+		tare = tare if tare is not None else np.zeros(len(self._x_orig))
+		x_crop, (strain_crop, tare) = self._strip_smooth_crop(x, strain, tare)
 		## Location data of the measurement area in accordance to \ref strain.
 		## The data is stripped of any `NaN` entries and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x = x_crop
 		## Strain data in the measurement area in accordance to \ref x.
 		## The data is stripped of any `NaN` entries, smoothed according to \ref smoothing_radius and \ref smoothing_margins and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.strain = strain_crop
+		## Tare values for the sensor.
+		## Those will be subtracted from the strain for crack width calculation.
+		self.tare = tare
 		## Array of calibration values for the shrinking in the measurement area.
 		## If \ref compensate_shrink is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref calculate_shrink_compensation().
 		## Else, it defaults to `np.zeros` of the same length as \ref strain.
@@ -151,21 +161,24 @@ class StrainProfile(ABC):
 		## Array of the tension stiffening.
 		## While integrating the crack width, it is subtracted from the strain values.
 		self.tension_stiffening_values = np.zeros(len(self.strain))
-	def _strip_smooth_crop(self, x, y):
+	def _strip_smooth_crop(self, x, *y_tuple):
 		"""
 		Sanitize the given arrays.
 		Firstly, `NaN`s are stripped.
-		Secondly, `y` is smoothed (see \ref smoothing_radius and \ref smoothing_margins).
-		Finally, both `x` and `y` are cropped to \ref start_pos and \ref end_pos.
-		\return Returns copies of `x` and `y`.
+		Secondly, all data records in `y_tuple` are smoothed (see \ref smoothing_radius and \ref smoothing_margins).
+		Finally, `x` and all records in `y_tuple` are cropped to \ref start_pos and \ref end_pos.
+		\return Returns copies of `x` and `y_tuple`.
 		"""
-		if x is not None and y is not None and len(x) == len(y):
-			x, y = fosutils.strip_nan_entries(x, y)
-			y = fosutils.smooth_data(y, r=self.smoothing_radius, margins=self.smoothing_margins)
-			x, y = fosutils.crop_to_x_range(x, y, x_start=self.start_pos, x_end=self.end_pos, length=self.length, offset=self.offset)
-			return x, y
+		if x is not None:
+			x_strip, *y_tuple_strip = fosutils.strip_nan_entries(x, *y_tuple)
+			y_list_smooth = []
+			for y_strip in y_tuple_strip:
+				y_smooth = fosutils.smooth_data(y_strip, r=self.smoothing_radius, margins=self.smoothing_margins)
+				x_crop, y_crop = fosutils.crop_to_x_range(x_strip, y_smooth, x_start=self.start_pos, x_end=self.end_pos, length=self.length, offset=self.offset)
+				y_list_smooth.append(y_crop)
+			return x_crop, y_list_smooth[0] if len(y_list_smooth) == 1 else tuple(y_list_smooth)
 		else:
-			raise ValueError("Either x or y is None or they differ in lengths.")
+			raise ValueError("Either x, y or tare is None or they differ in lengths.")
 	def _sort_cracks(self):
 		"""
 		Sort the list of cracks.
@@ -272,7 +285,7 @@ class StrainProfile(ABC):
 			self.calculate_shrink_compensation()
 		if self.compensate_tension_stiffening:
 			self.calculate_tension_stiffening()
-		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
+		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values - self.tare
 		if self.suppress_compression:
 			strain = fosutils.limit_entry_values(strain, 0.0, None)
 		for crack in self.crack_list:
