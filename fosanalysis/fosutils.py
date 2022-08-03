@@ -56,18 +56,19 @@ def crop_to_x_range(x_values: np.array,
 	\param x_end Length (value from the original range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
 	\param length Length of the data excerpt. If set, it is used to determine the `x_end`.
 		If both `length` and `x_end` are provided, `x_end` takes precedence.
-	\param offset If explicitly set, the zero point of `x_cropped`is shifted to `offset` after the cropping: `x_cropped = x_cropped - x_start + offset`.
-		If left `None` (default), the zero point of `x_cropped` is unchanged.
+	\param offset Before cropping, `x_values`is shifted by `offset`. Defaults ot `0`.
 	\return Returns the cropped lists:
 	\retval x_cropped
 	\retval y_cropped
 	"""
 	x_start = x_start if x_start is not None else x_values[0]
 	x_end = x_end if x_end is not None else x_start + length if length is not None else x_values[-1]
+	offset = offset if offset is not None else 0
 	start_index = None
 	end_index = None
 	# find start index
-	for index, value in enumerate(x_values):
+	x_shift = x_values + offset
+	for index, value in enumerate(x_shift):
 		if start_index is None and value >= x_start:
 			start_index = index
 		if end_index is None:
@@ -75,10 +76,8 @@ def crop_to_x_range(x_values: np.array,
 				end_index = index + 1
 			elif value > x_end:
 				end_index = index
-	x_cropped = x_values[start_index:end_index]
+	x_cropped = x_shift[start_index:end_index]
 	y_cropped = y_values[start_index:end_index]
-	if offset is not None:
-		x_cropped = x_cropped - x_start + offset
 	return x_cropped, y_cropped
 
 def find_closest_value(array, x) -> tuple:
