@@ -61,13 +61,13 @@ def crop_to_x_range(x_values: np.array,
 	\retval x_cropped
 	\retval y_cropped
 	"""
-	x_start = x_start if x_start is not None else x_values[0]
-	x_end = x_end if x_end is not None else x_start + length if length is not None else x_values[-1]
 	offset = offset if offset is not None else 0
+	x_shift = x_values + offset
+	x_start = x_start if x_start is not None else x_shift[0]
+	x_end = x_end if x_end is not None else x_start + length if length is not None else x_shift[-1]
 	start_index = None
 	end_index = None
 	# find start index
-	x_shift = x_values + offset
 	for index, value in enumerate(x_shift):
 		if start_index is None and value >= x_start:
 			start_index = index
