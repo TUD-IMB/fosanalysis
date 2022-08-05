@@ -8,6 +8,8 @@
 from abc import ABC, abstractmethod
 import datetime
 import numpy as np
+
+import filtering
 import fosutils
 
 class SensorRecord(dict):
@@ -27,7 +29,7 @@ class SensorRecord(dict):
 		self["values"] = values
 		self.update(kwargs)
 
-class ODiSITSVFile():
+class ODiSI6100TSVFile():
 	"""
 	Object contains fibre optical sensor data exported by the Luna Inc. Optical Distributed Sensor Interrogator (ODiSI), and provides some function to retrieve those.
 	"""
@@ -153,8 +155,9 @@ class ODiSITSVFile():
 		"""
 		y_table = self.get_y_table(self.get_record_slice(start=start, end=end))
 		mean_record = []
+		nan_filter = filtering.NaNFilter()
 		for column in zip(*y_table):
-			column = fosutils.strip_nan_entries(column)
+			column = nan_filter.run(column)
 			if len(column) > 0:
 				mean_record.append(sum(column)/len(column))
 			else:

@@ -41,8 +41,8 @@ class Integrator():
 		interpolation = interpolation if interpolation is not None else self.interpolation
 		F = []
 		area = integration_constant
-		n = filtering.NaNFilter()
-		x_values, y_values = n.run(x_values, y_values)
+		nan_filter = filtering.NaNFilter()
+		x_values, y_values = nan_filter.run(x_values, y_values)
 		# Prepare the segments
 		if interpolation == "linear":
 			x_l = x_values[0]

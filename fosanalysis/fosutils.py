@@ -9,6 +9,7 @@ import copy
 import numpy as np
 
 import filtering
+import cropping
 
 def find_closest_value(array, x) -> tuple:
 	"""
@@ -25,8 +26,10 @@ def find_closest_value(array, x) -> tuple:
 			closest_index = i
 	return closest_index, array[closest_index]
 
-def strip_smooth_crop(self, x, *y_tuple,
+def strip_smooth_crop(x,
+					*y_tuple,
 					smoothing = None,
+					crop = None,
 					start_pos: float = None,
 					end_pos: float = None,
 					offset: float = None,
@@ -42,11 +45,12 @@ def strip_smooth_crop(self, x, *y_tuple,
 		if x is not None:
 			nan_filter = filtering.NaNFilter()
 			smoothing = smoothing if smoothing is not None else filtering.SlidingMean()
+			crop = crop if crop is not None else cropping.Crop()
 			x_strip, *y_tuple_strip = nan_filter.run(x, *y_tuple)
 			y_list_smooth = []
 			for y_strip in y_tuple_strip:
-				y_smooth = self.filter.run(y_strip)
-				x_crop, y_crop = smoothing(x_strip, y_smooth, start_pos=start_pos, end_pos=end_pos, length=length, offset=offset)
+				y_smooth = smoothing.run(y_strip)
+				x_crop, y_crop = crop.run(x_strip, y_smooth, start_pos=start_pos, end_pos=end_pos, length=length, offset=offset)
 				y_list_smooth.append(y_crop)
 			return x_crop, y_list_smooth[0] if len(y_list_smooth) == 1 else tuple(y_list_smooth)
 		else:
