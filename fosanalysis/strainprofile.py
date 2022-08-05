@@ -10,14 +10,14 @@ import copy
 import numpy as np
 import scipy.signal
 
-import fosutils
 import cracks
+import cropping
+import filtering
 import finding
+import fosutils
+import integration
 import separation
 import tensionstiffening
-import filtering
-import cropping
-import integration
 
 class StrainProfile(ABC):
 	"""
@@ -28,12 +28,13 @@ class StrainProfile(ABC):
 			strain: np.array,
 			crop = None,
 			activate_shrink_compensation: bool = False,
-			shrinkcompensator: None,
+			shrinkcompensator = None,
 			compensate_tension_stiffening: bool = True,
-			tensions_stiffening_compensator= None,
-			crackfinder: None,
-			integrator: None,
-			lengthsplitter: None,
+			tension_stiffening_compensator = None,
+			crackfinder = None,
+			filter_object = None,
+			integrator = None,
+			lengthsplitter = None,
 			max_concrete_strain: float = 100,
 			name: str = "",
 			suppress_compression: bool = True,
@@ -91,9 +92,9 @@ class StrainProfile(ABC):
 		## \todo Document
 		self.lengthsplitter = lengthsplitter if lengthsplitter is not None else separation.CrackLengths()
 		## \todo Document
-		self.tensions_stiffening_compensator = tensions_stiffening_compensator
+		self.tension_stiffening_compensator = tension_stiffening_compensator
 		## \todo Document
-		self.filter = filtering.SlidingMean()
+		self.filter_object = filter_object if filter_object is not None else filtering.SlidingMean()
 		## \todo Document
 		self.integrator = integrator if integrator is not None else integration.Integrator()
 		## Maximum strain in concrete, before a crack opens.
@@ -106,8 +107,9 @@ class StrainProfile(ABC):
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
+		## \todo fix the copping
 		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
+			x_inst, strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig, smoothing=self.filter_object, crop=self.crop)
 		## Location data (x-axis) for the initial load experiment.
 		## The data is cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x_inst = x_inst
@@ -116,7 +118,7 @@ class StrainProfile(ABC):
 		self.strain_inst = strain_inst
 		# Sanitize the x and strain data
 		tare = tare if tare is not None else np.zeros(len(self._x_orig))
-		x_crop, (strain_crop, tare) = self._strip_smooth_crop(x, strain, tare)
+		x_crop, (strain_crop, tare) = fosutils.strip_smooth_crop(x, strain, tare, smoothing=self.filter_object, crop=self.crop)
 		## Location data of the measurement area in accordance to \ref strain.
 		## The data is stripped of any `NaN` entries and cropped to the interval given by \ref start_pos and \ref end_pos.
 		self.x = x_crop
@@ -160,13 +162,13 @@ class StrainProfile(ABC):
 			strain = f.run(strain)
 		for crack in self.crack_list:
 			x_seg, y_seg = self.crop.run(self.x, strain, start_pos=crack.leff_l, end_pos=crack.leff_r, offset=0)
-			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
+			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None)
 		return self.crack_list
 	def find_cracks(self):
 		"""
 		Identify cracks, settings are stored in \ref crackfinder.
 		"""
-		self.crack_list = self.cackfinder.run(self.x, self.strain)
+		self.crack_list = self.crackfinder.run(self.x, self.strain)
 		return self.crack_list
 	def set_leff(self) -> list:
 		"""
@@ -201,10 +203,10 @@ class StrainProfile(ABC):
 		"""
 		if self.crack_list is None:
 			self.set_leff()
-		self.tension_stiffening_values = self.tensions_stiffening_compensator.run(self.x, self.strain. self.crack_list)
+		self.tension_stiffening_values = self.tension_stiffening_compensator.run(self.x, self.strain, self.crack_list)
 		return self.tension_stiffening_values
 	def add_cracks(self,
-						*cracks: tuple,
+						*cracks_tuple: tuple,
 						recalculate: bool = True,
 						):
 		"""
@@ -217,7 +219,7 @@ class StrainProfile(ABC):
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 			Set to `False`, if you want to suppress a recalculation, until you are finished with modifying \ref crack_list. 
 		"""
-		for crack in cracks:
+		for crack in cracks_tuple:
 			if isinstance(crack, cracks.Crack):
 				crack = copy.deepcopy(crack)
 				index, x_pos = fosutils.find_closest_value(self.x, crack.location)
@@ -237,7 +239,7 @@ class StrainProfile(ABC):
 			self.set_leff()
 			self.calculate_crack_widths()
 	def delete_cracks(self,
-						*cracks: tuple,
+						*cracks_tuple: tuple,
 						recalculate: bool = True,
 						) -> list:
 		"""
@@ -247,8 +249,8 @@ class StrainProfile(ABC):
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 		\return Returns a list of the deleted \ref Crack objects. 
 		"""
-		delete_cracks = [self.crack_list[i] for i in cracks if i in range(len(self.crack_list))]
-		self.crack_list = [self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks]
+		delete_cracks = cracks.CrackList(*[self.crack_list[i] for i in cracks_tuple if i in range(len(self.crack_list))])
+		self.crack_list = cracks.CrackList(*[self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks_tuple])
 		if recalculate:
 			self.set_leff()
 			self.calculate_crack_widths()
@@ -266,7 +268,9 @@ class Concrete(StrainProfile):
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
 		"""
-		default_values = {"tensions_stiffening_compensator": tensionstiffening.Fischer()}
+		default_values = {
+			"tension_stiffening_compensator": tensionstiffening.Fischer()
+			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
 
@@ -297,7 +301,7 @@ class Rebar(StrainProfile):
 		- \ref crack_segment_method defaults to `"min"`. For more, see \ref crack_segment_method.
 		"""
 		default_values = {
-			"tensions_stiffening_compensator": tensionstiffening.Berrocal()
+			"tension_stiffening_compensator": tensionstiffening.Berrocal()
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
