@@ -9,35 +9,38 @@ from abc import ABC, abstractmethod
 import copy
 import numpy as np
 import scipy.signal
+
 import fosutils
+import cracks
+import finding
+import separation
+import tensionstiffening
+import filtering
+import cropping
+import integration
 
 class StrainProfile(ABC):
 	"""
 	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	"""
 	def __init__(self,
-						x: np.array,
-						strain: np.array,
-						start_pos: float = None,
-						end_pos: float = None,
-						offset: float = None,
-						length: float = None,
-						compensate_shrink: bool = False,
-						compensate_shrink_method: str = "mean_min",
-						compensate_shrink_kwargs: dict = None,
-						compensate_tension_stiffening: bool = True,
-						crack_peak_prominence: float = 100,
-						crack_segment_method: str = "middle",
-						interpolation : str = "linear",
-						max_concrete_strain: float = 100,
-						name: str = "",
-						smoothing_radius: int = 5,
-						smoothing_margins: str = "reduced",
-						suppress_compression: bool = True,
-						tare: np.array = None,
-						x_inst: np.array = None,
-						strain_inst: np.array = None,
-						*args, **kwargs):
+			x: np.array,
+			strain: np.array,
+			crop = None,
+			activate_shrink_compensation: bool = False,
+			shrinkcompensator: None,
+			compensate_tension_stiffening: bool = True,
+			tensions_stiffening_compensator= None,
+			crackfinder: None,
+			integrator: None,
+			lengthsplitter: None,
+			max_concrete_strain: float = 100,
+			name: str = "",
+			suppress_compression: bool = True,
+			tare: np.array = None,
+			x_inst: np.array = None,
+			strain_inst: np.array = None,
+			*args, **kwargs):
 		"""
 		Constructs a strain profile object.
 		\param x \copybrief x For more, see \ref x.
@@ -46,17 +49,15 @@ class StrainProfile(ABC):
 		\param end_pos \copybrief end_pos For more, see \ref end_pos.
 		\param length \copybrief length For more, see \ref length.
 		\param offset \copybrief offset For more, see \ref offset.
-		\param compensate_shrink \copybrief compensate_shrink For more, see \ref compensate_shrink.
-		\param compensate_shrink_method \copybrief compensate_shrink_method For more, see \ref compensate_shrink_method.
-		\param compensate_shrink_kwargs \copybrief compensate_shrink_kwargs For more, see \ref compensate_shrink_kwargs.
+		\param activate_shrink_compensation \copybrief activate_shrink_compensation For more, see \ref activate_shrink_compensation.
+		\param activate_shrink_compensation_method \copybrief activate_shrink_compensation_method For more, see \ref activate_shrink_compensation_method.
+		\param activate_shrink_compensation_kwargs \copybrief activate_shrink_compensation_kwargs For more, see \ref activate_shrink_compensation_kwargs.
 		\param compensate_tension_stiffening \copybrief compensate_tension_stiffening For more, see \ref compensate_tension_stiffening.
-		\param crack_peak_prominence \copybrief crack_peak_prominence For more, see \ref crack_peak_prominence.
+		\param crackfinder \copybrief crackfinder For more, see \ref crackfinder.
 		\param crack_segment_method \copybrief crack_segment_method For more, see \ref crack_segment_method.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
 		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
 		\param name \copybrief name For more, see \ref name.
-		\param smoothing_radius \copybrief smoothing_radius For more, see \ref smoothing_radius.
-		\param smoothing_margins \copybrief smoothing_margins For more, see \ref smoothing_margins.
 		\param suppress_compression \copybrief suppress_compression For more, see \ref suppress_compression.
 		\param tare \copybrief tare For more, see \ref tare.
 		\param x_inst \copybrief x_inst For more, see \ref x_inst.
@@ -68,69 +69,40 @@ class StrainProfile(ABC):
 		## Original list of location data (x-axis) for the current experiment.
 		self._x_orig = x
 		## Original list of strain data (y-axis) for the current experiment.
+		## \todo todo applay strip_smooth_crop()
 		self._strain_orig = strain
 		## Original list of location data (x-axis) for the current initial load experiment.
 		self._x_inst_orig = x_inst
 		## Original list of strain data (y-axis) for the initial load experiment.
 		self._strain_inst_orig = strain_inst
-		## The starting position specifies the length of the sensor, before entering the measurement area.
-		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
-		## Defaults to `None` (no cropping is done).
-		self.start_pos = start_pos
-		## The end position specifies the length of the sensor, when leaving the measurement area. 
-		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
-		## Defaults to `None` (no cropping is done).
-		self.end_pos = end_pos
-		## Offset used according to the same parameter of \ref crop_to_x_range().
-		self.offset = offset
-		## Length of the measurement area, used according to the same parameter of \ref crop_to_x_range().
-		self.length = length
-		## Switch, whether shrinkage of concrete should be taken into account.
-		## For this to work, also \ref x_inst and \ref strain_inst need to be provided.
-		self.compensate_shrink = compensate_shrink
-		## Keyword argument dictionary for the identification of strain minima for the calibration of shrinkage. Will be passed to `scipy.signal.find_peaks()`.
-		## By default, `"prominence"` is set to `100`.
-		self.compensate_shrink_kwargs = compensate_shrink_kwargs if compensate_shrink_kwargs is not None else {"prominence": 100}
-		## Method, how to calculate the shrinkage calibration. Available options:
-		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.
-		## 	Afterwards the mean over the differences is taken.
-		self.compensate_shrink_method = compensate_shrink_method
+		## \todo Document
+		self.crop = crop if crop is not None else cropping.Crop()
+		## \todo Document
+		self.activate_shrink_compensation = activate_shrink_compensation
+		## \todo Document
+		self.shrinkcompensator = shrinkcompensator
 		## Switch, whether the tension stiffening effect in the concrete is taken into account.
 		self.compensate_tension_stiffening = compensate_tension_stiffening
 		## List of cracks, see \ref Crack for documentation.
 		## To restart the calculation again, set to `None` and run \ref calculate_crack_widths() afterwards.
 		self.crack_list = None
-		## The prominence of the strain peaks over their surrounding data to be considered a crack.
-		## For more information, see [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
-		self.crack_peak_prominence = crack_peak_prominence
-		## Method, how the width of a crack is estimated. Available options:
-		## - `"middle"`: (default) Crack segments are split in the middle inbetween local strain maxima.
-		## - `"middle_limit"`: Crack segments are split in the middle inbetween local strain maxima or the end of peak, whichever is closer to the cracks location.
-		## - `"min"`: Crack segments are split at local strain minima.
-		## - `"min_limit"`: Crack segments are split at local strain minima or the end of peak, whichever is closer to the cracks location.
-		self.crack_segment_method = crack_segment_method
-		## Algorithm, which should be used to interpolate between data points.
-		## Defaults to `"linear"`.
-		## See \ref integrate_segment() for available options.
-		self.interpolation = interpolation
+		## \todo Document
+		self.crackfinder = crackfinder if crackfinder is not None else finding.CrackFinder()
+		## \todo Document
+		self.lengthsplitter = lengthsplitter if lengthsplitter is not None else separation.CrackLengths()
+		## \todo Document
+		self.tensions_stiffening_compensator = tensions_stiffening_compensator
+		## \todo Document
+		self.filter = filtering.SlidingMean()
+		## \todo Document
+		self.integrator = integrator if integrator is not None else integration.Integrator()
 		## Maximum strain in concrete, before a crack opens.
 		## Strains below this value are not considered cracked.
 		## It is used as the `height` option for [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
 		## Also, this is the treshhold for the calculation of tension stiffening by \ref calculate_tension_stiffening().
 		self.max_concrete_strain = max_concrete_strain
-		## Smoothing radius for smoothing \ref strain and \ref strain_inst.
-		## Smoothes the record using a the mean over \f$2r + 1\f$ entries.
-		## For each entry, the sliding mean extends `r` entries to both sides.
-		## The margins (first and last `r` entries of `data`) will be treated according to the `margins` parameter.
-		## In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 		## Name of the strain profile.
 		self.name = name
-		self.smoothing_radius = smoothing_radius
-		## Setting, how the first and last \ref smoothing_radius entries of \ref strain and \ref strain_inst will be treated.
-		## Available options:
-		## - `"reduced"`: (default) smoothing with reduced smoothing radius, such that the radius extends to the borders of the data.
-		## - `"flat"`:  the marginal entries get the same value applied, as the first/last fully smoothed entry.
-		self.smoothing_margins = smoothing_margins
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
@@ -155,145 +127,57 @@ class StrainProfile(ABC):
 		## Those will be subtracted from the strain for crack width calculation.
 		self.tare = tare
 		## Array of calibration values for the shrinking in the measurement area.
-		## If \ref compensate_shrink is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref calculate_shrink_compensation().
+		## If \ref activate_shrink_compensation is set to `True` and \ref x_inst and \ref strain_inst are provided, it calculated by \ref compensate_shrink().
 		## Else, it defaults to `np.zeros` of the same length as \ref strain.
 		self.shrink_calibration_values = np.zeros(len(self.strain))
 		## Array of the tension stiffening.
 		## While integrating the crack width, it is subtracted from the strain values.
 		self.tension_stiffening_values = np.zeros(len(self.strain))
-	def _strip_smooth_crop(self, x, *y_tuple):
-		"""
-		Sanitize the given arrays.
-		Firstly, `NaN`s are stripped.
-		Secondly, all data records in `y_tuple` are smoothed (see \ref smoothing_radius and \ref smoothing_margins).
-		Finally, `x` and all records in `y_tuple` are cropped to \ref start_pos and \ref end_pos.
-		\return Returns copies of `x` and `y_tuple`.
-		"""
-		if x is not None:
-			x_strip, *y_tuple_strip = fosutils.strip_nan_entries(x, *y_tuple)
-			y_list_smooth = []
-			for y_strip in y_tuple_strip:
-				y_smooth = fosutils.smooth_data(y_strip, r=self.smoothing_radius, margins=self.smoothing_margins)
-				x_crop, y_crop = fosutils.crop_to_x_range(x_strip, y_smooth, x_start=self.start_pos, x_end=self.end_pos, length=self.length, offset=self.offset)
-				y_list_smooth.append(y_crop)
-			return x_crop, y_list_smooth[0] if len(y_list_smooth) == 1 else tuple(y_list_smooth)
-		else:
-			raise ValueError("Either x, y or tare is None or they differ in lengths.")
-	def _sort_cracks(self):
-		"""
-		Sort the list of cracks.
-		"""
-		orig_order = [crack.location for crack in self.crack_list]
-		index_list = np.argsort(orig_order)
-		self.crack_list = [self.crack_list[i] for i in index_list]
-	def get_crack_widths(self) -> list:
-		""" Returns a list with the widths of all cracks. """
-		return [crack.width for crack in self.crack_list]
-	def get_crack_max_strain(self) -> list:
-		""" Returns a list with the peak strains of all cracks. """
-		return [crack.max_strain for crack in self.crack_list]
-	def get_crack_locations(self) -> list:
-		""" Returns a list with the locations of all cracks. """
-		return [crack.location for crack in self.crack_list]
-	def get_leff_l(self) -> list:
-		""" Returns a list with the left-hand side border of effective length of all cracks. """
-		return [crack.leff_l for crack in self.crack_list]
-	def get_leff_r(self) -> list:
-		""" Returns a list with the right-hand side border of effective length of all cracks. """
-		return [crack.leff_r for crack in self.crack_list]
-	def identify_crack_positions(self,
-						*args, **kwargs) -> list:
-		"""
-		Identifies the positions of cracks using `scipy.signal.find_peaks()` and save them to \ref crack_list \ref Crack objects.
-		Those \ref Crack objects are still incomplete.
-		Their effective lengths may need to be recalculated using \ref set_crack_effective_lengths() and the widths using \ref calculate_crack_widths().
-		\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
-		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
-		\return Returns a list of \ref Crack objects.
-		"""
-		peaks_max, max_properties = scipy.signal.find_peaks(self.strain, height=self.max_concrete_strain, prominence=self.crack_peak_prominence, *args, **kwargs)
-		segment_left = max_properties["left_bases"]
-		segment_right = max_properties["right_bases"]
-		self.crack_list = []
-		for peak_number, (left_index, peak_index, right_index) in enumerate(zip(segment_left, peaks_max, segment_right)):
-			crack = Crack(location=self.x[peak_index],
-						leff_l=self.x[left_index],
-						leff_r=self.x[right_index],
-						index = peak_index,
-						max_strain=self.strain[peak_index],
-						)
-			self.crack_list.append(crack)
-		return self.crack_list
-	def set_crack_effective_lengths(self, method: str = None) -> list:
-		"""
-		Specify the effective length of all cracks according to `method`.
-		\param method \copybrief crack_segment_method Use it to specify a different method than \ref crack_segment_method. 
-		\return Returns a list of \ref Crack objects.
-		"""
-		method = method if method is not None else self.crack_segment_method
-		self._sort_cracks()
-		for i, crack in enumerate(self.crack_list):
-			if method == "middle":
-				# Limit the effective length by the middle between two cracks
-				if i > 0:
-					middle = (self.crack_list[i-1].location + crack.location)/2
-					crack.leff_l = middle
-					self.crack_list[i-1].leff_r = middle
-			elif method == "middle_limit":
-				# Limit the effective length by the middle between two cracks
-				if i > 0:
-					middle = (self.crack_list[i-1].location + crack.location)/2
-					crack.leff_l = max(middle, crack.leff_l)
-					self.crack_list[i-1].leff_r = min(middle, self.crack_list[i-1].leff_r)
-			elif method == "min":
-				# Set the limits to the local minima
-				if i > 0:
-					left_peak_index = self.crack_list[i-1].index
-					right_peak_index = crack.index
-					left_valley = self.strain[left_peak_index:right_peak_index]
-					min_index = np.argmin(left_valley) + left_peak_index
-					crack.leff_l = self.x[min_index]
-					self.crack_list[i-1].leff_r = self.x[min_index]
-			elif method == "min_limit":
-				# Set the limits to the local minima
-				if i > 0:
-					left_peak_index = self.crack_list[i-1].index
-					right_peak_index = crack.index
-					left_valley = self.strain[left_peak_index:right_peak_index]
-					min_index = np.argmin(left_valley) + left_peak_index
-					crack.leff_l = max(self.x[min_index], crack.leff_l)
-					self.crack_list[i-1].leff_r = min(self.x[min_index], self.crack_list[i-1].leff_r)
-			else:
-				raise ValueError("No such option '{}' known for `method`.".format(method))
-		return self.crack_list
-	def calculate_crack_widths(self) -> list:
+	def calculate_crack_widths(self) -> cracks.CrackList:
 		"""
 		Returns the crack widths.
 		The following is done:
 		1. Find the crack positions, see \ref identify_crack_positions().
 		2. Find the effective lengths of the crack, see \ref set_crack_effective_lengths().
-		3. Shrinking/creep is taken into account, see \ref calculate_shrink_compensation().
+		3. Shrinking/creep is taken into account, see \ref compensate_shrink().
 		4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref calculate_tension_stiffening().
 		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
 		
 		\return Returns an list of crack widths.
 		"""
 		if self.crack_list is None:
-			self.identify_crack_positions()
-			self.set_crack_effective_lengths()
-		if self.compensate_shrink:
-			self.calculate_shrink_compensation()
+			self.find_cracks()
+			self.set_leff()
+		if self.activate_shrink_compensation:
+			self.shrink_calibration_values = np.zeros(len(self.strain))
+			self.compensate_shrink()
 		if self.compensate_tension_stiffening:
+			self.tension_stiffening_values = np.zeros(len(self.strain))
 			self.calculate_tension_stiffening()
 		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values - self.tare
 		if self.suppress_compression:
-			strain = fosutils.limit_entry_values(strain, 0.0, None)
+			f = filtering.Limit(minimum=0.0, maximum=None)
+			strain = f.run(strain)
 		for crack in self.crack_list:
-			x_seg, y_seg = fosutils.crop_to_x_range(self.x, strain, crack.leff_l, crack.leff_r)
-			crack.width = fosutils.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
-		return self.get_crack_widths()
-	@abstractmethod
-	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
+			x_seg, y_seg = self.crop.run(self.x, strain, start_pos=crack.leff_l, end_pos=crack.leff_r, offset=0)
+			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None, interpolation=self.interpolation)
+		return self.crack_list
+	def find_cracks(self):
+		"""
+		Identify cracks, settings are stored in \ref crackfinder.
+		"""
+		self.crack_list = self.cackfinder.run(self.x, self.strain)
+		return self.crack_list
+	def set_leff(self) -> list:
+		"""
+		Assing effective length to \ref crack_list, settings are stored in \ref lengthsplitter.
+		If \ref crack_list is empty, \ref find_cracks() is carried out beforehand.
+		"""
+		if self.crack_list is None:
+			self.find_cracks()
+		self.crack_list = self.lengthsplitter.run(self.x, self.strain, self.crack_list)
+		return self.crack_list
+	def compensate_shrink(self, *args, **kwargs) -> np.array:
 		"""
 		Calculate the shrink influence of the concrete and stores it in \ref shrink_calibration_values.
 		It is required to provide the following attributes:
@@ -301,25 +185,24 @@ class StrainProfile(ABC):
 		- \ref strain,
 		- \ref x_inst,
 		- \ref strain_inst,
-		- set \ref compensate_shrink to `True`.
+		- set \ref activate_shrink_compensation to `True`.
+		
+		\todo Document
 		"""
-		raise NotImplementedError()
-	@abstractmethod
+		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
+			self.shrink_calibration_values = self.shrinkcompensator.run(self.strain)
+		else:
+			raise ValueError("Can not calibrate shrink without both `x_inst` and `strain_inst`! Please provide both!")
+		return self.shrink_calibration_values()
 	def calculate_tension_stiffening(self) -> np.array:
 		"""
-		This method calculates the shrink influence of the concrete and stores it in \ref shrink_calibration_values.
-		\todo document
+		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
+		\return An array with the compensation values for each measuring point is returned.
 		"""
-		raise NotImplementedError()
-	def get_crack(self, x):
-		"""
-		Get the \ref Crack, for which holds: \f$l_{\mathrm{eff,l}} < x \leq l_{\mathrm{eff,r}}\f$.
-		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
-		"""
-		for crack in self.crack_list:
-			if crack.leff_l < x <= crack.leff_r:
-				return crack
-		return None
+		if self.crack_list is None:
+			self.set_leff()
+		self.tension_stiffening_values = self.tensions_stiffening_compensator.run(self.x, self.strain. self.crack_list)
+		return self.tension_stiffening_values
 	def add_cracks(self,
 						*cracks: tuple,
 						recalculate: bool = True,
@@ -335,7 +218,7 @@ class StrainProfile(ABC):
 			Set to `False`, if you want to suppress a recalculation, until you are finished with modifying \ref crack_list. 
 		"""
 		for crack in cracks:
-			if isinstance(crack, Crack):
+			if isinstance(crack, cracks.Crack):
 				crack = copy.deepcopy(crack)
 				index, x_pos = fosutils.find_closest_value(self.x, crack.location)
 				crack.index = index
@@ -345,13 +228,13 @@ class StrainProfile(ABC):
 				crack.leff_r = crack.leff_r if crack.leff_r is not None and crack.leff_r > crack.location else None
 			else: 
 				index, x_pos = fosutils.find_closest_value(self.x, crack)
-				crack = Crack(location=x_pos,
+				crack = cracks.Crack(location=x_pos,
 								index = index,
 								max_strain=self.strain[index],
 								)
 			self.crack_list.append(crack)
 		if recalculate:
-			self.set_crack_effective_lengths()
+			self.set_leff()
 			self.calculate_crack_widths()
 	def delete_cracks(self,
 						*cracks: tuple,
@@ -367,7 +250,7 @@ class StrainProfile(ABC):
 		delete_cracks = [self.crack_list[i] for i in cracks if i in range(len(self.crack_list))]
 		self.crack_list = [self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks]
 		if recalculate:
-			self.set_crack_effective_lengths()
+			self.set_leff()
 			self.calculate_crack_widths()
 		return delete_cracks
 
@@ -376,65 +259,16 @@ class Concrete(StrainProfile):
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
 	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
 	"""
-	def __init__(self,*args, **kwargs):
+	def __init__(self,
+			*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor embedded in concrete.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
 		"""
-		default_values = {}
+		default_values = {"tensions_stiffening_compensator": tensionstiffening.Fischer()}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
-	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
-		"""
-		The influence of concrete creep and shrinking is calculated.
-		\param *args Additional positional arguments. Will be passed to `scipy.signal.find_peaks()`.
-		\param **kwargs Additional keyword arguments. Will be passed to `scipy.signal.find_peaks()`.
-		"""
-		if self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			self.x_inst, self.strain_inst = self._strip_smooth_crop(self._x_inst_orig, self._strain_inst_orig)
-		else:
-			raise ValueError("Can not calibrate shrink without both `x_inst` and `strain_inst`! Please provide both!")
-		compensate_shrink_kwargs = {}
-		compensate_shrink_kwargs.update(self.compensate_shrink_kwargs)
-		compensate_shrink_kwargs.update(**kwargs)
-		peaks_min, properties = scipy.signal.find_peaks(-self.strain_inst, *args, **compensate_shrink_kwargs)
-		# Get x positions and y-values for instantanious deformation
-		y_min_inst = np.array([self.strain_inst[i] for i in peaks_min])
-		x_min_inst = np.array([self.x_inst[i] for i in peaks_min])
-		# Get x positions and y-values for deformation after a long time
-		x_min_inf_index = [fosutils.find_closest_value(self.x, min_pos)[0] for min_pos in x_min_inst]
-		y_min_inf = np.array([self.strain[i] for i in x_min_inf_index])
-		if self.compensate_shrink_method == "mean_min":
-			min_diff = y_min_inf - y_min_inst
-			self.shrink_calibration_values = np.full(len(self.strain), np.mean(min_diff))
-		else:
-			raise NotImplementedError()
-		return self.shrink_calibration_values
-	def calculate_tension_stiffening(self) -> np.array:
-		"""
-		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
-		\return An array with the compensation values for each measuring point is returned.
-		"""
-		self.tension_stiffening_values = np.zeros(len(self.strain))
-		if self.compensate_tension_stiffening:
-			if self.crack_list is None:
-				self.identify_cracks()
-			for i, (x, y) in enumerate(zip(self.x, self.strain)):
-				for crack in self.crack_list:
-					if crack.location is None:
-						raise ValueError("Location of crack is `None`: {}".format(crack))
-					if crack.leff_l <= x < crack.location and crack.d_l > 0.0:
-						d_x = (crack.location - x)/(crack.d_l)
-						self.tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
-					elif crack.location < x <= crack.leff_r and crack.d_r > 0.0:
-						d_x = (x - crack.location)/(crack.d_r)
-						self.tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
-					else:
-						pass
-		if self.suppress_compression:
-			self.tension_stiffening_values = fosutils.limit_entry_values(self.tension_stiffening_values, 0.0, None)
-		return self.tension_stiffening_values
 
 class Rebar(StrainProfile):
 	"""
@@ -450,9 +284,7 @@ class Rebar(StrainProfile):
 	- \f$ \rho \f$: \copydoc rho
 	"""
 	def __init__(self,
-						alpha: float,
-						rho: float,
-						*args, **kwargs):
+			*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor attached to a reinforcement rebar.
 		\param alpha \copybrief alpha For more, see \ref alpha.
@@ -465,89 +297,8 @@ class Rebar(StrainProfile):
 		- \ref crack_segment_method defaults to `"min"`. For more, see \ref crack_segment_method.
 		"""
 		default_values = {
-			"crack_peak_prominence": 50,
-			"crack_segment_method": "min",
+			"tensions_stiffening_compensator": tensionstiffening.Berrocal()
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
-		## Ratio of Young's moduli of steel to concrete \f$ \alpha = \frac{E_{\mathrm{s}}}{E_{\mathrm{c}}} \f$.
-		self.alpha = alpha
-		## Reinforcement ratio of steel to concrete \f$ \rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}} \f$.
-		self.rho = rho
-	def calculate_shrink_compensation(self, *args, **kwargs) -> np.array:
-		"""
-		\todo implement and document
-		"""
-		raise NotImplementedError()
-	def calculate_tension_stiffening(self) -> np.array:
-		"""
-		The statical influence of the concrete is computed as the according to second term of the crack width intergration equation, see \ref Rebar.
-		The values of outside of the outermost cracks are extrapolated according to the neighboring field.
-		"""
-		assert len(self.crack_list) > 1
-		# Linear Interpolation between peaks
-		for n_valley in range(1, len(self.crack_list)):
-			left_peak = self.crack_list[n_valley-1].index
-			right_peak = self.crack_list[n_valley].index
-			dx = self.x[right_peak] - self.x[left_peak]
-			dy = self.strain[right_peak] - self.strain[left_peak]
-			for i in range(left_peak, right_peak):
-				self.tension_stiffening_values[i] = self.strain[left_peak] + (self.x[i] - self.x[left_peak])/(dx) * dy
-			# Linear extrapolation left of first peak
-			if n_valley == 1:
-				for i in range(left_peak):
-					self.tension_stiffening_values[i] = self.strain[left_peak] + (self.x[i] - self.x[left_peak])/(dx) * dy
-			# Linear extrapolation right of last peak
-			if n_valley == len(self.crack_list) - 1:
-				for i in range(left_peak, len(self.x)):
-					self.tension_stiffening_values[i] = self.strain[left_peak] + (self.x[i] - self.x[left_peak])/(dx) * dy
-		# Difference of steel strain to the linear interpolation
-		self.tension_stiffening_values = self.tension_stiffening_values - self.strain
-		# Reduce by rho  and alpha
-		self.tension_stiffening_values = self.tension_stiffening_values * self.alpha * self.rho
 
-class Crack():
-	"""
-	Implements a crack with all necessary properties.
-	"""
-	def __init__(self,
-						index: int = None,
-						location: float = None,
-						leff_l: float = None,
-						leff_r: float = None,
-						width: float = None,
-						max_strain: float = None,
-						):
-		super().__init__()
-		## Position index in the measurement area.
-		self.index = index
-		## Absolute location along the fibre optical sensor.
-		self.location = location
-		## Absolute location left-hand side end of its effective length.
-		self.leff_l = leff_l
-		## Absolute location right-hand side end of its effective length.
-		self.leff_r = leff_r
-		## The opening width of the crack. The width is calculated by integrating the strain over the effective length. 
-		self.width = width
-		## The strain in the fibre-optical sensor at the \ref location. 
-		self.max_strain = max_strain
-	@property
-	def leff(self):
-		"""
-		Returns the length of the effective length.
-		"""
-		return self.leff_r - self.leff_l
-	@property
-	def d_l(self):
-		"""" Distance from the crack position to the left-hand side end of its effective length. """
-		return self.location - self.leff_l
-	@property
-	def d_r(self):
-		"""" Distance from the crack position to the right-hand side end of its effective length. """
-		return self.leff_r - self.location
-	@property
-	def segment(self):
-		"""
-		Returns the absolute influence segment of the crack.
-		"""
-		return self.leff_l, self.leff_r

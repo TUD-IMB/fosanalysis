@@ -63,7 +63,7 @@ class CrackList(list):
 	"""
 	def __init__(self, *crack_list):
 		"""
-		Constructs a 
+		Constructs a CrackList object of any number of \ref Crack objects.
 		"""
 		assert all([isinstance(entry, Crack) for entry in crack_list]), "At least one entry is not a Crack!"
 		super().__init__(crack_list)

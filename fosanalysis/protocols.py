@@ -1,6 +1,6 @@
 
 ## \file
-## Contains class definitions for fibre optical sensors.
+## Contains functionality for interfacing files and network ports.
 ## \author Bertram Richter
 ## \date 2022
 ## \package sensor \copydoc sensor.py
@@ -27,20 +27,7 @@ class SensorRecord(dict):
 		self["values"] = values
 		self.update(kwargs)
 
-class Sensor(ABC):
-	"""
-	Abstract base class for a sensor.
-	"""
-	@abstractmethod
-	def __init__(self, *args, **kwargs):
-		"""
-		Constructs a Sensor object.
-		\param *args Additional positional arguments. Will be ignored.
-		\param **kwargs Additional keyword arguments. Will be ignored.
-		"""
-		super().__init__(*args, **kwargs)
-
-class ODiSI(Sensor):
+class ODiSITSVFile():
 	"""
 	Object contains fibre optical sensor data exported by the Luna Inc. Optical Distributed Sensor Interrogator (ODiSI), and provides some function to retrieve those.
 	"""
