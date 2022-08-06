@@ -94,7 +94,7 @@ class StrainProfile(ABC):
 		## \todo Document
 		self.tension_stiffening_compensator = tension_stiffening_compensator
 		## \todo Document
-		self.filter_object = filter_object if filter_object is not None else filtering.SlidingMean()
+		self.filter_object = filter_object if filter_object is not None else filtering.SlidingMean(radius=0)
 		## \todo Document
 		self.integrator = integrator if integrator is not None else integration.Integrator()
 		## Maximum strain in concrete, before a crack opens.
