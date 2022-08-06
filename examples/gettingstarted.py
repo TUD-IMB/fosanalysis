@@ -6,13 +6,14 @@
 
 # Importing necessary modules
 import matplotlib.pyplot as plt
+
 import fosanalysis
 
 # Global plot settings
 plt.rcParams.update({"svg.fonttype": "none", "font.size": 10, "axes.grid": True, "axes.axisbelow": True})
 
 # Loading data from file
-sd = fosanalysis.sensor.ODiSI("data/demofile.tsv")
+sd = fosanalysis.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 
 # Retrieving data
 x = sd.get_x_values()
@@ -26,15 +27,15 @@ plt.plot(x, strain, c="k")
 plt.show()
 
 # Generating object for crack width calculation
+
+crop = fosanalysis.cropping.Crop(start_pos=3, end_pos=5)
+
+
 sp = fosanalysis.strainprofile.Concrete(x=x,
 		strain=strain,
-		start_pos=3,
-		end_pos=5,
-		smoothing_radius=1,
+		crop=crop,
 		max_concrete_strain=100,
-		crack_peak_prominence = 100,
-		crack_segment_method="middle",
-		compensate_shrink=False,
+		activate_shrink_compensation=False,
 		compensate_tension_stiffening=True,
 		)
 
@@ -46,11 +47,11 @@ sp.delete_cracks(3)
 sp.add_cracks(3.9)
 
 # Get the data of the calculated cracks
-c_w = sp.get_crack_widths()
-c_s = sp.get_crack_max_strain()
-c_l = sp.get_leff_l()
-c_loc = sp.get_crack_locations()
-c_r = sp.get_leff_r()
+c_w = sp.crack_list.widths
+c_s = sp.crack_list.max_strains
+c_l = sp.crack_list.leff_l
+c_loc = sp.crack_list.locations
+c_r = sp.crack_list.leff_r
 
 # Plot preparation and plotting
 fig, ax1 = plt.subplots()
