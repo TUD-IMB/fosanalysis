@@ -1,35 +1,66 @@
 
 ## \file
 ## Contains class definitions for tension stiffening influences for concrete embedded and reinforcement attached sensors.
-## \todo Implement and document 
 ## \author Bertram Richter
 ## \date 2022
-## \package tensionstiffening \copydoc tensionstiffening.py
+## \package fosanalysis.tensionstiffening \copydoc tensionstiffening.py
 
+from abc import ABC, abstractmethod
 import numpy as np
 
-import filtering
-
-class Berrocal():
+class TensionStiffeningCompensator(ABC):
 	"""
-	\todo Implement and document
+	Abstract base class for tension stiffening compensation approaches.
+	"""
+	def __init__(self,
+			*args, **kwargs):
+		"""
+		Constructs a TensionStiffeningCompensator object.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		"""
+		super().__init__(*args, **kwargs)
+	@abstractmethod
+	def run(self, x, strain, crack_list) -> np.array:
+		"""
+		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
+		An array with the compensation values for each measuring point is returned.
+		Every \ref TensionStiffeningCompensator has a \ref run() method, which takes the following parameters:
+		\param x Positional x values.
+		\param strain List of strain values.
+		\param crack_list \ref cracks.CrackList with \ref cracks.Crack objects, that already have assigned locations.
+		"""
+		raise NotImplementedError()
+
+class Berrocal(TensionStiffeningCompensator):
+	"""
+	Implements the tension stiffening approach according to the proposal by \cite Berrocal_2021_Crackmonitoringin.
+	The concrete strain \f$\varepsilon^{\mathrm{ts}}(x)\f$ is assumed to the difference between the real strain profile \f$\varepsilon^{\mathrm{DOFS}}(x)\f$
+	and the linear interpolation betwenn the peaks \f$\hat{\varepsilon}(x)\f$ reduced by the reinforcement ratio \ref rho \f$\rho\f$ and Young's moduli ratio \ref alpha \f$\alpha\f$:
+	\f[
+		\varepsilon^{\mathrm{ts}}(x) = \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right)
+	\f]
 	"""
 	def __init__(self,
 			alpha: float,
 			rho: float,
 			*args, **kwargs):
 		"""
-		\todo Implement and document
-		\param max_concrete_strain
+		Constructs a TensionStiffeningCompensator object with according to the proposal by\cite Berrocal_2021_Crackmonitoringin.
+		\param alpha \copybrief alpha For more, see \ref alpha.
+		\param rho \copybrief rho For more, see \ref rho.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## Ratio of Young's moduli of steel to concrete \f$ \alpha = \frac{E_{\mathrm{s}}}{E_{\mathrm{c}}} \f$.
+		## Ratio of Young's moduli of steel to concrete \f$\alpha = \frac{E_{\mathrm{s}}}{E_{\mathrm{c}}}\f$.
 		self.alpha = alpha
-		## Reinforcement ratio of steel to concrete \f$ \rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}} \f$.
+		## Reinforcement ratio of steel to concrete \f$\rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}}\f$.
 		self.rho = rho
-	def run(self, x, strain, crack_list):
+	def run(self, x, strain, crack_list) -> np.array:
 		"""
-		The statical influence of the concrete is computed as the according to second term of the crack width intergration equation, see \ref Rebar.
+		\copydoc TensionStiffeningCompensator.run()
+		
 		The values of outside of the outermost cracks are extrapolated according to the neighboring field.
 		"""
 		assert len(crack_list) > 1
@@ -55,28 +86,32 @@ class Berrocal():
 		# Reduce by rho  and alpha
 		tension_stiffening_values = tension_stiffening_values * self.alpha * self.rho
 
-class Fischer():
+class Fischer(TensionStiffeningCompensator):
 	"""
-	\todo Implement and document
+	Implements the tension stiffening approach according to the proposal by \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	The concrete strain \f$\varepsilon^{\mathrm{ts}}(x)\f$ is assumed to increase linearly with the distance from 0 at the crack location to \ref max_concrete_strain \f$ \sigma_{\mathrm{rupt}}\f$ at the border of the effective length.
+	With the equation for the right hand side of the crack (analogously for the left hand side):
+	\f[
+		\varepsilon^{\mathrm{ts}}(x) = \left|\frac{(x - x_{\mathrm{cr}})}{(l_{\mathrm{eff,r}} - x_{\mathrm{cr}})}\right| \times \sigma_{\mathrm{rupt}}
+	\f]
 	"""
 	def __init__(self,
 			max_concrete_strain: int = 100,
 			*args, **kwargs):
 		"""
-		\todo Implement and document
-		\param max_concrete_strain
+		Constructs a TensionStiffeningCompensator object with according to the proposal by \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## \todo Implement and document
-		## Maximum strain in concrete, before a crack opens.
-		## Strains below this value are not considered cracked.
-		## It is used as the `height` option for [scipy.stats.find_peaks](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html#scipy.signal.find_peaks).
-		## Also, this is the treshhold for the calculation of tension stiffening by \ref calculate_tension_stiffening().
+		## Maximum strain in concrete that the concrete can bear, before a crack opens.
+		## This the targed strain which the tension stiffening approaches towards the limit of the crack's effective length.
+		## Default to 100 µm/m.
 		self.max_concrete_strain = max_concrete_strain
-	def run(self, x, strain, crack_list):
+	def run(self, x, strain, crack_list) -> np.array:
 		"""
-		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
-		\return An array with the compensation values for each measuring point is returned.
+		\copydoc TensionStiffeningCompensator.run()
 		"""
 		tension_stiffening_values = np.zeros(len(strain))
 		for i, (x, y) in enumerate(zip(x, strain)):
