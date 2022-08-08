@@ -1,7 +1,6 @@
 
 ## \file
-## Contains functionality to compensate shirnking and creep.
-## \todo Implement and document 
+## Contains functionality to compensate crop a set of data.
 ## \author Bertram Richter
 ## \date 2022
 ## \package cropping \copydoc cropping.py
@@ -10,52 +9,59 @@ import numpy as np
 
 class Crop():
 	"""
-	\todo Implement and document
+	Object, that can crop two data sets \f$x_i,\: y_i\f$ based on locational data \f$x\f$.
+	The process consists of two steps:
+	1. The \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$.
+	2. Cropping (restricting entries):  \f$x_i:\: x_i \in [s,\: e]\f$ and  \f$y_i:\: x_i \in [s,\: e]\f$
 	"""
 	def __init__(self,
 			start_pos: float = None,
 			end_pos: float = None,
-			offset: float = None,
 			length: float = None,
+			offset: float = None,
 			*args, **kwargs):
 		"""
-		\todo Implement and document
+		Constructs a Crop object.
+		\param start_pos \copybrief start_pos For more, see \ref start_pos.
+		\param end_pos \copybrief end_pos For more, see \ref end_pos.
+		\param length \copybrief length For more, see \ref length.
+		\param offset \copybrief offset For more, see \ref offset.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## The starting position specifies the length of the sensor, before entering the measurement area.
-		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
-		## Defaults to `None` (no cropping is done).
+		## The starting position \f$s\f$ specifies the length of the sensor, before entering the measurement area.
+		## Defaults to `None` (no cropping is done/the first entry of `data`).
 		self.start_pos = start_pos
-		## The end position specifies the length of the sensor, when leaving the measurement area. 
-		## The data for \ref x, \ref strain, \ref x_inst and \ref strain_inst will be cropped to the interval given by \ref start_pos and \ref end_pos.
-		## Defaults to `None` (no cropping is done).
+		## The end position \f$s\f$ specifies the length of the sensor, when leaving the measurement area. 
+		## If both \ref length and \ref end_pos are provided, \ref end_pos takes precedence.
+		## Defaults to `None` (no cropping is done/the first entry of `data`).
 		self.end_pos = end_pos
-		## Offset used according to the same parameter of \ref crop_to_x_range().
+		## Before cropping, \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$, defaults to `0`.
 		self.offset = offset
-		## Length of the measurement area, used according to the same parameter of \ref crop_to_x_range().
+		## Length of the data excerpt. If set, it is used to determine the \ref end_pos.
+		## If both \ref length and \ref end_pos are provided, \ref end_pos takes precedence.
 		self.length = length
 	def run(self, x_values: np.array,
-					y_values: np.array,
-					start_pos: float = None,
-					end_pos: float = None,
-					length: float = None,
-					offset: float = None,
-					) -> tuple:
+			y_values: np.array,
+			start_pos: float = None,
+			end_pos: float = None,
+			length: float = None,
+			offset: float = None,
+			) -> tuple:
 		"""
-		Crops both given lists according to the values of `start_pos` and `end_pos`
+		Crops both \f$x\f$ and \f$y\f$ .
 		In general, if both smoothing and cropping are to be applied, smooth first, crop second.
-		\param x_values List of x-positions.
-		\param y_values List of y_values (matching the `x_values`).
-		\param start_pos Length (value from the original range in `x_values`) from where the excerpt should start. Defaults to the first entry of `x_values`.
-		\param end_pos Length (value from the original range in `x_values`) where the excerpt should end. Defaults to the last entry of `x_values`.
-		\param length Length of the data excerpt. If set, it is used to determine the `end_pos`.
-			If both `length` and `end_pos` are provided, `end_pos` takes precedence.
-		\param offset Before cropping, `x_values`is shifted by `offset`. Defaults ot `0`.
-		\return Returns the cropped lists:
-		\retval x_cropped
-		\retval y_cropped
+		\param x_values List of x-positions \f$x\f$.
+		\param y_values List of y-values \f$y\f$ matching \f$x\f$.
+		\param start_pos \copybrief start_pos Defaults to \ref start_pos. For more, see \ref start_pos.
+		\param end_pos \copybrief end_pos Defaults to \ref end_pos. For more, see \ref end_pos.
+		\param length \copybrief length Defaults to \ref length. For more, see \ref length.
+		\param offset \copybrief offset Defaults to \ref offset. For more, see \ref offset.
+		\return Returns the cropped lists \f$(x_i,\: y_i)\f$:
+		\retval x_cropped \f$x_i:\: x_i \in [s,\: e]\f$
+		\retval y_cropped \f$y_i:\: x_i \in [s,\: e]\f$
 		"""
-		
 		start_pos = start_pos if start_pos is not None else self.start_pos
 		end_pos = end_pos if end_pos is not None else self.end_pos
 		length = length if length is not None else self.length
