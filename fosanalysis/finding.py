@@ -1,7 +1,6 @@
 
 ## \file
-## Contains cuntionality to find crack locations.
-## \todo Implement and document
+## Contains funtionality to find potential crack locations.
 ## \author Bertram Richter
 ## \date 2022
 ## \package finding \copydoc finding.py
@@ -12,20 +11,29 @@ import cracks
 
 class CrackFinder():
 	"""
-	Finding crack position.
+	Obejct to identify potential crack positions.
+	Core functionality is based on [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
 	"""
 	def __init__(self,
 			*args,
 			**kwargs
 			):
 		"""
-		\todo Implement and document
-		\param args \copydoc args
-		\param kwargs \copydoc kwargs
+		Constructs a CrackFinder object.
+		\param args \copybrief args For more, see \ref args.
+		\param kwargs \copybrief kwargs For more, see \ref kwargs.
 		"""
-		## Positional arguments, will be passed to `scipy.signal.find_peaks()`.
+		## Positional arguments, will be passed to [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
+		## By default empty.
 		self.args = args
-		## Keyword arguments, will be passed to `scipy.signal.find_peaks()`.
+		## Keyword arguments, will be passed to [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
+		## Defaults to the following settings:
+		## | key		| value	|
+		## |------------|-------|
+		## | height		| 100	|
+		## | prominence	| 100	|
+		## The main parameter is `prominence`, see also [Wikipedia: Prominence](https://en.wikipedia.org/wiki/Topographic_prominence).
+		## If too many cracks are identified, increase `prominence`, if obvious cracks are missing, reduce `prominence`.
 		self.kwargs = {
 			"height": 100,
 			"prominence": 100,
@@ -33,9 +41,9 @@ class CrackFinder():
 		self.kwargs.update(kwargs)
 	def run(self, x, strain) -> cracks.CrackList:
 		"""
-		Identifies the positions of cracks using `scipy.signal.find_peaks()` and save them to \ref crack_list \ref Crack objects.
-		Those \ref Crack objects are still incomplete.
-		Their effective lengths may need to be recalculated using \ref set_crack_effective_lengths() and the widths using \ref calculate_crack_widths().
+		Identifies the positions of cracks using [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) and returns \ref cracks.CrackList object.
+		Those \ref cracks.Crack objects are still incomplete.
+		Their effective lengths may need to be recalculated using \ref separation.CrackLengths.run() and the widths \ref strainprofile.StrainProfile.calculate_crack_widths().
 		\param x Positions data.
 		\param strain Strain data.
 		\return Returns a \ref cracks.CrackList.
