@@ -3,7 +3,7 @@
 ## Contains standalone functions for dealing with measurement data sets.
 ## \author Bertram Richter
 ## \date 2022
-## \package fosutils \copydoc fosutils.py
+## \package fosanalysis.fosutils \copydoc fosutils.py
 
 import copy
 import numpy as np
@@ -11,9 +11,11 @@ import numpy as np
 import filtering
 import cropping
 
-def find_closest_value(array, x) -> tuple:
+def find_closest_value(array: np.array, x: float) -> tuple:
 	"""
 	Returns the index and value of the entry in `array`, that is closest to the given `x`.
+	\param array List or array, in which the closest value should be found.
+	\param x The target value, to which the distance should be minimized.
 	\return `(<index>, <entry>)`
 	"""
 	assert len(array) > 0
@@ -37,9 +39,9 @@ def strip_smooth_crop(x,
 					):
 		"""
 		Sanitize the given arrays.
-		Firstly, `NaN`s are stripped.
-		Secondly, all data records in `y_tuple` are smoothed (see \ref smoothing_radius and \ref smoothing_margins).
-		Finally, `x` and all records in `y_tuple` are cropped to \ref start_pos and \ref end_pos.
+		Firstly, `NaN`s are stripped, using \ref filtering.NaNFilter.run().
+		Secondly, all data records in `y_tuple` are smoothed using \ref filtering.SlidingMean.run().
+		Finally, `x` and all records in `y_tuple` are cropped using \ref cropping.Crop.run().
 		\return Returns copies of `x` and `y_tuple`.
 		"""
 		if x is not None:
