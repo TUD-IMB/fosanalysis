@@ -1,10 +1,9 @@
 
 ## \file
 ## Contains functionality to separate cracks and set effective lengths.
-## \todo Implement and document 
 ## \author Bertram Richter
 ## \date 2022
-## \package separation \copydoc separation.py
+## \package fosanalysis.separation \copydoc separation.py
 
 import numpy as np
 
@@ -18,7 +17,7 @@ class CrackLengths():
 				method: str = "middle",
 				):
 		"""
-		Constructs a CrackLenght object.
+		Constructs a CrackLength object.
 		\param method \copybrief method For more, see \ref method.
 		"""
 		## Method, how the width of a crack is estimated. Available options:
@@ -27,10 +26,16 @@ class CrackLengths():
 		## - `"min"`: Crack segments are split at local strain minima.
 		## - `"min_limit"`: Crack segments are split at local strain minima or the end of peak, whichever is closer to the cracks location.
 		self.method = method
-	def run(self, x, strain, crack_list: cracks.CrackList):
+	def run(self,
+			x,
+			strain,
+			crack_list: cracks.CrackList) -> cracks.CrackList:
 		"""
-		Specify the effective length of all cracks according to `method`.
-		\return Returns a list of \ref Crack objects.
+		Estimates the effective length of all cracks according to \ref method.
+		\param x Positional x values.
+		\param strain List of strain values.
+		\param crack_list \ref cracks.CrackList with \ref cracks.Crack objects, that already have assigned locations.
+		\return Returns a \ref cracks.CrackList object.
 		"""
 		crack_list.sort()
 		for i, crack in enumerate(crack_list):
