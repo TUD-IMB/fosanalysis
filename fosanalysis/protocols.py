@@ -3,7 +3,7 @@
 ## Contains functionality for interfacing files and network ports.
 ## \author Bertram Richter
 ## \date 2022
-## \package sensor \copydoc sensor.py
+## \package fosanalysis.protocols \copydoc protocols.py
 
 from abc import ABC, abstractmethod
 import datetime

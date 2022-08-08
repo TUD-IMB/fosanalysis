@@ -25,6 +25,7 @@ class ShrinkCompensator():
 		\param kwargs \copybrief kwargs For more, see \ref kwargs.
 		
 		\todo Apply sanitization to \ref strain_inst and \ref strain_inst.
+		\todo Take two \ref strainprofile.StrainProfile objects and return a \ref strainprofile.StrainProfile
 		"""
 		## Method, how to calculate the shrinkage calibration. Available options:
 		## - `"mean_min"`: (default) For all entries in local minima in `y_inst`, the difference to the same value in `y_inf` is measured.

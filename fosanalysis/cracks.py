@@ -1,10 +1,9 @@
 
 ## \file
-## Contains class definitions for \ref Crack and \ref CrackList.
-## \todo Implement and document
+## Contains class definitions for Crack and CrackList.
 ## \author Bertram Richter
 ## \date 2022
-## \package cracks \copydoc cracks.py
+## \package fosanalysis.cracks \copydoc cracks.py
 
 import copy
 import numpy as np

@@ -8,6 +8,7 @@
 import matplotlib.pyplot as plt
 
 import fosanalysis
+import tensionstiffening
 
 # Global plot settings
 plt.rcParams.update({"svg.fonttype": "none", "font.size": 10, "axes.grid": True, "axes.axisbelow": True})
@@ -29,6 +30,7 @@ plt.show()
 # Generate cropping and filtering objects
 crop = fosanalysis.cropping.Crop(start_pos=3, end_pos=5)
 smoothing=fosanalysis.filtering.SlidingMean(radius=1)
+ts_compensator = tensionstiffening.Fischer()
 
 # Generating object for crack width calculation
 sp = fosanalysis.strainprofile.Concrete(x=x,
@@ -36,8 +38,7 @@ sp = fosanalysis.strainprofile.Concrete(x=x,
 		crop=crop,
 		filter_object=smoothing,
 		max_concrete_strain=100,
-		activate_shrink_compensation=False,
-		compensate_tension_stiffening=True,
+		ts_compensator=ts_compensator
 		)
 
 # Calculate crack width

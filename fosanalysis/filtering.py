@@ -101,7 +101,7 @@ class NaNFilter(Filter):
 		\return Returns a tuple with copies of the arrays, without columns containing any of the specified values. If only a single array is given, only the stripped copy returned.
 		"""
 		exclude = exclude if exclude is not None else []
-		exclude_set = set(None, "")
+		exclude_set = set([None, ""])
 		exclude_set.update(set(exclude))
 		stripped_lists = []
 		delete_list = []
@@ -123,7 +123,7 @@ class SlidingMean(Filter):
 	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 	"""
 	def __init__(self,
-			radius: int = 5,
+			radius: int = 0,
 			margins: str = "reduced",
 			*args, **kwargs):
 		"""
@@ -154,6 +154,8 @@ class SlidingMean(Filter):
 		"""
 		margins = margins if margins is not None else self.margins
 		r = radius if radius is not None else self.radius
+		if radius == 0:
+			return data
 		start = r
 		end = len(data) - r
 		assert end > 0, "r is greater than the given data!"

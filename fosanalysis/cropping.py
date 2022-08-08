@@ -3,7 +3,7 @@
 ## Contains functionality to compensate crop a set of data.
 ## \author Bertram Richter
 ## \date 2022
-## \package cropping \copydoc cropping.py
+## \package fosanalysis.cropping \copydoc cropping.py
 
 import numpy as np
 

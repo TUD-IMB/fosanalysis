@@ -3,7 +3,7 @@
 ## Contains funtionality to find potential crack locations.
 ## \author Bertram Richter
 ## \date 2022
-## \package finding \copydoc finding.py
+## \package fosanalysis.finding \copydoc finding.py
 
 import scipy.signal
 
@@ -44,7 +44,7 @@ class CrackFinder():
 		Identifies the positions of cracks using [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) and returns \ref cracks.CrackList object.
 		Those \ref cracks.Crack objects are still incomplete.
 		Their effective lengths may need to be recalculated using \ref separation.CrackLengths.run() and the widths \ref strainprofile.StrainProfile.calculate_crack_widths().
-		\param x Positions data.
+		\param x Positional data.
 		\param strain Strain data.
 		\return Returns a \ref cracks.CrackList.
 		"""
