@@ -27,18 +27,13 @@ plt.show()
 plt.plot(x, strain, c="k")
 plt.show()
 
-# Generate cropping and filtering objects
+# Generate cropping and filtering objects and assemble the strain profile object
 crop = fosanalysis.cropping.Crop(start_pos=3, end_pos=5)
-smoothing=fosanalysis.filtering.SlidingMean(radius=1)
-ts_compensator = tensionstiffening.Fischer()
-
-# Generating object for crack width calculation
+filter_object=fosanalysis.filtering.SlidingMean(radius=1)
 sp = fosanalysis.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
-		filter_object=smoothing,
-		max_concrete_strain=100,
-		ts_compensator=ts_compensator
+		filter_object=filter_object,
 		)
 
 # Calculate crack width
