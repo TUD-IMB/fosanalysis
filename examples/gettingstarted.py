@@ -6,9 +6,7 @@
 
 # Importing necessary modules
 import matplotlib.pyplot as plt
-
 import fosanalysis
-import tensionstiffening
 
 # Global plot settings
 plt.rcParams.update({"svg.fonttype": "none", "font.size": 10, "axes.grid": True, "axes.axisbelow": True})

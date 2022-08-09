@@ -1,4 +1,5 @@
 # Getting Started
+\todo Update Getting Started
 
 ## Installation
 Currently, no automated installation is available yet, since `fosanalysis` is not yet in the Python Package Index.
@@ -25,16 +26,15 @@ This file contains artificial data in the format of a file, that was exported by
 To (re-)generate this file, the script \ref examples.generatedemofile needs to be run once.
 
 ```.py
-sensordata = fosanalysis.sensor.ODiSI("data/demofile.tsv")
+sd = fosanalysis.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 ```
 
 Now we want to get the position and strain data as well as the mean strain data.
 
 ```.py
-x = sensordata.get_x_values()
-strain = sensordata.mean_over_y_records()
-#strain = sensordata.y_record_list[0]
-#strain = sensordata.get_record_from_time_stamp(datetime.datetime.today())
+x = sd.get_x_values()
+strain = sd.mean_over_y_records()
+strain_first = sd.get_y_table()[0]
 ```
 
 In case, the strain values of only a single record are of interest, other options are available.
@@ -47,7 +47,9 @@ These two objects are arrays of floating point numbers, ready to be exported (pr
 Let's take a look at it.
 
 ```.py
-plt.plot(x, strain, color="k")
+plt.plot(x, strain_first, c="k")
+plt.show()
+plt.plot(x, strain, c="k")
 plt.show()
 ```
 
@@ -57,17 +59,13 @@ Since we know, the sensor was embedded in concrete or attached to the surface, w
 In case of a sensor attached to the rebar or having considerable cladding, we would use the `Rebar` class instead.
 
 ```.py
-measurement = fosanalysis.strainprofile.Concrete(x=x,
-						strain=strain,
-						start_pos=3,
-						end_pos=5,
-						smoothing_radius=1,
-						max_concrete_strain=100,
-						crack_peak_prominence = 100,
-						crack_segment_method="middle",
-						compensate_shrink=False,
-						compensate_tension_stiffening=True,
-						)
+crop = fosanalysis.cropping.Crop(start_pos=3, end_pos=5)
+filter_object=fosanalysis.filtering.SlidingMean(radius=1)
+sp = fosanalysis.strainprofile.Concrete(x=x,
+		strain=strain,
+		crop=crop,
+		filter_object=filter_object,
+		)
 ```
 
 During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is smoothed and finally cropped to the start and end values.
@@ -75,7 +73,7 @@ During the instantiation of the object, the data is sanitized: `NaN` entries are
 Now, identifying crack locations, crack segments and calculating their respective widths is as simple as
 
 ```.py
-measurement.calculate_crack_widths()
+sp.calculate_crack_widths()
 ```
 
 Just for the example, we want to delete an obvious misreading, which results in the 4th crack.
@@ -83,18 +81,18 @@ Also, from manual inspection of the specimen, we know, that at 3.9 m, whose ra
 If the peak recognition would be faulty in general, readjusting `crack_peak_prominence` would certainly help.
 
 ```.py
-measurement.delete_cracks(3)
-measurement.add_cracks(3.9)
+sp.delete_cracks(3)
+sp.add_cracks(3.9)
 ```
 
 The property lists of the cracks can be obtained by
 
 ```.py
-cracks_widths = measurement.get_crack_widths()
-cracks_strain = measurement.get_crack_max_strain()
-cracks_left = measurement.get_leff_l()
-cracks_location = measurement.get_crack_locations()
-cracks_right = measurement.get_leff_r()
+c_w = sp.crack_list.widths
+c_s = sp.crack_list.max_strains
+c_l = sp.crack_list.leff_l
+c_loc = sp.crack_list.locations
+c_r = sp.crack_list.leff_r
 ```
 
 Finally, we can plot the results.
@@ -104,14 +102,14 @@ fig, ax1 = plt.subplots()
 ax1.set_xlabel('x [m]')
 ax1.set_ylabel('FOS strain [µm/m]')
 ax2 = ax1.twinx()
-ax2.set_ylabel('Crack width [µm]', color="red")
+ax2.set_ylabel('Crack width [µm]', c="red")
 ax2.tick_params(axis ='y', labelcolor = 'red') 
-st = ax1.plot(measurement.x, measurement.strain, color="k", label="strain")
-ts = ax1.plot(measurement.x, measurement.tension_stiffening_values, color="k", linestyle="--", label="ts")
-cloc = ax1.plot(cracks_location, cracks_strain, color="k", linestyle="", marker="v", label="peak")
-cleft = ax1.plot(cracks_left, cracks_strain, color="k", linestyle="", marker=">", label="left")
-cright = ax1.plot(cracks_right, cracks_strain, color="k", linestyle="", marker="<", label="right")
-cwidth = ax2.plot(cracks_location, cracks_widths, color="red", linestyle="", marker="o", label="crack width")
+st = ax1.plot(sp.x, sp.strain, c="k", label="strain")
+ts = ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
+cloc = ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
+cleft = ax1.plot(c_l, c_s, c="k", ls="", marker=">", label="left")
+cright = ax1.plot(c_r, c_s, c="k", ls="", marker="<", label="right")
+cwidth = ax2.plot(c_loc, c_w, c="red", ls="", marker="o", label="crack width")
 ax2.legend(loc="best", handles=st+ts+cloc+cleft+cright+cwidth)
 plt.show()
 ```
