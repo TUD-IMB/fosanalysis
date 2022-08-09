@@ -34,9 +34,6 @@ class StrainProfile(ABC):
 	- \f$\varepsilon^{\mathrm{shrink}}(x)\f$ shrink and creep compensation values (\ref shrink_calibration_values), calculated by \ref shrink_compensator,
 	- \f$\varepsilon^{\mathrm{tare}}(x)\f$ tare values (\ref tare) to compensate strains, that were present before any other influence occured.
 	- left \f$l_{\mathrm{eff,l},i}\f$ and right \f$l_{\mathrm{eff,r},i}\f$ limit of the effective length of the \f$i\f$th crack, estimated by \ref lengthsplitter
-	
-	\todo outsource shrinking
-	\todo 
 	"""
 	def __init__(self,
 			x: np.array,
@@ -75,21 +72,43 @@ class StrainProfile(ABC):
 		## Original list of location data (x-axis) for the current experiment.
 		self._x_orig = x
 		## Original list of strain data (y-axis) for the current experiment.
-		## \todo apply strip_smooth_crop()
 		self._strain_orig = strain
 		## Original list of strain data (y-axis) for the initial load experiment.
 		self._strain_inst_orig = strain_inst
 		## Original tare values for the sensor.
 		self._tare_orig = tare
+		## Location data of the measurement area in accordance to \ref strain.
+		## The data is stripped of any `NaN` entries and cropped  according to \ref crop.
+		## The original data is available under \ref _x_orig.
+		self.x = None
+		## Strain data in the measurement area in accordance to \ref x.
+		## The data is stripped of any `NaN` entries, filtered by \ref filter_object and cropped according to \ref crop.
+		## The original data is available under \ref _strain_orig.
+		self.strain = None
+		## Strain data (y-axis) for the initial load experiment.
+		## The data is filtered by \ref filter_object and cropped according to \ref crop.
+		## The original data is available under \ref _strain_inst_orig.
+		self.strain_inst = None
+		## Tare values for the sensor.
+		## Those will be subtracted from the strain for crack width calculation.
+		## The original data is available under \ref _tare_orig.
+		self.tare = tare
+		## Array of calibration values for the shrinking in the measurement area.
+		## If \ref shrink_compensator is not `None`, it is calculated by \ref compensate_shrink().
+		## Else, it defaults to `np.zeros` of the same length as \ref strain.
+		self.shrink_calibration_values = None
+		## Array of the tension stiffening.
+		## While integrating the crack width, it is subtracted from the strain values.
+		self.tension_stiffening_values = None
+		## List of cracks, see \ref cracks.Crack for documentation.
+		## To restart the calculation again, set to `None` and run \ref calculate_crack_widths() afterwards.
+		self.crack_list = None
 		## \ref cropping.Crop object to restrict the data to a desired section of the sensor.
 		## Defaults to the default configuration of \ref cropping.Crop (no restirction applied.
 		self.crop = crop if crop is not None else cropping.Crop()
 		## \ref shrinking.ShrinkCompensator object to compensate the strain values for concrete shrinking and creep.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.shrink_compensator = shrink_compensator
-		## List of cracks, see \ref cracks.Crack for documentation.
-		## To restart the calculation again, set to `None` and run \ref calculate_crack_widths() afterwards.
-		self.crack_list = None
 		## \ref finding.CrackFinder object, wich holds the settings for peak identification.
 		## Defaults to the default configuration of \ref finding.CrackFinder.
 		self.crackfinder = crackfinder if crackfinder is not None else finding.CrackFinder()
@@ -105,42 +124,25 @@ class StrainProfile(ABC):
 		## \ref integration.Integrator object used to integrate the strain data to estimate the crack widths.
 		## Defaults to the default configuration of \ref integration.Integrator.
 		self.integrator = integrator if integrator is not None else integration.Integrator()
-		## Name of the strain profile.
+		## Name of the strain profile, defaults to `""`.
 		self.name = name
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
-		## Location data of the measurement area in accordance to \ref strain.
-		## The data is stripped of any `NaN` entries and cropped  according to \ref crop.
-		self.x = None
-		## Strain data in the measurement area in accordance to \ref x.
-		## The data is stripped of any `NaN` entries, filtered by \ref filter_object and cropped according to \ref crop.
-		self.strain = None
-		## Strain data (y-axis) for the initial load experiment.
-		## The data is filtered by \ref filter_object and cropped according to \ref crop.
-		self.strain_inst = None
-		## Array of calibration values for the shrinking in the measurement area.
-		## If \ref shrink_compensator is not `None`, it is calculated by \ref compensate_shrink().
-		## Else, it defaults to `np.zeros` of the same length as \ref strain.
-		self.shrink_calibration_values = None
-		## Tare values for the sensor.
-		## Those will be subtracted from the strain for crack width calculation.
-		self.tare = tare
-		## Array of the tension stiffening.
-		## While integrating the crack width, it is subtracted from the strain values.
-		self.tension_stiffening_values = None
+		self.clean_data()
 	def clean_data(self):
 		"""
-		Based on the original attributes, the data is sanitized. This has effect on:
+		Based on the original attributes, the data is sanitized.
+		This function is run a the end of the instantiation (\ref __init_()) and at the begin of \ref calculate_crack_widths().
+		The following attributes are assigned samitized data from the original data:
 		- \ref x
 		- \ref strain
-		- \ref x_inst
 		- \ref strain_inst
 		- \ref tare
+		
+		The following attributes are reset to zero:
 		- \ref shrink_calibration_values
 		- \ref tension_stiffening_values
-		
-		\todo fix cropping and data handling
 		"""
 		strain_inst_orig = self._strain_inst_orig if self._strain_inst_orig is not None else np.zeros(len(self._x_orig))
 		tare = self._tare_orig if self._tare_orig is not None else np.zeros(len(self._x_orig))
@@ -193,7 +195,7 @@ class StrainProfile(ABC):
 	def set_leff(self) -> list:
 		"""
 		Assing effective length to \ref crack_list, settings are stored in \ref lengthsplitter.
-		If \ref crack_list is empty, \ref find_cracks() is carried out beforehand.
+		If \ref crack_list is `None`, \ref find_cracks() is carried out beforehand.
 		"""
 		if self.crack_list is None:
 			self.find_cracks()
@@ -205,14 +207,11 @@ class StrainProfile(ABC):
 		It is required to provide the following attributes:
 		- \ref x,
 		- \ref strain,
-		- \ref x_inst,
 		- \ref strain_inst,
-		- set \ref shrink_compensator is not `None`
-		
-		\todo Fix shrink compensation, document
+		- \ref shrink_compensator is not `None`
 		"""
 		if self.shrink_compensator is not None and self._x_inst_orig is not None and self._strain_inst_orig is not None:
-			self.shrink_calibration_values = self.shrink_compensator.run(self.strain)
+			self.shrink_calibration_values = self.shrink_compensator.run(self.x, self.strain, self.strain_inst)
 		else:
 			raise ValueError("Can not calibrate shrink without shrink_compensator, `x_inst` and `strain_inst`! Please provide all of them!")
 		return self.shrink_calibration_values()
