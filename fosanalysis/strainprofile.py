@@ -41,6 +41,8 @@ class StrainProfile(ABC):
 	def __init__(self,
 			x: np.array,
 			strain: np.array,
+			strain_inst: np.array = None,
+			tare: np.array = None,
 			crackfinder = None,
 			crop = None,
 			filter_object = None,
@@ -49,14 +51,14 @@ class StrainProfile(ABC):
 			name: str = "",
 			shrink_compensator = None,
 			suppress_compression: bool = True,
-			tare: np.array = None,
 			ts_compensator = None,
-			strain_inst: np.array = None,
 			*args, **kwargs):
 		"""
 		Constructs a strain profile object.
 		\param x \copybrief x For more, see \ref x.
 		\param strain \copybrief strain For more, see \ref strain.
+		\param strain_inst \copybrief strain_inst For more, see \ref strain_inst.
+		\param tare \copybrief tare For more, see \ref tare.
 		\param crackfinder \copybrief crackfinder For more, see \ref crackfinder.
 		\param crop \copybrief crop For more, see \ref crop.
 		\param filter_object \copybrief filter_object For more, see \ref filter_object.
@@ -65,9 +67,7 @@ class StrainProfile(ABC):
 		\param name \copybrief name For more, see \ref name.
 		\param shrink_compensator \copybrief shrink_compensator For more, see \ref shrink_compensator.
 		\param suppress_compression \copybrief suppress_compression For more, see \ref suppress_compression.
-		\param tare \copybrief tare For more, see \ref tare.
 		\param ts_compensator \copybrief ts_compensator For more, see \ref ts_compensator.
-		\param strain_inst \copybrief strain_inst For more, see \ref strain_inst.
 		\param *args Additional positional arguments. They are ignored.
 		\param **kwargs Additional keyword arguments. They are ignored.
 		"""
@@ -142,15 +142,19 @@ class StrainProfile(ABC):
 		
 		\todo fix cropping and data handling
 		"""
+		strain_inst_orig = self._strain_inst_orig if self._strain_inst_orig is not None else np.zeros(len(self._x_orig))
 		tare = self._tare_orig if self._tare_orig is not None else np.zeros(len(self._x_orig))
 		data_tuple = (
 			self._strain_orig,
-			self._strain_inst_orig,
+			strain_inst_orig,
 			tare
 			)
-		assert len(self.x) == len(self._strain_orig) == len(self._strain_inst_orig) == len(tare), "The number of entries in data do not match."
+		assert len(self._x_orig) == len(self._strain_orig) == len(strain_inst_orig ) == len(tare), "The number of entries in data do not match."
 		self.x, data_tuple = fosutils.strip_smooth_crop(self._x_orig, *data_tuple, smoothing=self.filter_object, crop=self.crop)
 		self.strain, self.strain_inst, self.tare = data_tuple
+		# Reset calculation values
+		self.shrink_calibration_values = np.zeros(len(self.x))
+		self.tension_stiffening_values = np.zeros(len(self.x))
 	def calculate_crack_widths(self) -> cracks.CrackList:
 		"""
 		Returns the crack widths.
