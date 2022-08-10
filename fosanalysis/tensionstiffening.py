@@ -85,6 +85,7 @@ class Berrocal(TensionStiffeningCompensator):
 		tension_stiffening_values = tension_stiffening_values - strain
 		# Reduce by rho  and alpha
 		tension_stiffening_values = tension_stiffening_values * self.alpha * self.rho
+		return tension_stiffening_values
 
 class Fischer(TensionStiffeningCompensator):
 	"""
