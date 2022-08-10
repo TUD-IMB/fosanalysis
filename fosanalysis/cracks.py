@@ -62,22 +62,16 @@ class CrackList(list):
 	"""
 	def __init__(self, *crack_list):
 		"""
-		Constructs a CrackList object of any number of \ref Crack objects.
+		Constructs a CrackList.
+		\param crack_list Data, from which the CrackList is constructed. Possible arguments :
+		- any number of \ref Crack objects,
+		- \ref Crack objects wrapped in a `list`, `tuple` or `set`,
+		- \ref CrackList object (same as above)
 		"""
-		assert all([isinstance(entry, Crack) for entry in crack_list]), "At least one entry is not a Crack!"
+		if len(crack_list) == 1 and hasattr(crack_list[0], "__iter__"):
+			crack_list = crack_list[0]
+		assert all([isinstance(entry, Crack) for entry in crack_list]) or len(crack_list) == 0, "At least one entry is not a Crack!"
 		super().__init__(crack_list)
-	@property
-	def widths(self) -> list:
-		""" Returns a list with the widths of all cracks. """
-		return [crack.width for crack in self]
-	@property
-	def max_strains(self) -> list:
-		""" Returns a list with the peak strains of all cracks. """
-		return [crack.max_strain for crack in self]
-	@property
-	def locations(self) -> list:
-		""" Returns a list with the locations of all cracks. """
-		return [crack.location for crack in self]
 	@property
 	def leff_l(self) -> list:
 		""" Returns a list with the left-hand side border of effective length of all cracks. """
@@ -86,6 +80,18 @@ class CrackList(list):
 	def leff_r(self) -> list:
 		""" Returns a list with the right-hand side border of effective length of all cracks. """
 		return [crack.leff_r for crack in self]
+	@property
+	def locations(self) -> list:
+		""" Returns a list with the locations of all cracks. """
+		return [crack.location for crack in self]
+	@property
+	def max_strains(self) -> list:
+		""" Returns a list with the peak strains of all cracks. """
+		return [crack.max_strain for crack in self]
+	@property
+	def widths(self) -> list:
+		""" Returns a list with the widths of all cracks. """
+		return [crack.width for crack in self]
 	def get_crack(self, x):
 		"""
 		Get the \ref Crack, for which holds: \f$l_{\mathrm{eff,l}} < x \leq l_{\mathrm{eff,r}}\f$.
