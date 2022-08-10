@@ -12,8 +12,7 @@ import cracks
 
 class CrackLengths():
 	"""
-	Assignes the effective length to a \ref cracks.CrackList.
-	\todo Implement method `length` and `threshold` for CrackLengths
+	Assigns the effective length to a all \ref cracks.Crack objects in a \ref cracks.CrackList.
 	"""
 	def __init__(self, **methods: dict):
 		"""
