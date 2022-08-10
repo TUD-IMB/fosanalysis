@@ -267,7 +267,7 @@ class StrainProfile(ABC):
 			self.crack_list.append(crack)
 		if recalculate:
 			self.set_leff()
-			self.calculate_crack_widths()
+			self.calculate_crack_widths(clean=False)
 	def delete_cracks(self,
 						*cracks_tuple: tuple,
 						recalculate: bool = True,
@@ -285,7 +285,7 @@ class StrainProfile(ABC):
 		self.crack_list = cracks.CrackList([self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks_tuple])
 		if recalculate:
 			self.set_leff()
-			self.calculate_crack_widths()
+			self.calculate_crack_widths(clean=False)
 		return delete_cracks
 
 class Concrete(StrainProfile):
