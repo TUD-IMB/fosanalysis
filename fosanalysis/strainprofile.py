@@ -8,7 +8,6 @@
 from abc import ABC, abstractmethod
 import copy
 import numpy as np
-import scipy.signal
 
 import cracks
 import cropping
@@ -101,8 +100,8 @@ class StrainProfile(ABC):
 		## While integrating the crack width, it is subtracted from the strain values.
 		self.tension_stiffening_values = None
 		## List of cracks, see \ref cracks.Crack for documentation.
-		## To restart the calculation again, set to `None` and run \ref calculate_crack_widths() afterwards.
-		self.crack_list = None
+		## To restart the calculation again, set to run \ref clean_data() and run \ref calculate_crack_widths() afterwards.
+		self.crack_list = cracks.CrackList()
 		## \ref cropping.Crop object to restrict the data to a desired section of the sensor.
 		## Defaults to the default configuration of \ref cropping.Crop (no restirction applied.
 		self.crop = crop if crop is not None else cropping.Crop()
@@ -133,8 +132,8 @@ class StrainProfile(ABC):
 	def clean_data(self):
 		"""
 		Based on the original attributes, the data is sanitized.
-		This function is run a the end of the instantiation (\ref __init_()) and at the begin of \ref calculate_crack_widths().
-		The following attributes are assigned samitized data from the original data:
+		This function is run a the end of the instantiation (\ref __init__()) and at the begin of \ref calculate_crack_widths().
+		The following attributes are assigned sanitized data from the original data:
 		- \ref x
 		- \ref strain
 		- \ref strain_inst
@@ -143,7 +142,11 @@ class StrainProfile(ABC):
 		The following attributes are reset to zero:
 		- \ref shrink_calibration_values
 		- \ref tension_stiffening_values
+		
+		Additional resets:
+		- \ref crack_list is emptied
 		"""
+		# Data sanitization
 		strain_inst_orig = self._strain_inst_orig if self._strain_inst_orig is not None else np.zeros(len(self._x_orig))
 		tare = self._tare_orig if self._tare_orig is not None else np.zeros(len(self._x_orig))
 		data_tuple = (
@@ -157,7 +160,9 @@ class StrainProfile(ABC):
 		# Reset calculation values
 		self.shrink_calibration_values = np.zeros(len(self.x))
 		self.tension_stiffening_values = np.zeros(len(self.x))
-	def calculate_crack_widths(self) -> cracks.CrackList:
+		# Additional resets
+		self.crack_list = cracks.CrackList()
+	def calculate_crack_widths(self, clean: bool = True) -> cracks.CrackList:
 		"""
 		Returns the crack widths.
 		The following is done:
@@ -167,11 +172,15 @@ class StrainProfile(ABC):
 		4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref calculate_tension_stiffening().
 		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
 		
-		\return Returns an list of crack widths.
-		"""
-		self.clean_data()
+		\param clean Switch, whether the all data should be cleaned using \ref clean_data() before carrying out any calculation.
+			Defaults to `True`.
 		
-		if self.crack_list is None:
+		\return Returns a \ref cracks.CrackList.
+		"""
+		if clean:
+			self.clean_data()
+		
+		if not self.crack_list:
 			self.find_cracks()
 			self.set_leff()
 		if self.shrink_compensator is not None:
@@ -195,9 +204,9 @@ class StrainProfile(ABC):
 	def set_leff(self) -> list:
 		"""
 		Assing effective length to \ref crack_list, settings are stored in \ref lengthsplitter.
-		If \ref crack_list is `None`, \ref find_cracks() is carried out beforehand.
+		If \ref crack_list is empty, \ref find_cracks() is carried out beforehand.
 		"""
-		if self.crack_list is None:
+		if not self.crack_list:
 			self.find_cracks()
 		self.crack_list = self.lengthsplitter.run(self.x, self.strain, self.crack_list)
 		return self.crack_list
@@ -220,7 +229,7 @@ class StrainProfile(ABC):
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		\return An array with the compensation values for each measuring point is returned.
 		"""
-		if self.crack_list is None:
+		if not self.crack_list:
 			self.set_leff()
 		self.tension_stiffening_values = self.ts_compensator.run(self.x, self.strain, self.crack_list)
 		return self.tension_stiffening_values
@@ -238,6 +247,8 @@ class StrainProfile(ABC):
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 			Set to `False`, if you want to suppress a recalculation, until you are finished with modifying \ref crack_list. 
 		"""
+		if not self.crack_list:
+			self.crack_list = cracks.CrackList([])
 		for crack in cracks_tuple:
 			if isinstance(crack, cracks.Crack):
 				crack = copy.deepcopy(crack)
@@ -268,8 +279,10 @@ class StrainProfile(ABC):
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 		\return Returns a \ref cracks.CrackList of the deleted \ref cracks.Crack objects. 
 		"""
-		delete_cracks = cracks.CrackList(*[self.crack_list[i] for i in cracks_tuple if i in range(len(self.crack_list))])
-		self.crack_list = cracks.CrackList(*[self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks_tuple])
+		if not self.crack_list:
+			self.crack_list = cracks.CrackList([])
+		delete_cracks = cracks.CrackList([self.crack_list[i] for i in cracks_tuple if i in range(len(self.crack_list))])
+		self.crack_list = cracks.CrackList([self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks_tuple])
 		if recalculate:
 			self.set_leff()
 			self.calculate_crack_widths()
