@@ -36,7 +36,7 @@ class Berrocal(TensionStiffeningCompensator):
 	"""
 	Implements the tension stiffening approach according to the proposal by \cite Berrocal_2021_Crackmonitoringin.
 	The concrete strain \f$\varepsilon^{\mathrm{ts}}(x)\f$ is assumed to the difference between the real strain profile \f$\varepsilon^{\mathrm{DOFS}}(x)\f$
-	and the linear interpolation betwenn the peaks \f$\hat{\varepsilon}(x)\f$ reduced by the reinforcement ratio \ref rho \f$\rho\f$ and Young's moduli ratio \ref alpha \f$\alpha\f$:
+	and the linear interpolation between the peaks \f$\hat{\varepsilon}(x)\f$ reduced by the reinforcement ratio \ref rho \f$\rho\f$ and Young's moduli ratio \ref alpha \f$\alpha\f$:
 	\f[
 		\varepsilon^{\mathrm{ts}}(x) = \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right)
 	\f]
