@@ -95,6 +95,10 @@ class Fischer(TensionStiffeningCompensator):
 	\f[
 		\varepsilon^{\mathrm{ts}}(x) = \left|\frac{(x - x_{\mathrm{cr}})}{(l_{\mathrm{eff,r}} - x_{\mathrm{cr}})}\right| \times \sigma_{\mathrm{rupt}}
 	\f]
+	However, the tension stiffening are limited to
+	\f[
+	\varepsilon^{\mathrm{ts}}(x) = \max{\left(\min{\left(\varepsilon^{\mathrm{ts}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)]\right)}, 0\right)}
+	\f]
 	"""
 	def __init__(self,
 			max_concrete_strain: int = 100,
@@ -115,16 +119,18 @@ class Fischer(TensionStiffeningCompensator):
 		\copydoc TensionStiffeningCompensator.run()
 		"""
 		tension_stiffening_values = np.zeros(len(strain))
-		for i, (x, y) in enumerate(zip(x, strain)):
+		for i, x in enumerate(x):
 			for crack in crack_list:
 				if crack.location is None:
 					raise ValueError("Location of crack is `None`: {}".format(crack))
-				if crack.leff_l <= x < crack.location and crack.d_l > 0.0:
+				if crack.leff_l <= x < crack.location:
 					d_x = (crack.location - x)/(crack.d_l)
-					tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
-				elif crack.location < x <= crack.leff_r and crack.d_r > 0.0:
+					tension_stiffening_values[i] = self.max_concrete_strain * d_x
+				elif crack.location < x <= crack.leff_r:
 					d_x = (x - crack.location)/(crack.d_r)
-					tension_stiffening_values[i] = min(y, self.max_concrete_strain * d_x)
+					tension_stiffening_values[i] = self.max_concrete_strain * d_x
 				else:
 					pass
+		tension_stiffening_values = np.minimum(tension_stiffening_values, strain)
+		tension_stiffening_values = np.maximum(tension_stiffening_values, np.zeros(len(strain)))
 		return tension_stiffening_values
