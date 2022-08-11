@@ -63,11 +63,10 @@ class CrackLengths():
 		reset = methods.pop("reset", "no")
 		if reset != "no":
 			for i, crack in enumerate(crack_list):
-				if i in [0, len(crack_list)-1] and reset != "all":
-					pass
-				else:
-					crack.leff_l = -np.inf
+				if i < len(crack_list)-1 or reset == "all":
 					crack.leff_r = np.inf
+				if i > 0 or reset == "all":
+					crack.leff_l = -np.inf
 		for method, value in methods.items():
 			for i, crack in enumerate(crack_list):
 				if method == "middle":
