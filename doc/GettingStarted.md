@@ -16,7 +16,7 @@ We use `matplotlib` for visualization.
 
 ```.py
 import matplotlib.pyplot as plt
-import fosanalysis
+import fosanalysis as fa
 ```
 
 After that, data can be imported from a demonstration file.
@@ -24,7 +24,7 @@ This file contains artificial data in the format of a file, as it is exported by
 To (re-)generate this file, the script \ref examples.generatedemofile needs to be run once.
 
 ```.py
-sd = fosanalysis.protocols.ODiSI6100TSVFile("data/demofile.tsv")
+sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 ```
 
 Now we want to get the position and strain data as well as the mean strain data.
@@ -39,7 +39,6 @@ In case, the strain values of only a single record are of interest, other option
 Either by direct access using the record's index (as shown) or via a timestamp.
 Note, that taking the mean across all (or a slice of them) stored records smooths the data and reduces the number of `NaN` entries.
 However, the resulting array might still contain `NaN` entries.
-
 
 These two objects are arrays of floating point numbers, ready to be exported (printed or saved to disk), further processing, or plotting:
 
@@ -58,13 +57,12 @@ Both are passed to the \ref fosanalysis.strainprofile.Concrete object.
 The object, which compensates the tension stiffening (see \ref fosanalysis.tensionstiffening) and indentifies the cracks (see \ref fosanalysis.finding.CrackFinder) is picked by default, but could be configured in a similar way.
 
 ```.py
-crop = fosanalysis.cropping.Crop(start_pos=3, end_pos=5)
-filter_object=fosanalysis.filtering.SlidingMean(radius=1)
-sp = fosanalysis.strainprofile.Concrete(x=x,
+crop = fa.cropping.Crop(start_pos=3, end_pos=5)
+filter_object=fa.filtering.SlidingMean(radius=1)
+sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
-		filter_object=filter_object,
-		)
+		filter_object=filter_object)
 ```
 
 During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the \ref fosanalysis.filtering.Filter object and finally cropped to the start and end values by the \ref fosanalysis.cropping.Crop object.
@@ -105,13 +103,15 @@ ax1.set_ylabel('FOS strain [µm/m]')
 ax2 = ax1.twinx()
 ax2.set_ylabel('Crack width [µm]', c="red")
 ax2.tick_params(axis ='y', labelcolor = 'red') 
-st = ax1.plot(sp.x, sp.strain, c="k", label="strain")
-ts = ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
-cloc = ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
-cleft = ax1.plot(c_l, c_s, c="k", ls="", marker=">", label="left")
-cright = ax1.plot(c_r, c_s, c="k", ls="", marker="<", label="right")
-cwidth = ax2.plot(c_loc, c_w, c="red", ls="", marker="o", label="crack width")
-ax2.legend(loc="best", handles=st+ts+cloc+cleft+cright+cwidth)
+ax1.plot(sp.x, sp.strain, c="k", label="strain")
+ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
+ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
+ax1.plot(c_l, c_s, c="k", ls="", marker=">", label="left")
+ax1.plot(c_r, c_s, c="k", ls="", marker="<", label="right")
+ax2.plot(c_loc, c_w, c="red", ls="", marker="o", label="crack width")
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax2.legend(loc="best", handles=h1+h2, labels=l1+l2)
 plt.show()
 ```
 

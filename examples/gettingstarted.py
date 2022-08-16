@@ -6,13 +6,13 @@
 
 # Importing necessary modules
 import matplotlib.pyplot as plt
-import fosanalysis
+import fosanalysis as fa
 
 # Global plot settings
 plt.rcParams.update({"svg.fonttype": "none", "font.size": 10, "axes.grid": True, "axes.axisbelow": True})
 
 # Loading data from file
-sd = fosanalysis.protocols.ODiSI6100TSVFile("data/demofile.tsv")
+sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 
 # Retrieving data
 x = sd.get_x_values()
@@ -26,13 +26,12 @@ plt.plot(x, strain, c="k")
 plt.show()
 
 # Generate cropping and filtering objects and assemble the strain profile object
-crop = fosanalysis.cropping.Crop(start_pos=3, end_pos=5)
-filter_object=fosanalysis.filtering.SlidingMean(radius=1)
-sp = fosanalysis.strainprofile.Concrete(x=x,
+crop = fa.cropping.Crop(start_pos=3, end_pos=5)
+filter_object=fa.filtering.SlidingMean(radius=1)
+sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
-		filter_object=filter_object,
-		)
+		filter_object=filter_object)
 
 # Calculate crack width
 sp.calculate_crack_widths()
@@ -55,11 +54,13 @@ ax1.set_ylabel('FOS strain [µm/m]')
 ax2 = ax1.twinx()
 ax2.set_ylabel('Crack width [µm]', c="red")
 ax2.tick_params(axis ='y', labelcolor = 'red') 
-st = ax1.plot(sp.x, sp.strain, c="k", label="strain")
-ts = ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
-cloc = ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
-cleft = ax1.plot(c_l, c_s, c="k", ls="", marker=">", label="left")
-cright = ax1.plot(c_r, c_s, c="k", ls="", marker="<", label="right")
-cwidth = ax2.plot(c_loc, c_w, c="red", ls="", marker="o", label="crack width")
-ax2.legend(loc="best", handles=st+ts+cloc+cleft+cright+cwidth)
+ax1.plot(sp.x, sp.strain, c="k", label="strain")
+ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
+ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
+ax1.plot(c_l, c_s, c="k", ls="", marker=">", label="left")
+ax1.plot(c_r, c_s, c="k", ls="", marker="<", label="right")
+ax2.plot(c_loc, c_w, c="red", ls="", marker="o", label="crack width")
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax2.legend(loc="best", handles=h1+h2, labels=l1+l2)
 plt.show()
