@@ -115,9 +115,9 @@ class NaNFilter(Filter):
 			stripped_lists.append(np.array([entry for i, entry in enumerate(candidate_list) if i not in delete_list]))
 		return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
 
-class SlidingMean(Filter):
+class SlidingFilter(Filter):
 	"""
-	A filter, that smoothes the record using the mean over \f$2r + 1\f$ entries for each entry.
+	Abstract base class for filter classes, which work with a sliding window.
 	For each entry, the sliding mean extends \ref radius \f$r\f$ entries to both sides.
 	The margins (first and last \f$r\f$ entries of `data`) will be treated according to the \ref margins parameter.
 	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
@@ -163,14 +163,14 @@ class SlidingMean(Filter):
 		# Smooth the middle
 		for i in range(start, end):
 			sliding_window = data[i-r:i+r+1]
-			smooth_data[i] = sum(sliding_window)/len(sliding_window)
+			smooth_data[i] = self.operation(sliding_window)
 		# Fill up the margins
 		if margins == "reduced":
 			for i in range(r):
 				sliding_window = data[:2*i+1]
-				smooth_data[i] = sum(sliding_window)/len(sliding_window)
+				smooth_data[i] = self.operation(sliding_window)
 				sliding_window = data[-1-2*i:]
-				smooth_data[-i-1] = sum(sliding_window)/len(sliding_window)
+				smooth_data[-i-1] = self.operation(sliding_window)
 		elif margins == "flat":
 			first_smooth = smooth_data[start]
 			last_smooth = smooth_data[end-1]
@@ -180,4 +180,45 @@ class SlidingMean(Filter):
 		else:
 			raise RuntimeError("No such option '{}' known for `margins`.".format(margins))
 		return np.array(smooth_data)
+	@abstractmethod
+	def operation(self, segment: np.array) -> float:
+		"""
+		Defines the operation, which is applied to each element in the 
+		\f[
+			x_{i} \gets \mathrm{op}(x_{j,\:\ldots,\:k}) \text{ with } j = i -r \text{ and } k = i + r
+		\f]
+		"""
+		raise NotImplementedError()
 
+class SlidingMean(SlidingFilter):
+	"""
+	A filter, that smoothes the record using the mean over \f$2r + 1\f$ entries for each entry.
+	\copydetails SlidingFilter
+	"""
+	def operation(self, sliding_window: np.array) -> float:
+		"""
+		Each element in the in array to be filtered is assigned the arithmetical average of the sliding window:
+		\f[
+			x_{i} \gets \frac{\sum{x_{j,\:\ldots,\:k}}}{2r + 1}
+		\f]
+		"""
+		return np.mean(sliding_window)
+	
+class SlidingMedian(SlidingFilter):
+	"""
+	A filter, that smoothes the record using the median over \f$2r + 1\f$ entries for each entry.
+	\copydetails SlidingFilter
+	"""
+	def operation(self, sliding_window: np.array) -> float:
+		"""
+		Each element in the in array to be filtered is assigned the median of the sliding window:
+		\f[
+			x_{i} \gets
+			\begin{cases}
+				x_{m+1} & \text{ for odd } n = 2 m +1 \\
+				\frac{x_{m} + x_{m+1}}{2} & \text{ for even } n = 2 m
+			\end{cases}
+			\text{ with } m = 2r + 1
+		\f]
+		"""
+		return np.median(sliding_window)
