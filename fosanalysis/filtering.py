@@ -31,6 +31,35 @@ class Filter(ABC):
 		"""
 		raise NotImplementedError()
 
+class MultiFilter(ABC):
+	"""
+	Container for several filters, that are carried out in sequential order.
+	"""
+	def __init__(self,
+			filters: list,
+			*args, **kwargs):
+		"""
+		Constructs a MultiFilter object.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		"""
+		super().__init__(*args, **kwargs)
+		## List of \ref Filter objects.
+		## The filters are executed sequetially, the output of a previous filter is used as the input to the next one.
+		self.filters = filters
+	def run(self, data, *args, **kwargs):
+		"""
+		The `data` is passed sequentially through all \ref Filter objects in \ref filters, in that specific order.
+		The output of a previous filter is used as the input to the next one.
+		\param data Data, the will be filtered.
+		\param *args Additional positional arguments, to customize the behaviour, will be passed to the `run()` method of all filter objects in \ref filters.
+		\param **kwargs Additional keyword arguments to customize the behaviour, will be passed to the `run()` method of all filter objects in \ref filters.
+		"""
+		data = copy.deepcopy(data)
+		for filter_object in self.filters:
+			data = filter_object.run(data, *args, **kwargs)
+		return data
+
 class Limit(Filter):
 	"""
 	A filter to limit the entries.
