@@ -44,7 +44,7 @@ def strip_smooth_crop(x,
 		Finally, `x` and all records in `y_tuple` are cropped using \ref cropping.Crop.run().
 		\return Returns copies of `x` and `y_tuple`.
 		"""
-		if x is not None:
+		if x is not None and len(y_tuple) > 0 and all([len(y) == len(x) for y in y_tuple]):
 			nan_filter = filtering.NaNFilter()
 			smoothing = smoothing if smoothing is not None else filtering.SlidingMean()
 			crop = crop if crop is not None else cropping.Crop()
@@ -56,4 +56,4 @@ def strip_smooth_crop(x,
 				y_list_smooth.append(y_crop)
 			return x_crop, y_list_smooth[0] if len(y_list_smooth) == 1 else tuple(y_list_smooth)
 		else:
-			raise ValueError("Either x, y or tare is None or they differ in lengths.")
+			raise ValueError("Either x, any of y_tuple is None or they differ in lengths.")
