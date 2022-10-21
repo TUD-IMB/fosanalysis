@@ -24,14 +24,16 @@ class StrainProfile(ABC):
 	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	The crack widths are calculated with the general equation:
 	\f[
-		w_{\mathrm{cr},i} = \int_{l_{\mathrm{eff,l},i}}^{l_{\mathrm{eff,r},i}} \varepsilon^{\mathrm{DOFS}}(x) - \varepsilon^{\mathrm{ts}}(x) - \varepsilon^{\mathrm{shrink}}(x) - \varepsilon^{\mathrm{tare}}(x) \mathrm{d}x
-		
+		w_{\mathrm{cr},i} = \int_{l_{\mathrm{eff,l},i}}^{l_{\mathrm{eff,r},i}}
+		\varepsilon^{\mathrm{DOFS}}(x)
+		- \varepsilon^{\mathrm{ts}}(x)
+		- \varepsilon^{\mathrm{shrink}}(x)
+		\mathrm{d}x
 	\f]
 	With
 	- \f$\varepsilon^{\mathrm{DOFS}}(x)\f$ the strain values (\ref strain) for the positional data \f$x\f$ (\ref x),
 	- \f$\varepsilon^{\mathrm{ts}}(x)\f$ tension stiffening values (\ref tension_stiffening_values), calculated by \ref ts_compensator,
-	- \f$\varepsilon^{\mathrm{shrink}}(x)\f$ shrink and creep compensation values (\ref shrink_calibration_values), calculated by \ref shrink_compensator,
-	- \f$\varepsilon^{\mathrm{tare}}(x)\f$ tare values (\ref tare) to compensate strains, that were present before any other influence occured.
+	- \f$\varepsilon^{\mathrm{shrink}}(x)\f$ shrink and creep compensation values (\ref shrink_calibration_values), calculated by \ref shrink_compensator.
 	- left \f$l_{\mathrm{eff,l},i}\f$ and right \f$l_{\mathrm{eff,r},i}\f$ limit of the effective length of the \f$i\f$th crack, estimated by \ref lengthsplitter
 	"""
 	def __init__(self,
@@ -88,10 +90,13 @@ class StrainProfile(ABC):
 		## The data is filtered by \ref filter_object and cropped according to \ref crop.
 		## The original data is available under \ref _strain_inst_orig.
 		self.strain_inst = None
-		## Tare values for the sensor.
-		## Those will be subtracted from the strain for crack width calculation.
-		## The original data is available under \ref _tare_orig.
-		self.tare = tare
+		## The tare strain values.
+		## Initially, the sensor might report a non-zero strains state.
+		## This is due to the sensor manifacturing process sensor application or environmental influences.
+		## Prior to the maesurement, the sensor can be calibrated in the ODiSI software.
+		## The tare strains have only informative character, as the ODiSI software reports net strain data (corrected by the tare already).
+		## The original (unfiltered and uncropped) data is available under \ref _tare_orig.
+		self.tare = None
 		## Array of calibration values for the shrinking in the measurement area.
 		## If \ref shrink_compensator is not `None`, it is calculated by \ref compensate_shrink().
 		## Else, it defaults to `np.zeros` of the same length as \ref strain.
@@ -187,7 +192,7 @@ class StrainProfile(ABC):
 			self.compensate_shrink()
 		if self.ts_compensator is not None:
 			self.calculate_tension_stiffening()
-		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values - self.tare
+		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
 		if self.suppress_compression:
 			f = filtering.Limit(minimum=0.0, maximum=None)
 			strain = f.run(strain)
