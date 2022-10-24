@@ -78,25 +78,6 @@ class StrainProfile(ABC):
 		self._strain_inst_orig = strain_inst
 		## Original tare values for the sensor.
 		self._tare_orig = tare
-		## Location data of the measurement area in accordance to \ref strain.
-		## The data is stripped of any `NaN` entries and cropped  according to \ref crop.
-		## The original data is available under \ref _x_orig.
-		self.x = None
-		## Strain data in the measurement area in accordance to \ref x.
-		## The data is stripped of any `NaN` entries, filtered by \ref filter_object and cropped according to \ref crop.
-		## The original data is available under \ref _strain_orig.
-		self.strain = None
-		## Strain data (y-axis) for the initial load experiment.
-		## The data is filtered by \ref filter_object and cropped according to \ref crop.
-		## The original data is available under \ref _strain_inst_orig.
-		self.strain_inst = None
-		## The tare strain values.
-		## Initially, the sensor might report a non-zero strains state.
-		## This is due to the sensor manifacturing process sensor application or environmental influences.
-		## Prior to the maesurement, the sensor can be calibrated in the ODiSI software.
-		## The tare strains have only informative character, as the ODiSI software reports net strain data (corrected by the tare already).
-		## The original (unfiltered and uncropped) data is available under \ref _tare_orig.
-		self.tare = None
 		## Array of calibration values for the shrinking in the measurement area.
 		## If \ref shrink_compensator is not `None`, it is calculated by \ref compensate_shrink().
 		## Else, it defaults to `np.zeros` of the same length as \ref strain.
@@ -133,40 +114,60 @@ class StrainProfile(ABC):
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
-		self.clean_data()
+		
+		# Attributes, that are set automatically
+		
+		## Location data of the measurement area in accordance to \ref strain.
+		## The data is stripped of any `NaN` entries and cropped  according to \ref crop.
+		## The original data is available under \ref _x_orig.
+		self.x = None
+		## Strain data in the measurement area in accordance to \ref x.
+		## The data is stripped of any `NaN` entries, filtered by \ref filter_object and cropped according to \ref crop.
+		## The original data is available under \ref _strain_orig.
+		self.strain = None
+		## Strain data (y-axis) for the initial load experiment.
+		## The data is filtered by \ref filter_object and cropped according to \ref crop.
+		## The original data is available under \ref _strain_inst_orig.
+		self.strain_inst = None
+		## The tare strain values.
+		## Initially, the sensor might report a non-zero strains state.
+		## This is due to the sensor manifacturing process sensor application or environmental influences.
+		## Prior to the maesurement, the sensor can be calibrated in the ODiSI software.
+		## The tare strains have only informative character, as the ODiSI software reports net strain data (corrected by the tare already).
+		## The original (unfiltered and uncropped) data is available under \ref _tare_orig.
+		self.tare = None
+		# Data sanitization
+		data_container_orig = [self._strain_orig]
+		attr_list = ["strain"]
+		if self._strain_inst_orig is not None:
+			data_container_orig.append(self._strain_inst_orig)
+			attr_list.append("strain_inst")
+		if self._tare_orig is not None:
+			data_container_orig.append(self._tare_orig)
+			attr_list.append("tare")
+		assert [len(entry) == len(self._x_orig) for entry in data_container_orig], "The number of entries of data attributes do not match."
+		(self.x, *data_container_out) = fosutils.strip_smooth_crop(self._x_orig, *data_container_orig, smoothing=self.filter_object, crop=self.crop)
+		for attr, data in zip(attr_list, data_container_out):
+			setattr(self, attr, data)
 	def clean_data(self):
 		"""
-		Based on the original attributes, the data is sanitized.
-		This function is run a the end of the instantiation (\ref __init__()) and at the begin of \ref calculate_crack_widths().
-		The following attributes are assigned sanitized data from the original data:
-		- \ref x
-		- \ref strain
-		- \ref strain_inst
-		- \ref tare
-		
-		The following attributes are reset to zero:
-		- \ref shrink_calibration_values
-		- \ref tension_stiffening_values
-		
-		Additional resets:
-		- \ref crack_list is emptied
+		Reset the object to it's original state before any calculations.
+		This is a light wrapper around \ref __init__(), which passes most of the attributes.
 		"""
-		# Data sanitization
-		strain_inst_orig = self._strain_inst_orig if self._strain_inst_orig is not None else np.zeros(len(self._x_orig))
-		tare = self._tare_orig if self._tare_orig is not None else np.zeros(len(self._x_orig))
-		data_tuple = (
-			self._strain_orig,
-			strain_inst_orig,
-			tare
-			)
-		assert len(self._x_orig) == len(self._strain_orig) == len(strain_inst_orig ) == len(tare), "The number of entries in data do not match."
-		self.x, data_tuple = fosutils.strip_smooth_crop(self._x_orig, *data_tuple, smoothing=self.filter_object, crop=self.crop)
-		self.strain, self.strain_inst, self.tare = data_tuple
-		# Reset calculation values
-		self.shrink_calibration_values = np.zeros(len(self.x))
-		self.tension_stiffening_values = np.zeros(len(self.x))
-		# Additional resets
-		self.crack_list = cracks.CrackList()
+		self.__init__(x=self._x_orig,
+					strain=self._strain_orig,
+					strain_inst=self._strain_inst_orig,
+					tare=self._tare_orig,
+					crackfinder=self.crackfinder,
+					crop=self.crop,
+					filter_object=self.filter_object,
+					integrator=self.integrator,
+					lengthsplitter=self.lengthsplitter,
+					name=self.name,
+					shrink_compensator=self.shrink_compensator,
+					suppress_compression=self.suppress_compression,
+					ts_compensator=self.ts_compensator,
+					)
 	def calculate_crack_widths(self, clean: bool = True) -> cracks.CrackList:
 		"""
 		Returns the crack widths.
