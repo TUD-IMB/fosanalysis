@@ -40,6 +40,7 @@ class MultiFilter(ABC):
 			*args, **kwargs):
 		"""
 		Constructs a MultiFilter object.
+		\param filters \copybrief filters For more, see \ref filters.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""

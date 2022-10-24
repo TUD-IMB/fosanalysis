@@ -1,9 +1,11 @@
 
-## \file
-## Contains functionality for interfacing files and network ports.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.protocols \copydoc protocols.py
+"""
+\file
+Contains functionality for interfacing files and network ports.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.protocols \copydoc protocols.py
+"""
 
 from abc import ABC, abstractmethod
 import datetime
@@ -36,7 +38,36 @@ class SensorRecord(dict):
 		data_str = [str(data) for data in self["data"]]
 		return itemsep.join([self["record_name"], self["message_type"], self["sensor_type"], *data_str])
 
-class ODiSI6100TSVFile():
+class Protocol(ABC):
+	"""
+	Abstract class, which specifies the basic interfaces, a protocol must implement.
+	"""
+	@abstractmethod
+	def __init__(self, *args, **kwargs):
+		"""
+		\todo Implement and document
+		"""
+		super().__init__(*args, **kwargs)
+		## Dictionary containting header information.
+		self.header = {}
+		## \ref SensorRecord, which contains the x-axis (location) values.
+		self.x_record = None
+		## List of \ref SensorRecord, which contain the strain values.
+		self.y_record_list = []
+	@abstractmethod
+	def get_x_values(self) -> np.array:
+		"""
+		Returns the values of the x-axis record (location data). 
+		"""
+		raise NotImplementedError()
+	@abstractmethod
+	def get_y_table(self, *args, **kwargs) -> list:
+		"""
+		Returns the table of the strain data.
+		"""
+		raise NotImplementedError()
+
+class ODiSI6100TSVFile(Protocol):
 	"""
 	Object contains fibre optical sensor data exported by the Luna Inc. Optical Distributed Sensor Interrogator (ODiSI), and provides some function to retrieve those.
 	"""
@@ -53,17 +84,11 @@ class ODiSI6100TSVFile():
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## File name (fully specified path), from which the data has been read.
-		self.file = file
-		## Dictionary containting header information.
-		self.header = {}
 		## \ref SensorRecord, which contains the tare data values.
 		## This is only set, if \ref file contains such a line.
 		self.tare = None
-		## \ref SensorRecord, which contains the x-axis (location) values.
-		self.x_record = None
-		## List of \ref SensorRecord, which contain the strain values.
-		self.y_record_list = []
+		## File name (fully specified path), from which the data has been read.
+		self.file = file
 		in_header = True
 		with open(file) as f:
 			for line in f:
@@ -177,3 +202,23 @@ class ODiSI6100TSVFile():
 				mean_record.append(float("nan"))
 		return np.array(mean_record)
 
+class NetworkStream(Protocol):
+	"""
+	\todo Implement and document
+	"""
+	def __init__(self,
+				*args, **kwargs):
+		"""
+		\todo Implement and document
+		"""
+		super().__init__(*args, **kwargs)
+	def get_x_values(self) -> np.array:
+		"""
+		Returns the values of the x-axis record (location data). 
+		"""
+		raise NotImplementedError()
+	def get_y_table(self, *args, **kwargs) -> list:
+		"""
+		Returns the table of the strain data.
+		"""
+		raise NotImplementedError()
