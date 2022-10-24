@@ -91,7 +91,7 @@ def main():
 		f.write("Measurement Rate Per Channel:	1.5625 Hz" + "\n")
 		f.write("Gage Pitch (mm):	0.65" + "\n")
 		f.write("Standoff Cable Length (m):	50" + "\n")
-		f.write("Temperature offset:	0.0")
+		f.write("Temperature offset:	0.0" + "\n")
 		f.write("Performance Mode:	Full Optimization" + "\n")
 		f.write("Channel:	1" + "\n")
 		f.write("Sensor Name:	GettingStartedSensor" + "\n")
