@@ -188,14 +188,17 @@ class StrainProfile(ABC):
 		if not self.crack_list:
 			self.find_cracks()
 			self.set_leff()
+		# Compensation
+		strain = self.strain
 		if self.shrink_compensator is not None:
-			self.compensate_shrink()
+			strain = strain - self.compensate_shrink()
 		if self.ts_compensator is not None:
-			self.calculate_tension_stiffening()
-		strain = self.strain - self.shrink_calibration_values - self.tension_stiffening_values
+			strain = strain - self.calculate_tension_stiffening()
+		# Compression cancelling
 		if self.suppress_compression:
 			f = filtering.Limit(minimum=0.0, maximum=None)
 			strain = f.run(strain)
+		# Crack width calculation
 		for crack in self.crack_list:
 			x_seg, y_seg = self.crop.run(self.x, strain, start_pos=crack.leff_l, end_pos=crack.leff_r, offset=0)
 			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None)
