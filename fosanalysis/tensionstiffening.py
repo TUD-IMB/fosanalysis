@@ -121,8 +121,7 @@ class Fischer(TensionStiffeningCompensator):
 		tension_stiffening_values = np.zeros(len(strain))
 		for i, x in enumerate(x):
 			for crack in crack_list:
-				if crack.location is None:
-					raise ValueError("Location of crack is `None`: {}".format(crack))
+				assert crack.location is not None, "Location of crack is `None`: {}".format(crack)
 				if crack.leff_l <= x < crack.location:
 					d_x = (crack.location - x)/(crack.d_l)
 					tension_stiffening_values[i] = self.max_concrete_strain * d_x

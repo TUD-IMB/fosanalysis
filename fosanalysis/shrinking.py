@@ -39,6 +39,7 @@ class ShrinkCompensator():
 			\param strain_inst Instantaneous strain belonging to `x`, that appear right after applying the load to the structure.
 			\return Returns an array of same length as the given arrays.
 			"""
+			assert all(entry is not None for entry in [x, strain, strain_inst]), "Can not compute shrink compensation. At least one of `x`, `strain` and `strain_inst` is None! Please provide all of them!"
 			peaks_min, properties = scipy.signal.find_peaks(-strain_inst, *self.args, **self.kwargs)
 			strain_min_inst = np.array([strain_inst[i] for i in peaks_min])
 			strain_min = np.array([strain[i] for i in peaks_min])

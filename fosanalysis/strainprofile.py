@@ -227,20 +227,25 @@ class StrainProfile(ABC):
 		- \ref strain_inst,
 		- \ref shrink_compensator is not `None`
 		"""
-		if self.shrink_compensator is not None and self._x_inst_orig is not None and self._strain_inst_orig is not None:
+		try:
 			self.shrink_calibration_values = self.shrink_compensator.run(self.x, self.strain, self.strain_inst)
+		except:
+			raise RuntimeError("Something went wrong while attempting to calculate shrink compensation.")
 		else:
-			raise ValueError("Can not calibrate shrink without shrink_compensator, `x_inst` and `strain_inst`! Please provide all of them!")
-		return self.shrink_calibration_values()
+			return self.shrink_calibration_values()
 	def calculate_tension_stiffening(self) -> np.array:
 		"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		\return An array with the compensation values for each measuring point is returned.
 		"""
-		if not self.crack_list:
-			self.set_leff()
-		self.tension_stiffening_values = self.ts_compensator.run(self.x, self.strain, self.crack_list)
-		return self.tension_stiffening_values
+		try:
+			if not self.crack_list:
+				self.set_leff()
+			self.tension_stiffening_values = self.ts_compensator.run(self.x, self.strain, self.crack_list)
+		except:
+			raise RuntimeError("Something went wrong while attempting to calculate tension stiffening compensation.")
+		else:
+			return self.tension_stiffening_values
 	def add_cracks(self,
 						*cracks_tuple: tuple,
 						recalculate: bool = True,
