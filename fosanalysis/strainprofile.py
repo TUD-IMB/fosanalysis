@@ -149,25 +149,35 @@ class StrainProfile(ABC):
 		(self.x, *data_container_out) = fosutils.strip_smooth_crop(self._x_orig, *data_container_orig, smoothing=self.filter_object, crop=self.crop)
 		for attr, data in zip(attr_list, data_container_out):
 			setattr(self, attr, data)
+	@abstractmethod
+	def _clean_data_prepare(self) -> dict:
+		"""
+		Prepare the data, that is passed into the \ref clean_data.
+		Returns a dictionary, which contains the keyword arguments.
+		"""
+		kwargs = {
+			"x":self._x_orig,
+			"strain": self._strain_orig,
+			"strain_inst": self._strain_inst_orig,
+			"tare": self._tare_orig,
+			"crackfinder": self.crackfinder,
+			"crop": self.crop,
+			"filter_object": self.filter_object,
+			"integrator": self.integrator,
+			"lengthsplitter": self.lengthsplitter,
+			"name": self.name,
+			"shrink_compensator": self.shrink_compensator,
+			"suppress_compression": self.suppress_compression,
+			"ts_compensator": self.ts_compensator,
+			}
+		return kwargs
 	def clean_data(self):
 		"""
 		Reset the object to it's original state before any calculations.
 		This is a light wrapper around \ref __init__(), which passes most of the attributes.
 		"""
-		self.__init__(x=self._x_orig,
-					strain=self._strain_orig,
-					strain_inst=self._strain_inst_orig,
-					tare=self._tare_orig,
-					crackfinder=self.crackfinder,
-					crop=self.crop,
-					filter_object=self.filter_object,
-					integrator=self.integrator,
-					lengthsplitter=self.lengthsplitter,
-					name=self.name,
-					shrink_compensator=self.shrink_compensator,
-					suppress_compression=self.suppress_compression,
-					ts_compensator=self.ts_compensator,
-					)
+		kwargs = self._clean_data_prepare()
+		self.__init__(**kwargs)
 	def calculate_crack_widths(self, clean: bool = True) -> cracks.CrackList:
 		"""
 		Returns the crack widths.
@@ -319,6 +329,12 @@ class Concrete(StrainProfile):
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
+	def _clean_data_prepare(self) -> dict:
+		"""
+		\copydoc StrainProfile._clean_data_prepare()
+		"""
+		kwargs = super()._clean_data_prepare()
+		return kwargs
 
 class Rebar(StrainProfile):
 	"""
@@ -349,4 +365,18 @@ class Rebar(StrainProfile):
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
-
+		## \copydoc tensionstiffening.Berrocal.alpha
+		self.alpha = alpha
+		## \copydoc tensionstiffening.Berrocal.rho
+		self.rho = rho
+	def _clean_data_prepare(self) -> dict:
+		"""
+		\copydoc StrainProfile._clean_data_prepare()
+		"""
+		kwargs = super()._clean_data_prepare()
+		addkwargs = {
+			"alpha": self.alpha,
+			"rho": self.rho,
+			}
+		kwargs.update(addkwargs)
+		return kwargs
