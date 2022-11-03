@@ -92,15 +92,32 @@ class CrackList(list):
 	def widths(self) -> list:
 		""" Returns a list with the widths of all cracks. """
 		return [crack.width for crack in self]
-	def get_crack(self, x):
+	def get_crack(self, x, method: str = "nearest") -> Crack:
 		"""
-		Get the \ref Crack, for which holds: \f$l_{\mathrm{eff,l}} < x \leq l_{\mathrm{eff,r}}\f$.
+		Get the \ref Crack, 
+		\param x Position along the Sensor.
+		\param method Method, that is used, to use decide, how the crack is chosen. Available methods:
+			- `"nearest"` (default): returns the crack, for which the distance between the location and `x` is the smallest among all cracks.
+			- `"leff"`: returns the first crack, for which holds: \f$l_{\mathrm{eff,l}} < x \leq l_{\mathrm{eff,r}}\f$.
 		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
 		"""
-		for crack in self:
-			if crack.leff_l < x <= crack.leff_r:
-				return crack
-		return None
+		crack = None
+		if method == "nearest":
+			min_dist = float("inf")
+			closest_crack = None
+			for crack in self:
+				dist = abs(x - crack.location)
+				if dist < min_dist:
+					min_dist = dist
+					closest_crack = crack
+			crack =closest_crack
+		elif method == "leff":
+			for crack in self:
+				if crack.leff_l < x <= crack.leff_r:
+					return crack
+		else:
+			raise ValueError("No such option '{}' known for `method`.".format(method))
+		return crack
 	def sort(self):
 		"""
 		Sort the list of cracks.
