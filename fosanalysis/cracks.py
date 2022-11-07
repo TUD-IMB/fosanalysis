@@ -19,11 +19,22 @@ class Crack():
 						location: float = None,
 						leff_l: float = None,
 						leff_r: float = None,
-						width: float = None,
 						max_strain: float = None,
+						name: str = None,
+						width: float = None,
 						):
+		"""
+		Constructs a Crack object.
+		\param index \copybrief index For more, see \ref index.
+		\param location \copybrief location For more, see \ref location.
+		\param leff_l \copybrief leff_l For more, see \ref leff_l.
+		\param leff_r \copybrief leff_r For more, see \ref leff_r.
+		\param max_strain \copybrief max_strain For more, see \ref max_strain.
+		\param name \copybrief name For more, see \ref name.
+		\param width \copybrief width For more, see \ref width.
+		"""
 		super().__init__()
-		## Position index in the measurement area.
+		## Position index in the sanitized measurement data of \ref strainprofile.StrainProfile (e.g.\ `x`).
 		self.index = index
 		## Absolute location along the fibre optical sensor.
 		self.location = location
@@ -35,6 +46,8 @@ class Crack():
 		self.width = width
 		## The strain in the fibre-optical sensor at the \ref location. 
 		self.max_strain = max_strain
+		## Name of the crack.
+		self.name = name
 	@property
 	def leff(self):
 		"""
