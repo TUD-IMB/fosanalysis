@@ -57,3 +57,38 @@ def strip_smooth_crop(x,
 			return x_crop, y_list_smooth[0] if len(y_list_smooth) == 1 else tuple(y_list_smooth)
 		else:
 			raise ValueError("Either x, any of y_tuple is None or they differ in lengths.")
+
+def find_next_finite_neighbor(
+		array: np.array,
+		index: int,
+		to_left: bool,
+		recurse: int = 0,
+		) -> tuple:
+	"""
+	Find the next finite neighbor of the entry `array[index]`.
+	An entry `<entry>` is finite, if `np.isfinite(<entry>) == True`.
+	\param array Array, in which neighbor is searched.
+	\param index Position in the `array`, where the search is started.
+	\param to_left `True`, if a neighbor to the left of the starting index is found, `False` for a neighbor to the right.
+	\param recurse Number of recursions, that are done.
+		- `0`: direct neighbors of the starting index.
+		- `1`: neighbors of the neighbors
+		- `2`: neighbors of the neighbors' neighbors
+	\return Tuple like `(<index>, <entry>)`.
+		If no finite value could be found before reaching the end of `array` `(None, None)` is returned.
+	"""
+	i = index
+	result = None
+	result_index = None
+	while True:
+		i = i - 1 if to_left else i + 1
+		if (0 <= i <= len(array) - 1):
+			if np.isfinite(array[i]):
+				result = array[i]
+				result_index = i
+				break
+		else:
+			break
+	if result_index is not None and recurse > 0:
+		result_index, result = find_next_finite_neighbor(array=array, index=result_index, to_left=to_left, recurse=recurse-1)
+	return result_index, result
