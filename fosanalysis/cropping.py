@@ -52,8 +52,8 @@ class Crop():
 		"""
 		Crops both \f$x\f$ and \f$y\f$ .
 		In general, if both smoothing and cropping are to be applied, smooth first, crop second.
-		\param x_values List of x-positions \f$x\f$.
-		\param y_values List of y-values \f$y\f$ matching \f$x\f$.
+		\param x_values One-dimensional array of x-positions \f$x\f$.
+		\param y_values Array of y-values \f$y\f$ matching \f$x\f$. Can be one- or two-dimensional
 		\param start_pos \copybrief start_pos Defaults to \ref start_pos. For more, see \ref start_pos.
 		\param end_pos \copybrief end_pos Defaults to \ref end_pos. For more, see \ref end_pos.
 		\param length \copybrief length Defaults to \ref length. For more, see \ref length.
@@ -82,5 +82,11 @@ class Crop():
 				elif value > end_pos:
 					end_index = index
 		x_cropped = x_shift[start_index:end_index]
-		y_cropped = y_values[start_index:end_index]
+		y_cropped = np.array(y_values)
+		if len(y_cropped.shape) == 1:
+			y_cropped = y_cropped[start_index:end_index]
+		elif len(y_cropped.shape) == 2:
+			y_cropped = y_cropped[:,start_index:end_index]
+		else:
+			raise ValueError("Dimensions of y_values ({}) not conformant. y_values must be a 1D or 2D array".format(len(np.shape())))
 		return x_cropped, y_cropped
