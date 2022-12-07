@@ -1,13 +1,17 @@
 
-## \file
-## Contains functionality to compensate crop a set of data.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.cropping \copydoc cropping.py
+"""
+\file
+Contains functionality to compensate crop a set of data.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.cropping \copydoc cropping.py
+"""
 
 import numpy as np
 
-class Crop():
+import fosutils
+
+class Crop(fosutils.Base):
 	"""
 	Object, that can crop two data sets \f$x_i,\: y_i\f$ based on locational data \f$x\f$.
 	The process consists of two steps:

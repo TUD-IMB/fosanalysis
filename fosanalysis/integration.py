@@ -1,15 +1,18 @@
 
-## \file
-## Contains functionality for integrating discretized funtions.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.integration \copydoc integration.py
+"""
+\file
+Contains functionality for integrating discretized funtions.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.integration \copydoc integration.py
+"""
 
 import numpy as np
 
-import filtering
+import sanitation.repair
+import fosutils
 
-class Integrator():
+class Integrator(fosutils.Base):
 	"""
 	Object to integrate a function \f$y = f(x)\f$ given by discrete argument data \f$x\f$ and associated values \f$y\f$.
 	"""
@@ -43,7 +46,7 @@ class Integrator():
 		interpolation = interpolation if interpolation is not None else self.interpolation
 		F = []
 		area = integration_constant
-		nan_filter = filtering.NaNFilter()
+		nan_filter = sanitation.repair.NaNFilter()
 		x_values, y_values = nan_filter.run(x_values, y_values)
 		# Prepare the segments
 		if interpolation == "linear":

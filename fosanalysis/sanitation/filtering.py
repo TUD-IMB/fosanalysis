@@ -1,15 +1,21 @@
 
-## \file
-## Contains filtering, sanitization, smoothing and healing functionalities.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.filtering \copydoc filtering.py
+"""
+\file
+Contains class definitions for filtering algorithms.
+Those can be leveraged to deal with noise, e.g.\ by smoothing neighboring data points.
+
+\author Bertram Richter
+\date 2022
+\package fosanalysis.filtering \copydoc filtering.py
+"""
 
 from abc import ABC, abstractmethod
 import copy
 import numpy as np
 
-class Filter(ABC):
+import fosutils
+
+class Filter(fosutils.Base):
 	"""
 	Abstract base class for filter classes.
 	"""
@@ -31,7 +37,7 @@ class Filter(ABC):
 		"""
 		raise NotImplementedError()
 
-class MultiFilter(ABC):
+class MultiFilter(fosutils.Base):
 	"""
 	Container for several filters, that are carried out in sequential order.
 	"""
@@ -107,43 +113,6 @@ class Limit(Filter):
 		if maximum is not None:
 			limited = [min(entry, maximum) for entry in limited]
 		return np.array(limited)
-
-class NaNFilter(Filter):
-	"""
-	A filter, that removes any columns from a given number of data sets (matrix), tha contain `not a number` entries.
-	"""
-	def __init__(self,
-			*args, **kwargs):
-		"""
-		Constructs a NaNFilter object.
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
-		"""
-		super().__init__(*args, **kwargs)
-	def run(self,
-			*data_list,
-			exclude: list = None,
-			) -> tuple:
-		"""
-		In all given arrays of `data_list`, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
-		\param data_list Tuple of arrays (matrix), which should be cleaned.
-		\param exclude Additional values that should be excluded. Defaults to nothing.
-		\return Returns a tuple with copies of the arrays, without columns containing any of the specified values. If only a single array is given, only the stripped copy returned.
-		"""
-		exclude = exclude if exclude is not None else []
-		exclude_set = set([None, ""])
-		exclude_set.update(set(exclude))
-		stripped_lists = []
-		delete_list = []
-		# find all NaNs
-		for candidate_list in data_list:
-			for i, entry in enumerate(candidate_list):
-				if entry in exclude_set or np.isnan(entry):
-					delete_list.append(i)
-		# strip the NaNs
-		for candidate_list in data_list:
-			stripped_lists.append(np.array([entry for i, entry in enumerate(candidate_list) if i not in delete_list]))
-		return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
 
 class SlidingFilter(Filter):
 	"""
@@ -233,7 +202,7 @@ class SlidingMean(SlidingFilter):
 		\f]
 		"""
 		return np.mean(sliding_window)
-	
+
 class SlidingMedian(SlidingFilter):
 	"""
 	A filter, that smoothes the record using the median over \f$2r + 1\f$ entries for each entry.

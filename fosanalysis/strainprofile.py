@@ -1,9 +1,11 @@
 
-## \file
-## Contains class definitions for strain profiles and cracks.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.strainprofile \copydoc strainprofile.py
+"""
+\file
+Contains class definitions for strain profiles and cracks.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.strainprofile \copydoc strainprofile.py
+"""
 
 from abc import ABC, abstractmethod
 import copy
@@ -11,15 +13,15 @@ import numpy as np
 
 import cracks
 import cropping
-import filtering
 import finding
 import fosutils
 import integration
+import sanitation
 import separation
 import shrinking
 import tensionstiffening
 
-class StrainProfile(ABC):
+class StrainProfile(fosutils.Base):
 	"""
 	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	The crack widths are calculated with the general equation:
@@ -69,7 +71,7 @@ class StrainProfile(ABC):
 		\param *args Additional positional arguments. They are ignored.
 		\param **kwargs Additional keyword arguments. They are ignored.
 		"""
-		super().__init__()
+		super().__init__(*args, **kwargs)
 		## Original list of location data (x-axis) for the current experiment.
 		self._x_orig = x
 		## Original list of strain data (y-axis) for the current experiment.
@@ -103,9 +105,9 @@ class StrainProfile(ABC):
 		## \ref tensionstiffening.TensionStiffeningCompensator object used to substract out the influence of tension stiffening on the crack width.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.ts_compensator = ts_compensator
-		## \ref filtering.Filter object to sanitize the data values and reduce strain reading anomalies.
-		## Defaults to the default configuration of \ref filtering.SlidingMean (no effect).
-		self.filter_object = filter_object if filter_object is not None else filtering.SlidingMean()
+		## \ref sanitation.filtering.Filter object to sanitize the data values and reduce strain reading anomalies.
+		## Defaults to the default configuration of \ref sanitation.filtering.SlidingMean (no effect).
+		self.filter_object = filter_object if filter_object is not None else sanitation.filtering.SlidingMean()
 		## \ref integration.Integrator object used to integrate the strain data to estimate the crack widths.
 		## Defaults to the default configuration of \ref integration.Integrator.
 		self.integrator = integrator if integrator is not None else integration.Integrator()
@@ -146,7 +148,7 @@ class StrainProfile(ABC):
 			data_container_orig.append(self._tare_orig)
 			attr_list.append("tare")
 		assert [len(entry) == len(self._x_orig) for entry in data_container_orig], "The number of entries of data attributes do not match."
-		(self.x, *data_container_out) = fosutils.strip_smooth_crop(self._x_orig, *data_container_orig, smoothing=self.filter_object, crop=self.crop)
+		(self.x, *data_container_out) = sanitation.strip_smooth_crop(self._x_orig, *data_container_orig, filter_object=self.filter_object, crop=self.crop)
 		for attr, data in zip(attr_list, data_container_out):
 			setattr(self, attr, data)
 	@abstractmethod
@@ -207,7 +209,7 @@ class StrainProfile(ABC):
 			strain = strain - self.calculate_tension_stiffening()
 		# Compression cancelling
 		if self.suppress_compression:
-			f = filtering.Limit(minimum=0.0, maximum=None)
+			f = sanitation.filtering.Limit(minimum=0.0, maximum=None)
 			strain = f.run(strain)
 		# Crack width calculation
 		for crack in self.crack_list:

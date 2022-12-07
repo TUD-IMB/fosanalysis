@@ -1,8 +1,11 @@
-## \file
-## This script shows how to interact with `fosanalysis` and is the resulting script of [Getting Started](doc/GettingStarted.md).
-## \author Bertram Richter
-## \date 2022
-## \package examples.gettingstarted \copydoc gettingstarted.py
+
+"""
+\file
+This script shows how to interact with `fosanalysis` and is the resulting script of [Getting Started](doc/GettingStarted.md).
+\author Bertram Richter
+\date 2022
+\package examples.gettingstarted \copydoc gettingstarted.py
+"""
 
 # Importing necessary modules
 import matplotlib.pyplot as plt
@@ -27,7 +30,7 @@ plt.show()
 
 # Generate cropping and filtering objects and assemble the strain profile object
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
-filter_object=fa.filtering.SlidingMean(radius=1)
+filter_object=fa.sanitation.filtering.SlidingMean(radius=1)
 sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,

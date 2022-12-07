@@ -1,9 +1,11 @@
 
-## \file
-## Contains functionality to separate cracks and set effective lengths.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.separation \copydoc separation.py
+"""
+\file
+Contains functionality to separate cracks and set effective lengths.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.separation \copydoc separation.py
+"""
 
 import copy
 import numpy as np

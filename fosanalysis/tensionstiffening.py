@@ -1,14 +1,18 @@
 
-## \file
-## Contains class definitions for tension stiffening influences for concrete embedded and reinforcement attached sensors.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.tensionstiffening \copydoc tensionstiffening.py
+"""
+\file
+Contains class definitions for tension stiffening influences for concrete embedded and reinforcement attached sensors.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.tensionstiffening \copydoc tensionstiffening.py
+"""
 
 from abc import ABC, abstractmethod
 import numpy as np
 
-class TensionStiffeningCompensator(ABC):
+import fosutils
+
+class TensionStiffeningCompensator(fosutils.Base):
 	"""
 	Abstract base class for tension stiffening compensation approaches.
 	"""

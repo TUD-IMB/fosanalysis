@@ -1,14 +1,14 @@
 
-## \file
-## Contains functionality to compensate shrinking and creep.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.shrinking \copydoc shrinking.py
+"""
+\file
+Contains functionality to compensate shrinking and creep.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.shrinking \copydoc shrinking.py
+"""
 
 import numpy as np
 import scipy.signal
-
-import fosutils
 
 class ShrinkCompensator():
 	def __init__(self,

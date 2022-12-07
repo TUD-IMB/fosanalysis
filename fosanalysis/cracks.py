@@ -1,14 +1,13 @@
 
-## \file
-## Contains class definitions for Crack and CrackList.
-## \author Bertram Richter
-## \date 2022
-## \package fosanalysis.cracks \copydoc cracks.py
+"""
+\file
+Contains class definitions for Crack and CrackList.
+\author Bertram Richter
+\date 2022
+\package fosanalysis.cracks \copydoc cracks.py
+"""
 
-import copy
 import numpy as np
-
-import fosutils
 
 class Crack():
 	"""

@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 import datetime
 import numpy as np
 
-import filtering
+import sanitation.repair
 import fosutils
 
 class SensorRecord(dict):
@@ -38,7 +38,7 @@ class SensorRecord(dict):
 		data_str = [str(data) for data in self["data"]]
 		return itemsep.join([self["record_name"], self["message_type"], self["sensor_type"], *data_str])
 
-class Protocol(ABC):
+class Protocol(fosutils.Base):
 	"""
 	Abstract class, which specifies the basic interfaces, a protocol must implement.
 	"""
@@ -193,7 +193,7 @@ class ODiSI6100TSVFile(Protocol):
 		"""
 		y_table = self.get_y_table(self.get_record_slice(start=start, end=end))
 		mean_record = []
-		nan_filter = filtering.NaNFilter()
+		nan_filter = sanitation.repair.NaNFilter()
 		for column in zip(*y_table):
 			column = nan_filter.run(column)
 			if len(column) > 0:
