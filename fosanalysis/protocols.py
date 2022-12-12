@@ -189,18 +189,11 @@ class ODiSI6100TSVFile(Protocol):
 		Takes the arithmetic mean for each position over all records in the slice and return the strain values as `np.array`.
 		During the operation, `NaN` entries are stripped.
 		If a column consists entirely of `NaN`, nan is written to the returned array.
+		For more, see documentation on `numpy.nanmean()`.
 		\copydetails get_record_slice()
 		"""
 		y_table = self.get_y_table(self.get_record_slice(start=start, end=end))
-		mean_record = []
-		nan_filter = sanitation.repair.NaNFilter()
-		for column in zip(*y_table):
-			column = nan_filter.run(column)
-			if len(column) > 0:
-				mean_record.append(sum(column)/len(column))
-			else:
-				mean_record.append(float("nan"))
-		return np.array(mean_record)
+		return np.nanmean(y_table, axis=0)
 
 class NetworkStream(Protocol):
 	"""
