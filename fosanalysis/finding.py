@@ -56,8 +56,8 @@ class CrackFinder():
 		crack_list = []
 		for left_index, peak_index, right_index in zip(segment_left, peaks_max, segment_right):
 			crack = cracks.Crack(location=x[peak_index],
-						leff_l=x[left_index],
-						leff_r=x[right_index],
+						x_l=x[left_index],
+						x_r=x[right_index],
 						index = peak_index,
 						max_strain=strain[peak_index],
 						)

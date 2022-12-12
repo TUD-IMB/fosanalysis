@@ -126,11 +126,11 @@ class Fischer(TensionStiffeningCompensator):
 		for i, x in enumerate(x):
 			for crack in crack_list:
 				assert crack.location is not None, "Location of crack is `None`: {}".format(crack)
-				if crack.leff_l <= x < crack.location:
-					d_x = (crack.location - x)/(crack.d_l)
+				if crack.x_l <= x < crack.location:
+					d_x = (crack.location - x)/(crack.leff_l)
 					tension_stiffening_values[i] = self.max_concrete_strain * d_x
-				elif crack.location < x <= crack.leff_r:
-					d_x = (x - crack.location)/(crack.d_r)
+				elif crack.location < x <= crack.x_r:
+					d_x = (x - crack.location)/(crack.leff_r)
 					tension_stiffening_values[i] = self.max_concrete_strain * d_x
 				else:
 					pass

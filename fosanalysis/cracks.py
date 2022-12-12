@@ -16,8 +16,8 @@ class Crack():
 	def __init__(self,
 						index: int = None,
 						location: float = None,
-						leff_l: float = None,
-						leff_r: float = None,
+						x_l: float = None,
+						x_r: float = None,
 						max_strain: float = None,
 						name: str = None,
 						width: float = None,
@@ -26,8 +26,8 @@ class Crack():
 		Constructs a Crack object.
 		\param index \copybrief index For more, see \ref index.
 		\param location \copybrief location For more, see \ref location.
-		\param leff_l \copybrief leff_l For more, see \ref leff_l.
-		\param leff_r \copybrief leff_r For more, see \ref leff_r.
+		\param x_l \copybrief x_l For more, see \ref x_l.
+		\param x_r \copybrief x_r For more, see \ref x_r.
 		\param max_strain \copybrief max_strain For more, see \ref max_strain.
 		\param name \copybrief name For more, see \ref name.
 		\param width \copybrief width For more, see \ref width.
@@ -38,9 +38,9 @@ class Crack():
 		## Absolute location along the fibre optical sensor.
 		self.location = location
 		## Absolute location left-hand side end of its effective length.
-		self.leff_l = leff_l
+		self.x_l = x_l
 		## Absolute location right-hand side end of its effective length.
-		self.leff_r = leff_r
+		self.x_r = x_r
 		## The opening width of the crack. The width is calculated by integrating the strain over the effective length. 
 		self.width = width
 		## The strain in the fibre-optical sensor at the \ref location. 
@@ -52,21 +52,21 @@ class Crack():
 		"""
 		Returns the length of the effective length.
 		"""
-		return self.leff_r - self.leff_l
+		return self.x_r - self.x_l
 	@property
-	def d_l(self):
+	def leff_l(self):
 		"""" Distance from the crack position to the left-hand side end of its effective length. """
-		return self.location - self.leff_l
+		return self.location - self.x_l
 	@property
-	def d_r(self):
+	def leff_r(self):
 		"""" Distance from the crack position to the right-hand side end of its effective length. """
-		return self.leff_r - self.location
+		return self.x_r - self.location
 	@property
 	def segment(self):
 		"""
 		Returns the absolute influence segment of the crack.
 		"""
-		return self.leff_l, self.leff_r
+		return self.x_l, self.x_r
 
 class CrackList(list):
 	"""
@@ -85,13 +85,13 @@ class CrackList(list):
 		assert all([isinstance(entry, Crack) for entry in crack_list]) or len(crack_list) == 0, "At least one entry is not a Crack!"
 		super().__init__(crack_list)
 	@property
-	def leff_l(self) -> list:
+	def x_l(self) -> list:
 		""" Returns a list with the left-hand side border of effective length of all cracks. """
-		return [crack.leff_l for crack in self]
+		return [crack.x_l for crack in self]
 	@property
-	def leff_r(self) -> list:
+	def x_r(self) -> list:
 		""" Returns a list with the right-hand side border of effective length of all cracks. """
-		return [crack.leff_r for crack in self]
+		return [crack.x_r for crack in self]
 	@property
 	def locations(self) -> list:
 		""" Returns a list with the locations of all cracks. """
@@ -110,7 +110,7 @@ class CrackList(list):
 		\param x Position along the Sensor.
 		\param method Method, that is used, to use decide, how the crack is chosen. Available methods:
 			- `"nearest"` (default): returns the crack, for which the distance between the location and `x` is the smallest among all cracks.
-			- `"leff"`: returns the first crack, for which holds: \f$l_{\mathrm{eff,l}} < x \leq l_{\mathrm{eff,r}}\f$.
+			- `"leff"`: returns the first crack, for which holds: \f$x_{\mathrm{eff,l}} < x \leq x_{\mathrm{eff,r}}\f$.
 		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
 		"""
 		crack = None
@@ -122,14 +122,13 @@ class CrackList(list):
 				if dist < min_dist:
 					min_dist = dist
 					closest_crack = crack
-			crack =closest_crack
+			return closest_crack
 		elif method == "leff":
 			for crack in self:
-				if crack.leff_l < x <= crack.leff_r:
+				if crack.x_l < x <= crack.x_r:
 					return crack
 		else:
 			raise ValueError("No such option '{}' known for `method`.".format(method))
-		return crack
 	def sort(self):
 		"""
 		Sort the list of cracks.

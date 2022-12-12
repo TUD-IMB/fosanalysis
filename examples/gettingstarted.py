@@ -30,11 +30,11 @@ plt.show()
 
 # Generate cropping and filtering objects and assemble the strain profile object
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
-filter_object=fa.sanitation.filtering.SlidingMean(radius=1)
+fo = fa.sanitation.filtering.SlidingMean(radius=1)
 sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
-		filter_object=filter_object)
+		filter_object=fo)
 
 # Calculate crack width
 sp.calculate_crack_widths()
@@ -46,17 +46,17 @@ sp.add_cracks(3.9)
 # Get the data of the calculated cracks
 c_w = sp.crack_list.widths
 c_s = sp.crack_list.max_strains
-c_l = sp.crack_list.leff_l
+c_l = sp.crack_list.x_l
 c_loc = sp.crack_list.locations
-c_r = sp.crack_list.leff_r
+c_r = sp.crack_list.x_r
 
 # Plot preparation and plotting
 fig, ax1 = plt.subplots()
-ax1.set_xlabel('x [m]')
-ax1.set_ylabel('FOS strain [µm/m]')
+ax1.set_xlabel("Sensor coordinate x [m]")
+ax1.set_ylabel("Strain [µm/m]")
 ax2 = ax1.twinx()
-ax2.set_ylabel('Crack width [µm]', c="red")
-ax2.tick_params(axis ='y', labelcolor = 'red') 
+ax2.set_ylabel("Crack width [µm]", c="red")
+ax2.tick_params(axis ="y", labelcolor = "red") 
 ax1.plot(sp.x, sp.strain, c="k", label="strain")
 ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
 ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")

@@ -213,7 +213,7 @@ class StrainProfile(fosutils.Base):
 			strain = f.run(strain)
 		# Crack width calculation
 		for crack in self.crack_list:
-			x_seg, y_seg = self.crop.run(self.x, strain, start_pos=crack.leff_l, end_pos=crack.leff_r, offset=0)
+			x_seg, y_seg = self.crop.run(self.x, strain, start_pos=crack.x_l, end_pos=crack.x_r, offset=0)
 			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None)
 		return self.crack_list
 	def find_cracks(self):
@@ -282,8 +282,8 @@ class StrainProfile(fosutils.Base):
 				crack.index = index
 				crack.location = x_pos
 				crack.max_strain=self.strain[index]
-				crack.leff_l = crack.leff_l if crack.leff_l is not None and crack.leff_l < crack.location else None
-				crack.leff_r = crack.leff_r if crack.leff_r is not None and crack.leff_r > crack.location else None
+				crack.x_l = crack.x_l if crack.x_l is not None and crack.x_l < crack.location else None
+				crack.x_r = crack.x_r if crack.x_r is not None and crack.x_r > crack.location else None
 			else: 
 				index, x_pos = fosutils.find_closest_value(self.x, crack)
 				crack = cracks.Crack(location=x_pos,

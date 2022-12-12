@@ -33,9 +33,9 @@ class CrackLengths():
 		## - `"reset": "str" = "<option>"` If provided`, the limits of the effective lengths are set to \f$-\infty\f$ for the left and \f$\infty\f$ right limit prior to the assignments.
 		## 	In order to purge the information, that is initially provided e.g. by \ref finding.CrackFinder.run(), use this option.
 		## 	Available options:
-		## 	    - "no" (default) Deactivate reset, leave the data as provided.
-		## 	    - "all" The limits of all cracks are replaced.
-		## 	    - "inner" The outer limits of the outermost cracks are excluded from reseting.
+		## 	    - `"no"` (default) Deactivate reset, leave the data as provided.
+		## 	    - `"all"` The limits of all cracks are replaced.
+		## 	    - `"inner"` The outer limits of the outermost cracks are excluded from reseting.
 		self.methods = methods if methods else {"middle": True}
 	def _find_closest_threshold(self, data, threshold) -> int:
 		"""
@@ -59,31 +59,31 @@ class CrackLengths():
 		"""
 		crack_list.sort()
 		for crack in crack_list:
-			crack.leff_l = crack.leff_l if crack.leff_l is not None else -np.inf
-			crack.leff_r = crack.leff_r if crack.leff_r is not None else np.inf
+			crack.x_l = crack.x_l if crack.x_l is not None else -np.inf
+			crack.x_r = crack.x_r if crack.x_r is not None else np.inf
 		methods = copy.deepcopy(self.methods)
 		reset = methods.pop("reset", "no")
 		if reset != "no":
 			for i, crack in enumerate(crack_list):
 				if i < len(crack_list)-1 or reset == "all":
-					crack.leff_r = np.inf
+					crack.x_r = np.inf
 				if i > 0 or reset == "all":
-					crack.leff_l = -np.inf
+					crack.x_l = -np.inf
 		for method, value in methods.items():
 			for i, crack in enumerate(crack_list):
 				if method == "middle":
 					if i > 0:
 						middle = (crack_list[i-1].location + crack.location)/2
-						crack.leff_l = max(middle, crack.leff_l)
-						crack_list[i-1].leff_r = min(middle, crack_list[i-1].leff_r)
+						crack.x_l = max(middle, crack.x_l)
+						crack_list[i-1].x_r = min(middle, crack_list[i-1].x_r)
 				elif method == "min":
 					if i > 0:
 						left_peak_index = crack_list[i-1].index
 						right_peak_index = crack.index
 						left_valley = strain[left_peak_index:right_peak_index]
 						min_index = np.argmin(left_valley) + left_peak_index
-						crack.leff_l = max(x[min_index], crack.leff_l)
-						crack_list[i-1].leff_r = min(x[min_index], crack_list[i-1].leff_r)
+						crack.x_l = max(x[min_index], crack.x_l)
+						crack_list[i-1].x_r = min(x[min_index], crack_list[i-1].x_r)
 				elif method == "threshold":
 					left_peak_index = crack_list[i-1].index if i > 1 else 0
 					right_peak_index = crack.index[i+1] if i < len(x) - 1 else len(len(x) - 1)
@@ -92,12 +92,12 @@ class CrackLengths():
 					l_index = self._find_closest_threshold(left_valley, value)
 					r_index = self._find_closest_threshold(right_valley, value)
 					if l_index is not None:
-						crack.leff_l = x[crack.index - l_index]
+						crack.x_l = x[crack.index - l_index]
 					if r_index is not None:
-						crack.leff_r = x[crack.index + r_index]
+						crack.x_r = x[crack.index + r_index]
 				elif method == "length":
-					crack.leff_l = max(crack.location - value, crack.leff_l)
-					crack.leff_r = min(crack.location - value, crack.leff_l)
+					crack.x_l = max(crack.location - value, crack.x_l)
+					crack.x_r = min(crack.location - value, crack.x_l)
 				else:
 					raise ValueError("No such option '{}' known for `method`.".format(method))
 		return crack_list
