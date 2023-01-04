@@ -93,16 +93,28 @@ class Berrocal(TensionStiffeningCompensator):
 
 class Fischer(TensionStiffeningCompensator):
 	"""
-	Implements the tension stiffening approach according to the proposal by \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
-	The concrete strain \f$\varepsilon^{\mathrm{ts}}(x)\f$ is assumed to increase linearly with the distance from 0 at the crack location to \ref max_concrete_strain \f$ \sigma_{\mathrm{rupt}}\f$ at the border of the effective length.
-	With the equation for the right hand side of the crack (analogously for the left hand side):
+	Implements the tension stiffening approach based on \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	The calculative tension stiffening strain \f(\varepsilon^{\mathrm{ts}}_{\mathrm{concrete}}\f) is idealized to increase linearly from the crack's position
 	\f[
-		\varepsilon^{\mathrm{ts}}(x) = \left|\frac{(x - x_{\mathrm{cr}})}{(l_{\mathrm{eff,r}} - x_{\mathrm{cr}})}\right| \times \sigma_{\mathrm{rupt}}
+		\varepsilon^{\mathrm{ts}}_{\mathrm{concrete}}(x) = \min{\left(\delta_{\varepsilon}(x) \times \varepsilon_{\mathrm{lim}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)\right)}
 	\f]
-	However, the tension stiffening are limited to
+	with the normalized distance to the crack
 	\f[
-	\varepsilon^{\mathrm{ts}}(x) = \max{\left(\min{\left(\varepsilon^{\mathrm{ts}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)]\right)}, 0\right)}
+		\delta_{\varepsilon}(x) =
+		\begin{cases}
+			\frac{x_{\mathrm{cr}} - x}{l^{-}_{\mathrm{t}}} & \text{if } x \leq x_{\mathrm{cr}}, \\
+			\frac{x - x_{\mathrm{cr}}}{l^{+}_{\mathrm{t}}} & \text{if } x > x_{\mathrm{cr}}
+		\end{cases}
 	\f]
+	and the limit strain
+	\f[
+		\varepsilon_{\mathrm{lim}}(x) =
+		\begin{cases}
+			\min{\left(\varepsilon^{\mathrm{DFOS}}\left(x_{\mathrm{cr}} - l^{-}_{\mathrm{t}}\right),\: \varepsilon_{\mathrm{ctu}} \right)}& \text{if } x \leq x_{\mathrm{cr}}, \\
+			\min{\left(\varepsilon^{\mathrm{DFOS}}\left(x_{\mathrm{cr}} + l^{+}_{\mathrm{t}}\right),\: \varepsilon_{\mathrm{ctu}} \right)}& \text{if } x > x_{\mathrm{cr}}
+		\end{cases}
+	\f]
+	which is the minimum of the rupture strain \f(\varepsilon_{\mathrm{ctu}}\f) and the measured strain at the transfer length end.
 	"""
 	def __init__(self,
 			max_concrete_strain: int = 100,
@@ -123,17 +135,13 @@ class Fischer(TensionStiffeningCompensator):
 		\copydoc TensionStiffeningCompensator.run()
 		"""
 		tension_stiffening_values = np.zeros(len(strain))
-		for i, x in enumerate(x):
-			for crack in crack_list:
-				assert crack.location is not None, "Location of crack is `None`: {}".format(crack)
-				if crack.x_l <= x < crack.location:
-					d_x = (crack.location - x)/(crack.leff_l)
-					tension_stiffening_values[i] = self.max_concrete_strain * d_x
-				elif crack.location < x <= crack.x_r:
-					d_x = (x - crack.location)/(crack.leff_r)
-					tension_stiffening_values[i] = self.max_concrete_strain * d_x
-				else:
-					pass
+		for crack in crack_list:
+			l_i, x_l = fosutils.find_closest_value(x, crack.x_l)
+			r_i, x_r = fosutils.find_closest_value(x, crack.x_r)
+			x_seg = x[l_i:r_i]
+			xp = [x_l, crack.location, x_r]
+			fp = np.minimum([strain[l_i], 0, strain[r_i]], self.max_concrete_strain)
+			tension_stiffening_values[l_i:r_i] = np.interp(x_seg, xp, fp)
 		tension_stiffening_values = np.minimum(tension_stiffening_values, strain)
 		tension_stiffening_values = np.maximum(tension_stiffening_values, np.zeros(len(strain)))
 		return tension_stiffening_values
