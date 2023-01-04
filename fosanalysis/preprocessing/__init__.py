@@ -1,6 +1,6 @@
 
 """
-Contains modules for data sanitation, like:
+Contains modules for data preprocessing, like:
 - filtering: dealing with noise, e.g. smoothing
 - identification of strain reading anomalies (SRAs),
 - repair, dealing with `NaN`s

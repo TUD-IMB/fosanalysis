@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 import datetime
 import numpy as np
 
-import sanitation.repair
+import preprocessing.repair
 import fosutils
 
 class SensorRecord(dict):

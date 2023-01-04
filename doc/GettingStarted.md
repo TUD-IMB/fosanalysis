@@ -51,21 +51,21 @@ plt.show()
 
 We want to process it further and calculate crack widths.
 Since we know, the sensor was embedded in concrete or attached to the surface, we use the \ref fosanalysis.strainprofile.Concrete class.
-Beforehand, some of those exchangeable objects need to be generated, a \ref fosanalysis.sanitation.filtering.Filter object for smoothing/treating strain reading anomalies and a \ref fosanalysis.cropping.Crop object for restricting the data to the interesting area.
+Beforehand, some of those exchangeable objects need to be generated, a \ref fosanalysis.preprocessing.filtering.Filter object for smoothing/treating strain reading anomalies and a \ref fosanalysis.cropping.Crop object for restricting the data to the interesting area.
 It is known and visible in the data, that the area of interest ranges from 3 m -- 5 m.
 Both are passed to the \ref fosanalysis.strainprofile.Concrete object.
 The object, which compensates the tension stiffening (see \ref fosanalysis.tensionstiffening) and indentifies the cracks (see \ref fosanalysis.finding.CrackFinder) is picked by default, but could be configured in a similar way.
 
 ```.py
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
-filter_object=fa.sanitation.filtering.SlidingMean(radius=1)
+filter_object=fa.preprocessing.filtering.SlidingMean(radius=1)
 sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
 		filter_object=filter_object)
 ```
 
-During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the \ref fosanalysis.sanitation.filtering.Filter object and finally cropped to the start and end values by the \ref fosanalysis.cropping.Crop object.
+During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the \ref fosanalysis.preprocessing.filtering.Filter object and finally cropped to the start and end values by the \ref fosanalysis.cropping.Crop object.
 
 Now, identifying crack locations, crack segments and calculating their respective widths is as simple as:
 
@@ -76,7 +76,7 @@ sp.calculate_crack_widths()
 As the peak identification could be missing valid cracks or identify peaks which are no cracks, this automatic approach is not always successful.
 To demonstrate how to correct those errors, we want to delete an obvious misreading, which results in the fourth crack.
 Also, from manual inspection of the specimen, we know, that at 3.9 m, whose rather small peak is not recognized as a crack.
-If the peak recognition is faulty in general, readjusting the parameters of \ref fosanalysis.finding.CrackFinder and/or \ref fosanalysis.sanitation.filtering.Filter is suggested.
+If the peak recognition is faulty in general, readjusting the parameters of \ref fosanalysis.finding.CrackFinder and/or \ref fosanalysis.preprocessing.filtering.Filter is suggested.
 The cracks are recalulated by default after modifying the list of cracks.
 
 ```.py

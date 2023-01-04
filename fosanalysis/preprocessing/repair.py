@@ -6,7 +6,7 @@ Those can be used to attempt the reconstruction of more or less heavily destroye
 
 \author Bertram Richter
 \date 2022
-\package fosanalysis.sanitation.repair \copydoc repair.py
+\package fosanalysis.preprocessing.repair \copydoc repair.py
 """
 
 from abc import ABC, abstractmethod

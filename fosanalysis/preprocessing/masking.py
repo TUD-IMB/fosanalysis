@@ -6,7 +6,7 @@ This can be used to remove strain reading anomalies (SRAs) from the data.
 
 \author Bertram Richter
 \date 2022
-\package fosanalysis.sanitation.masking \copydoc masking.py
+\package fosanalysis.preprocessing.masking \copydoc masking.py
 """
 
 from abc import ABC, abstractmethod

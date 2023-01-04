@@ -6,7 +6,7 @@ Those can be leveraged to deal with noise, e.g.\ by smoothing neighboring data p
 
 \author Bertram Richter
 \date 2022
-\package fosanalysis.filtering \copydoc filtering.py
+\package fosanalysis.preprocessing.filtering \copydoc filtering.py
 """
 
 from abc import ABC, abstractmethod
