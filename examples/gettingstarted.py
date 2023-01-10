@@ -52,7 +52,7 @@ c_r = sp.crack_list.x_r
 
 # Plot preparation and plotting
 fig, ax1 = plt.subplots()
-ax1.set_xlabel("Sensor coordinate x [m]")
+ax1.set_xlabel("Position x [m]")
 ax1.set_ylabel("Strain [µm/m]")
 ax2 = ax1.twinx()
 ax2.set_ylabel("Crack width [µm]", c="red")
