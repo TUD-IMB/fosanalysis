@@ -14,23 +14,24 @@ In order to use this framework, make sure, that:
 
 ---
 
-**Contributing, License, and Citation**
+## Contributing, License, and Citation
 
 See [CONTRIBUTING](./CONTRIBUTING.md) for details on how to contribute to `fosanalysis`.
 
 If you use this framework, please cite this paper (not yet published):
-\todo Publish the paper.
 
 ```
-@unpublished{Richter2022_Towardsanautomaticdetection,
-  author  = {Bertram Richter, Max Herbers, Katarzyna Zdanowicz, Daniel Gebauer, Martin Claßen, Steffen Marx},
-  title   = {Towards an automatic detection and analysis of cracks with distributed fibre optic sensors},
-  date    = {2022},
+@article{Richter_2023_Crack_Monitoring_on_Concrete,
+	author = {Richter, Bertram and Herbers, Max and Marx, Steffen},
+	year = {2023},
+	title = {Crack Monitoring on Concrete Structures with \glsfmtshort{DFOS}~-- Towards an Automated Data Evaluation and Assessment},
+	doi = {},
+	journal = {Structural Concrete},
+	note = {(under review)}
 }
 ```
 
-\author Bertram Richter
-
-\copyright GPLv3: see [LICENSE](./LICENSE) for details.
-
-\date 2022
+# Licence and Copyright
+**Author:** Bertram Richter, more see [CONTRIBUTING](./CONTRIBUTING.md)  
+**Copyright:** Copyright by the authors, 2023.  
+**License:** This software is released under GPLv3, see [LICENSE](./LICENSE) for details

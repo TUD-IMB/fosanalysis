@@ -98,11 +98,11 @@ Finally, we can plot the results with some magic to put different two axes in th
 
 ```.py
 fig, ax1 = plt.subplots()
-ax1.set_xlabel('x [m]')
-ax1.set_ylabel('FOS strain [µm/m]')
+ax1.set_xlabel("Position x [m]")
+ax1.set_ylabel("Strain [µm/m]")
 ax2 = ax1.twinx()
-ax2.set_ylabel('Crack width [µm]', c="red")
-ax2.tick_params(axis ='y', labelcolor = 'red') 
+ax2.set_ylabel("Crack width [µm]", c="red")
+ax2.tick_params(axis ="y", labelcolor = "red") 
 ax1.plot(sp.x, sp.strain, c="k", label="strain")
 ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
 ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
