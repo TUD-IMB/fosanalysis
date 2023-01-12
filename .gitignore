@@ -3,6 +3,8 @@ _*
 .*
 !.gitignore
 data
+dist
+*.egg-info
 Documentation
 test*
 Test*

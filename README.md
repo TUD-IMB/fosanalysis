@@ -7,7 +7,7 @@ To build the full documentation, run `doxygen` in this directory and it will gen
 
 In order to use this framework, make sure, that:
 - the dependencies as stated below are correctly installed (follow the instructions of the packages),
-    - `Python >=3.?` (Developend under Python 3.9)
+    - `Python >=3.?` (Developed under Python 3.9)
     - `scipy` for peak finding. See [scipy.org](https://scipy.org) for the documentation.
     - `numpy` for array handling and operations. See [numpy.org](https://numpy.org) for the documentation.
 - the `fosanalysis` directory is in your `$PYTHONPATH`, for the modules to be importable.
@@ -24,7 +24,7 @@ If you use this framework, please cite this paper (not yet published):
 @article{Richter_2023_Crack_Monitoring_on_Concrete,
 	author = {Richter, Bertram and Herbers, Max and Marx, Steffen},
 	year = {2023},
-	title = {Crack Monitoring on Concrete Structures with \glsfmtshort{DFOS}~-- Towards an Automated Data Evaluation and Assessment},
+	title = {Crack Monitoring on Concrete Structures with DFOS~-- Towards an Automated Data Evaluation and Assessment},
 	doi = {},
 	journal = {Structural Concrete},
 	note = {(under review)}
