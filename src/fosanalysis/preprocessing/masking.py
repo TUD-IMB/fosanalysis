@@ -11,9 +11,10 @@ This can be used to remove strain reading anomalies (SRAs) from the data.
 
 from abc import ABC, abstractmethod
 import copy
+
 import numpy as np
 
-import fosutils
+from fosanalysis import fosutils
 
 class AnomalyMasker(fosutils.Base):
 	"""

@@ -9,17 +9,18 @@ Contains class definitions for strain profiles and cracks.
 
 from abc import ABC, abstractmethod
 import copy
+
 import numpy as np
 
-import cracks
-import cropping
-import finding
-import fosutils
-import integration
-import preprocessing
-import separation
-import shrinking
-import tensionstiffening
+from fosanalysis import cracks
+from fosanalysis import cropping
+from fosanalysis import finding
+from fosanalysis import fosutils
+from fosanalysis import integration
+from fosanalysis import preprocessing
+from fosanalysis import separation
+from fosanalysis import shrinking
+from fosanalysis import tensionstiffening
 
 class StrainProfile(fosutils.Base):
 	"""

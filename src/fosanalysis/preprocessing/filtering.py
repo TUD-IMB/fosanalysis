@@ -11,9 +11,10 @@ Those can be leveraged to deal with noise, e.g.\ by smoothing neighboring data p
 
 from abc import ABC, abstractmethod
 import copy
+
 import numpy as np
 
-import fosutils
+from fosanalysis import fosutils
 
 class Filter(fosutils.Base):
 	"""

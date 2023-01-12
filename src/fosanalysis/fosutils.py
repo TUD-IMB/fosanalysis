@@ -8,8 +8,9 @@ Contains standalone functions for dealing with measurement data sets.
 """
 
 from abc import ABC
-import numpy as np
 import warnings
+
+import numpy as np
 
 def find_closest_value(array: np.array, x: float) -> tuple:
 	"""

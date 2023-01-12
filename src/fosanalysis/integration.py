@@ -9,8 +9,8 @@ Contains functionality for integrating discretized funtions.
 
 import numpy as np
 
-import preprocessing.repair
-import fosutils
+from fosanalysis import fosutils
+from fosanalysis.preprocessing.repair import NaNFilter
 
 class Integrator(fosutils.Base):
 	"""
@@ -46,7 +46,7 @@ class Integrator(fosutils.Base):
 		interpolation = interpolation if interpolation is not None else self.interpolation
 		F = []
 		area = integration_constant
-		nan_filter = preprocessing.repair.NaNFilter()
+		nan_filter = NaNFilter()
 		x_values, y_values = nan_filter.run(x_values, y_values)
 		# Prepare the segments
 		if interpolation == "linear":

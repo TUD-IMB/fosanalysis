@@ -10,7 +10,7 @@ Contains functionality to separate cracks and set effective lengths.
 import copy
 import numpy as np
 
-import cracks
+from fosanalysis import cracks
 
 class CrackLengths():
 	"""

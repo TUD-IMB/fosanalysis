@@ -8,9 +8,10 @@ Contains class definitions for tension stiffening influences for concrete embedd
 """
 
 from abc import ABC, abstractmethod
+
 import numpy as np
 
-import fosutils
+from fosanalysis import fosutils
 
 class TensionStiffeningCompensator(fosutils.Base):
 	"""

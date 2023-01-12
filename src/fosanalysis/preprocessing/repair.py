@@ -10,9 +10,10 @@ Those can be used to attempt the reconstruction of more or less heavily destroye
 """
 
 from abc import ABC, abstractmethod
+
 import numpy as np
 
-import fosutils
+from fosanalysis import fosutils
 
 class Repair(fosutils.Base):
 	"""

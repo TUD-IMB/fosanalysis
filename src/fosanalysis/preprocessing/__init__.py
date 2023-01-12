@@ -13,7 +13,7 @@ from . import filtering
 from . import masking
 from . import repair
 
-import cropping
+from fosanalysis import cropping
 
 def strip_smooth_crop(x,
 					*y_tuple,

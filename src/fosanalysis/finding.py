@@ -9,7 +9,7 @@ Contains funtionality to find potential crack locations.
 
 import scipy.signal
 
-import cracks
+from fosanalysis import cracks
 
 class CrackFinder():
 	"""

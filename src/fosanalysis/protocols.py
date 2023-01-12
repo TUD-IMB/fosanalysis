@@ -9,10 +9,10 @@ Contains functionality for interfacing files and network ports.
 
 from abc import ABC, abstractmethod
 import datetime
+
 import numpy as np
 
-import preprocessing.repair
-import fosutils
+from fosanalysis import fosutils
 
 class SensorRecord(dict):
 	"""
