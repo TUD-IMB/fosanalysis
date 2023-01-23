@@ -24,7 +24,7 @@ If you use this framework, please cite this paper (not yet published):
 @article{Richter_2023_Crack_Monitoring_on_Concrete,
 	author = {Richter, Bertram and Herbers, Max and Marx, Steffen},
 	year = {2023},
-	title = {Crack Monitoring on Concrete Structures with DFOS~-- Towards an Automated Data Evaluation and Assessment},
+	title = {Crack Monitoring on Concrete Structures with Distributed Fiber Optic Sensors~-- Towards Automated Data Evaluation and Assessment},
 	doi = {},
 	journal = {Structural Concrete},
 	note = {(under review)}
