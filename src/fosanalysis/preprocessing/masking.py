@@ -9,7 +9,7 @@ This can be used to remove strain reading anomalies (SRAs) from the data.
 \package fosanalysis.preprocessing.masking \copydoc masking.py
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import copy
 
 import numpy as np
@@ -28,28 +28,35 @@ class AnomalyMasker(fosutils.Base):
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## List of the indices, that where identified as strain reading anomalies in the previous \ref run().
-		self.SRA_list = None
-	def run(self, x: np.array, y: np.array) -> np.array:
+	def run(self, x: np.array,
+			y: np.array,
+			*args, **kwargs) -> np.array:
 		"""
-		Check the strain values for plausibility using \ref is_SRA().
-		If \ref is_SRA() return `True`, the entry in the strain data is replaced by `NaN`.
+		Mask strain reading anomalies with `NaN`s.
+		The array, indicating which indizes are SRA is determined by \ref identify_SRAs().
+		The strain data is replaced by `NaN` for all entries in the returned array being `True`.
 		\param x Distance from the start of the sensor.
 		\param y Strain data according to `x`.
-		\return Returns the `y` array, with identified strain reading anomalies masked with `NaN`.
-			The according indizes are made available at \ref SRA_list
+		\param *args Additional positional arguments, will be passed to \ref identify_SRAs().
+		\param **kwargs Additional keyword arguments will be passed to \ref identify_SRAs().
+		\return Returns the `y` array, with identified strain reading anomalies masked by `NaN`.
 		"""
-		SRA_list = self.is_SRA(x, y)
 		masked = np.array(copy.deepcopy(y))
-		masked[SRA_list] = float("nan")
-		self.SRA_list = SRA_list
-		return np.array(masked)
+		SRA_array = self.identify_SRAs(x=x, y=masked, *args, **kwargs)
+		masked[SRA_array] = float("nan")
+		return masked
 	@abstractmethod
-	def is_SRA(self, x: np.array, y: np.array) -> np.array:
+	def identify_SRAs(self, x: np.array,
+					y: np.array,
+					*args, **kwargs) -> np.array:
 		"""
-		Estimate, whether which entry are strain reading anomalies.
+		Estimate, which entries are strain reading anomalies.
 		\param x Distance from the start of the sensor.
 		\param y Strain data according to `x`.
-		\return Returns an array of the same shape as `y` filled with boleans (`True` for SRA, `False` for valid entry).
+		\param *args Additional positional arguments, further specified in sub-classes.
+		\param **kwargs Additional keyword arguments, further specified in sub-classes.
+		\return Returns an array (same shape as `y`), where entries, which are identified as SRA, are set to `True`.
 		"""
-		raise NotImplementedError()
+		SRA_array = np.full_like(y, False, dtype=bool)
+		return SRA_array
+
