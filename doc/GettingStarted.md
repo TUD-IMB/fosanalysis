@@ -1,8 +1,17 @@
 # Getting Started
 
 ## Installation
-Currently, no automated installation is available yet, since `fosanalysis` is not yet in the Python Package Index.
-Thus, the software is installed by downloading it from [fosanalysis](https://gitlab.hrz.tu-chemnitz.de/tud-imb-fos/fosanalysis) and making the modules available by adding the directory where `fosanalysis` is stored to the `$PYTHONPATH` system variable.
+`fosanalysis` is developed under Python 3.9 and is available in the [Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
+To install the latest stable version, please run:
+- Linux and Mac: `python3 -m pip install -U fosanalysis`
+- Windows: `py -m pip install -U fosanalysis`
+
+In order to obtain the one of the development versions:
+- clone or download the project from [GitHub](https://github.com/TUD-IMB/fosanalysis).
+- install the required dependencies:
+    - `scipy`, see [scipy.org](https://scipy.org) for the documentation.
+    - `numpy`, see [numpy.org](https://numpy.org) for the documentation.
+- make the modules available by adding the directory where `fosanalysis` is stored to the `$PYTHONPATH` system variable.
 
 ## Software Architecture
 As a design principle, `fosanalysis` consists of several modules, each dedicated to a single specific functionality.
@@ -58,11 +67,11 @@ The object, which compensates the tension stiffening (see \ref fosanalysis.tensi
 
 ```.py
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
-filter_object=fa.preprocessing.filtering.SlidingMean(radius=1)
+fo = fa.preprocessing.filtering.SlidingMean(radius=1)
 sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
-		filter_object=filter_object)
+		filter_object=fo)
 ```
 
 During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the \ref fosanalysis.preprocessing.filtering.Filter object and finally cropped to the start and end values by the \ref fosanalysis.cropping.Crop object.
@@ -89,9 +98,9 @@ The property lists of the cracks can be obtained by
 ```.py
 c_w = sp.crack_list.widths
 c_s = sp.crack_list.max_strains
-c_l = sp.crack_list.leff_l
+c_l = sp.crack_list.x_l
 c_loc = sp.crack_list.locations
-c_r = sp.crack_list.leff_r
+c_r = sp.crack_list.x_r
 ```
 
 Finally, we can plot the results with some magic to put different two axes in the plot.

@@ -42,9 +42,9 @@ dependencies = [
 ]
 
 [project.urls] # to be decided
-#"Homepage" = ""
-#"Bug Reports" = ""
-#"Source" = ""
+"Homepage" = "https://github.com/TUD-IMB/fosanalysis"
+"Bug Reports" = "https://github.com/TUD-IMB/fosanalysis/issues"
+"Source" = "https://github.com/TUD-IMB/fosanalysis"
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]
