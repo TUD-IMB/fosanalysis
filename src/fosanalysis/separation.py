@@ -97,7 +97,7 @@ class CrackLengths():
 						crack.x_r = x[crack.index + r_index]
 				elif method == "length":
 					crack.x_l = max(crack.location - value, crack.x_l)
-					crack.x_r = min(crack.location - value, crack.x_l)
+					crack.x_r = min(crack.location + value, crack.x_r)
 				else:
 					raise ValueError("No such option '{}' known for `method`.".format(method))
 		return crack_list
