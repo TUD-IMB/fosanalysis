@@ -37,9 +37,9 @@ class CrackLengths():
 		## 	    - `"all"` The limits of all cracks are replaced.
 		## 	    - `"inner"` The outer limits of the outermost cracks are excluded from reseting.
 		self.methods = methods if methods else {"middle": True}
-	def _find_closest_threshold(self, data, threshold) -> int:
+	def _first_index_leq_threshold(self, data, threshold) -> int:
 		"""
-		Return the index of the first entry, that is less or equal to the given threshold and `None`, if no value one fulfills this condition.
+		Return the index of the first entry in `data`, that is less or equal than the given threshold and `None`, if no entry fulfills this condition.
 		"""
 		for i, x in enumerate(data):
 			if x <= threshold:
@@ -89,8 +89,8 @@ class CrackLengths():
 					right_peak_index = crack.index[i+1] if i < len(x) - 1 else len(len(x) - 1)
 					left_valley = strain[left_peak_index:crack.index+1].reverse()
 					right_valley = strain[crack.index:right_peak_index+1]
-					l_index = self._find_closest_threshold(left_valley, value)
-					r_index = self._find_closest_threshold(right_valley, value)
+					l_index = self._first_index_leq_threshold(left_valley, value)
+					r_index = self._first_index_leq_threshold(right_valley, value)
 					if l_index is not None:
 						crack.x_l = x[crack.index - l_index]
 					if r_index is not None:
