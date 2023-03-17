@@ -12,15 +12,15 @@ import copy
 
 import numpy as np
 
-from fosanalysis import cracks
-from fosanalysis import cropping
-from fosanalysis import finding
-from fosanalysis import fosutils
-from fosanalysis import integration
-from fosanalysis import preprocessing
-from fosanalysis import separation
-from fosanalysis import shrinking
-from fosanalysis import tensionstiffening
+from . import cracks
+from . import cropping
+from . import finding
+from . import fosutils
+from . import integration
+from . import preprocessing
+from . import separation
+from . import shrinking
+from . import tensionstiffening
 
 class StrainProfile(fosutils.Base):
 	"""
