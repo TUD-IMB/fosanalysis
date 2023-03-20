@@ -7,7 +7,7 @@ Contains functionality for interfacing files and network ports.
 \package fosanalysis.protocols \copydoc protocols.py
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import datetime
 
 import numpy as np

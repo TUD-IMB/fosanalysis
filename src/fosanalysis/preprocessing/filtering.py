@@ -9,7 +9,7 @@ Those can be leveraged to deal with noise, e.g.\ by smoothing neighboring data p
 \package fosanalysis.preprocessing.filtering \copydoc filtering.py
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import copy
 
 import numpy as np

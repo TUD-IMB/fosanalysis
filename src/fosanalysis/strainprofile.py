@@ -7,7 +7,7 @@ Contains class definitions for strain profiles and cracks.
 \package fosanalysis.strainprofile \copydoc strainprofile.py
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import copy
 
 import numpy as np

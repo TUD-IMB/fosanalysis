@@ -9,7 +9,7 @@ Those can be used to attempt the reconstruction of more or less heavily destroye
 \package fosanalysis.preprocessing.repair \copydoc repair.py
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 import numpy as np
 

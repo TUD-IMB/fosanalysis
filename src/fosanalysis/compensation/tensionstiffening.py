@@ -7,7 +7,7 @@ Contains class definitions for tension stiffening influences for concrete embedd
 \package fosanalysis.compensation.tensionstiffening \copydoc tensionstiffening.py
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 import numpy as np
 
