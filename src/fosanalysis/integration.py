@@ -24,7 +24,7 @@ class Integrator(fosutils.Base):
 		Constructs an Integrator object.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Algorithm, which should be used to interpolate between data points. Available options:
@@ -46,7 +46,7 @@ class Integrator(fosutils.Base):
 		\param initial The interpolation constant \f$C\f$.
 		\param interpolation \copybrief interpolation Defaults to \ref interpolation. For more, see \ref interpolation.
 		\param *args Additional positional arguments, will be passed to the called integration function.
-		\param **kwargs Additional keyword arguments will be passed to the called integration function.
+		\param **kwargs Additional keyword arguments, will be passed to the called integration function.
 		"""
 		interpolation = interpolation if interpolation is not None else self.interpolation
 		nan_filter = preprocessing.repair.NaNFilter()
@@ -74,7 +74,7 @@ class Integrator(fosutils.Base):
 		\param initial The interpolation constant \f$C\f$.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
 		\param *args Additional positional arguments, will be passed to the called integration function.
-		\param **kwargs Additional keyword arguments will be passed to the called integration function.
+		\param **kwargs Additional keyword arguments, will be passed to the called integration function.
 		"""
 		interpolation = interpolation if interpolation is not None else self.interpolation
 		start_index = start_index if start_index is not None else 0

@@ -319,6 +319,7 @@ class Concrete(StrainProfile):
 	"""
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
 	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref tensionstiffening.Fischer.
 	"""
 	def __init__(self,
 			*args, **kwargs):
@@ -342,7 +343,9 @@ class Concrete(StrainProfile):
 class Rebar(StrainProfile):
 	"""
 	The strain profile is assumed to be from a sensor attached to a reinforcement rebar.
-	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin using the following calculation:
+	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin.
+	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref tensionstiffening.Berrocal.
+	using the following calculation:
 	\f[
 		\omega{}_{\mathrm{cr},i} = \int_{l_{\mathrm{eff,l},i}}^{l_{\mathrm{eff,r},i}} \varepsilon^{\mathrm{DOFS}}(x) - \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right) \mathrm{d}x
 	\f]

@@ -26,7 +26,7 @@ class TensionStiffeningCompensator(fosutils.Base):
 		"""
 		super().__init__(*args, **kwargs)
 	@abstractmethod
-	def run(self, x, strain, crack_list) -> np.array:
+	def run(self, x, strain, crack_list, *args, **kwargs) -> np.array:
 		"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		An array with the compensation values for each measuring point is returned.
@@ -34,6 +34,8 @@ class TensionStiffeningCompensator(fosutils.Base):
 		\param x Positional x values.
 		\param strain List of strain values.
 		\param crack_list \ref cracks.CrackList with \ref cracks.Crack objects, that already have assigned locations.
+		\param *args Additional positional arguments to customize the baheviour.
+		\param **kwargs Additional keyword arguments to customize the baheviour.
 		"""
 		raise NotImplementedError()
 
@@ -43,8 +45,17 @@ class Berrocal(TensionStiffeningCompensator):
 	The concrete strain \f$\varepsilon^{\mathrm{ts}}(x)\f$ is assumed to the difference between the real strain profile \f$\varepsilon^{\mathrm{DOFS}}(x)\f$
 	and the linear interpolation between the peaks \f$\hat{\varepsilon}(x)\f$ reduced by the reinforcement ratio \ref rho \f$\rho\f$ and Young's moduli ratio \ref alpha \f$\alpha\f$:
 	\f[
-		\varepsilon^{\mathrm{ts}}(x) = \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right)
+		\varepsilon^{\mathrm{TS}}(x) = \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right).
 	\f]
+	Outside of the outermost cracks (index \f$0\f$ and \f$n\f$), \f$\hat{\varepsilon}(x)\f$ assumed to be constant at the peak strain of the outermost crack:
+	\f[
+		\hat{\varepsilon}(x) =
+		\begin{cases}
+			\varepsilon_{\mathrm{cr},0} &\text{ if } x < x_{\mathrm{cr}, 0}\\
+			\varepsilon_{\mathrm{cr},n} &\text{ if } x_{\mathrm{cr}, n} < x.
+		\end{cases}
+	\f]
+	The interpolation is done using [`numpy.interp()`](https://numpy.org/doc/stable/reference/generated/numpy.interp.html).
 	"""
 	def __init__(self,
 			alpha: float,
@@ -62,30 +73,12 @@ class Berrocal(TensionStiffeningCompensator):
 		self.alpha = alpha
 		## Reinforcement ratio of steel to concrete \f$\rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}}\f$.
 		self.rho = rho
-	def run(self, x, strain, crack_list) -> np.array:
+	def run(self, x, strain, crack_list, *args, **kwargs) -> np.array:
 		"""
 		\copydoc TensionStiffeningCompensator.run()
-		
-		The values of outside of the outermost cracks are extrapolated according to the neighboring field.
 		"""
 		assert len(crack_list) > 1
-		tension_stiffening_values = np.zeros(len(strain))
-		# Linear Interpolation between peaks
-		for n_valley in range(1, len(crack_list)):
-			left_peak = crack_list[n_valley-1].index
-			right_peak = crack_list[n_valley].index
-			dx = x[right_peak] - x[left_peak]
-			dy = strain[right_peak] - strain[left_peak]
-			for i in range(left_peak, right_peak):
-				tension_stiffening_values[i] = strain[left_peak] + (x[i] - x[left_peak])/(dx) * dy
-			# Linear extrapolation left of first peak
-			if n_valley == 1:
-				for i in range(left_peak):
-					tension_stiffening_values[i] = strain[left_peak] + (x[i] - x[left_peak])/(dx) * dy
-			# Linear extrapolation right of last peak
-			if n_valley == len(crack_list) - 1:
-				for i in range(left_peak, len(x)):
-					tension_stiffening_values[i] = strain[left_peak] + (x[i] - x[left_peak])/(dx) * dy
+		tension_stiffening_values = np.interp(x=x, xp=crack_list.locations, fp=crack_list.max_strains)
 		# Difference of steel strain to the linear interpolation
 		tension_stiffening_values = tension_stiffening_values - strain
 		# Reduce by rho  and alpha
@@ -97,7 +90,7 @@ class Fischer(TensionStiffeningCompensator):
 	Implements the tension stiffening approach based on \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
 	The calculative tension stiffening strain \f(\varepsilon^{\mathrm{ts}}_{\mathrm{concrete}}\f) is idealized to increase linearly from the crack's position
 	\f[
-		\varepsilon^{\mathrm{ts}}_{\mathrm{concrete}}(x) = \min{\left(\delta_{\varepsilon}(x) \times \varepsilon_{\mathrm{lim}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)\right)}
+		\varepsilon^{\mathrm{TS}}_{\mathrm{concrete}}(x) = \min{\left(\delta_{\varepsilon}(x) \times \varepsilon_{\mathrm{lim}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)\right)}
 	\f]
 	with the normalized distance to the crack
 	\f[
@@ -116,6 +109,7 @@ class Fischer(TensionStiffeningCompensator):
 		\end{cases}
 	\f]
 	which is the minimum of the rupture strain \f(\varepsilon_{\mathrm{ctu}}\f) and the measured strain at the transfer length end.
+	The interpolation is done using [`numpy.interp()`](https://numpy.org/doc/stable/reference/generated/numpy.interp.html).
 	"""
 	def __init__(self,
 			max_concrete_strain: int = 100,
@@ -131,7 +125,7 @@ class Fischer(TensionStiffeningCompensator):
 		## This the targed strain which the tension stiffening approaches towards the limit of the crack's effective length.
 		## Default to 100 µm/m.
 		self.max_concrete_strain = max_concrete_strain
-	def run(self, x, strain, crack_list) -> np.array:
+	def run(self, x, strain, crack_list, *args, **kwargs) -> np.array:
 		"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""
