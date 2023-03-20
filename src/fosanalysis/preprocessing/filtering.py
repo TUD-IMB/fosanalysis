@@ -25,7 +25,7 @@ class Filter(fosutils.Base):
 		"""
 		Constructs a Filter object.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 	@abstractmethod
@@ -49,7 +49,7 @@ class MultiFilter(fosutils.Base):
 		Constructs a MultiFilter object.
 		\param filters \copybrief filters For more, see \ref filters.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## List of \ref Filter objects.
@@ -84,7 +84,7 @@ class Limit(Filter):
 		\param minimum \copybrief minimum For more, see \ref minimum.
 		\param maximum \copybrief maximum For more, see \ref maximum.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Minimal value, which will be included in the result.
@@ -131,7 +131,7 @@ class SlidingFilter(Filter):
 		\param radius \copybrief radius For more, see \ref radius.
 		\param margins \copybrief margins For more, see \ref margins.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Setting, how the first and last `r` entries of `data` will be treated.

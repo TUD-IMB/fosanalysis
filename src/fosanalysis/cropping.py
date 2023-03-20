@@ -31,7 +31,7 @@ class Crop(fosutils.Base):
 		\param length \copybrief length For more, see \ref length.
 		\param offset \copybrief offset For more, see \ref offset.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## The starting position \f$s\f$ specifies the length of the sensor, before entering the measurement area.

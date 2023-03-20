@@ -63,7 +63,7 @@ Since we know, the sensor was embedded in concrete or attached to the surface, w
 Beforehand, some of those exchangeable objects need to be generated, a \ref fosanalysis.preprocessing.filtering.Filter object for smoothing/treating strain reading anomalies and a \ref fosanalysis.cropping.Crop object for restricting the data to the interesting area.
 It is known and visible in the data, that the area of interest ranges from 3 m -- 5 m.
 Both are passed to the \ref fosanalysis.strainprofile.Concrete object.
-The object, which compensates the tension stiffening (see \ref fosanalysis.tensionstiffening) and indentifies the cracks (see \ref fosanalysis.finding.CrackFinder) is picked by default, but could be configured in a similar way.
+The object, which compensates the tension stiffening (see \ref fosanalysis.compensation.tensionstiffening) and indentifies the cracks (see \ref fosanalysis.finding.CrackFinder) is picked by default, but could be configured in a similar way.
 
 ```.py
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)

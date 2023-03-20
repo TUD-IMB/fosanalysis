@@ -69,7 +69,7 @@ class Base(ABC):
 		"""
 		Does nothing, but warn about unused/unknown arguments
 		\param *args Additional positional arguments, will be discarded and warned about.
-		\param **kwargs Additional keyword arguments will be discarded and warned about.
+		\param **kwargs Additional keyword arguments, will be discarded and warned about.
 		"""
 		if len(args) > 0:
 			warnings.warn("Unused positional arguments for {c}: {a}".format(c=type(self), a=args))

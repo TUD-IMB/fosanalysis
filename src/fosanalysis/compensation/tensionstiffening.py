@@ -4,7 +4,7 @@
 Contains class definitions for tension stiffening influences for concrete embedded and reinforcement attached sensors.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.tensionstiffening \copydoc tensionstiffening.py
+\package fosanalysis.compensation.tensionstiffening \copydoc tensionstiffening.py
 """
 
 from abc import ABC, abstractmethod
@@ -12,8 +12,9 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from fosanalysis import fosutils
+from . import compensator
 
-class TensionStiffeningCompensator(fosutils.Base):
+class TensionStiffeningCompensator(compensator.Compensator):
 	"""
 	Abstract base class for tension stiffening compensation approaches.
 	"""
@@ -22,11 +23,11 @@ class TensionStiffeningCompensator(fosutils.Base):
 		"""
 		Constructs a TensionStiffeningCompensator object.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 	@abstractmethod
-	def run(self, x, strain, crack_list, *args, **kwargs) -> np.array:
+	def run(self, x: np.array, strain: np.array, crack_list: list, *args, **kwargs) -> np.array:
 		"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		An array with the compensation values for each measuring point is returned.
@@ -34,8 +35,8 @@ class TensionStiffeningCompensator(fosutils.Base):
 		\param x Positional x values.
 		\param strain List of strain values.
 		\param crack_list \ref cracks.CrackList with \ref cracks.Crack objects, that already have assigned locations.
-		\param *args Additional positional arguments to customize the baheviour.
-		\param **kwargs Additional keyword arguments to customize the baheviour.
+		\param *args Additional positional arguments to customize the behavior.
+		\param **kwargs Additional keyword arguments to customize the behavior.
 		"""
 		raise NotImplementedError()
 
@@ -66,14 +67,14 @@ class Berrocal(TensionStiffeningCompensator):
 		\param alpha \copybrief alpha For more, see \ref alpha.
 		\param rho \copybrief rho For more, see \ref rho.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Ratio of Young's moduli of steel to concrete \f$\alpha = \frac{E_{\mathrm{s}}}{E_{\mathrm{c}}}\f$.
 		self.alpha = alpha
 		## Reinforcement ratio of steel to concrete \f$\rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}}\f$.
 		self.rho = rho
-	def run(self, x, strain, crack_list, *args, **kwargs) -> np.array:
+	def run(self, x: np.array, strain: np.array, crack_list: list, *args, **kwargs) -> np.array:
 		"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""
@@ -118,14 +119,14 @@ class Fischer(TensionStiffeningCompensator):
 		Constructs a TensionStiffeningCompensator object with according to the proposal by \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
 		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Maximum strain in concrete that the concrete can bear, before a crack opens.
 		## This the targed strain which the tension stiffening approaches towards the limit of the crack's effective length.
 		## Default to 100 µm/m.
 		self.max_concrete_strain = max_concrete_strain
-	def run(self, x, strain, crack_list, *args, **kwargs) -> np.array:
+	def run(self, x: np.array, strain: np.array, crack_list: list, *args, **kwargs) -> np.array:
 		"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""

@@ -4,13 +4,15 @@
 Contains functionality to compensate shrinking and creep.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.shrinking \copydoc shrinking.py
+\package fosanalysis.compensation.shrinking \copydoc shrinking.py
 """
 
 import numpy as np
 import scipy.signal
 
-class ShrinkCompensator():
+from . import compensator
+
+class ShrinkCompensator(compensator.Compensator):
 	def __init__(self,
 			method: str = "mean_min",
 			*args, **kwargs):

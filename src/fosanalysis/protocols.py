@@ -81,7 +81,7 @@ class ODiSI6100TSVFile(Protocol):
 		\param itemsep Item separator used in the file. Will be used to split the several entries.
 		\param start_index Start index of the data. This can be used to omit additional data in the beginning. Defaults to `None` (no restriction).
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## \ref SensorRecord, which contains the tare data values.

@@ -12,6 +12,7 @@ import copy
 
 import numpy as np
 
+from . import compensation
 from . import cracks
 from . import cropping
 from . import finding
@@ -19,8 +20,6 @@ from . import fosutils
 from . import integration
 from . import preprocessing
 from . import separation
-from . import shrinking
-from . import tensionstiffening
 
 class StrainProfile(fosutils.Base):
 	"""
@@ -69,8 +68,8 @@ class StrainProfile(fosutils.Base):
 		\param shrink_compensator \copybrief shrink_compensator For more, see \ref shrink_compensator.
 		\param suppress_compression \copybrief suppress_compression For more, see \ref suppress_compression.
 		\param ts_compensator \copybrief ts_compensator For more, see \ref ts_compensator.
-		\param *args Additional positional arguments. They are ignored.
-		\param **kwargs Additional keyword arguments. They are ignored.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Original list of location data (x-axis) for the current experiment.
@@ -94,7 +93,7 @@ class StrainProfile(fosutils.Base):
 		## \ref cropping.Crop object to restrict the data to a desired section of the sensor.
 		## Defaults to the default configuration of \ref cropping.Crop (no restirction applied.
 		self.crop = crop if crop is not None else cropping.Crop()
-		## \ref shrinking.ShrinkCompensator object to compensate the strain values for concrete shrinking and creep.
+		## \ref compensation.shrinking.ShrinkCompensator object to compensate the strain values for concrete shrinking and creep.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.shrink_compensator = shrink_compensator
 		## \ref finding.CrackFinder object, wich holds the settings for peak identification.
@@ -103,7 +102,7 @@ class StrainProfile(fosutils.Base):
 		## \ref separation.CrackLengths object used to assign the cracks their respective effective lengths.
 		## Defaults to the default configuration of \ref separation.CrackLengths.
 		self.lengthsplitter = lengthsplitter if lengthsplitter is not None else separation.CrackLengths()
-		## \ref tensionstiffening.TensionStiffeningCompensator object used to substract out the influence of tension stiffening on the crack width.
+		## \ref compensation.tensionstiffening.TensionStiffeningCompensator object used to substract out the influence of tension stiffening on the crack width.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.ts_compensator = ts_compensator
 		## \ref preprocessing.filtering.Filter object to sanitize the data values and reduce strain reading anomalies.
@@ -319,7 +318,7 @@ class Concrete(StrainProfile):
 	"""
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
 	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
-	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref tensionstiffening.Fischer.
+	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Fischer.
 	"""
 	def __init__(self,
 			*args, **kwargs):
@@ -329,7 +328,7 @@ class Concrete(StrainProfile):
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
 		"""
 		default_values = {
-			"ts_compensator": tensionstiffening.Fischer()
+			"ts_compensator": compensation.tensionstiffening.Fischer()
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
@@ -344,7 +343,7 @@ class Rebar(StrainProfile):
 	"""
 	The strain profile is assumed to be from a sensor attached to a reinforcement rebar.
 	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin.
-	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref tensionstiffening.Berrocal.
+	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Berrocal.
 	using the following calculation:
 	\f[
 		\omega{}_{\mathrm{cr},i} = \int_{l_{\mathrm{eff,l},i}}^{l_{\mathrm{eff,r},i}} \varepsilon^{\mathrm{DOFS}}(x) - \rho \alpha \left(\hat{\varepsilon}(x) - \varepsilon^{\mathrm{DOFS}}(x)\right) \mathrm{d}x
@@ -352,8 +351,8 @@ class Rebar(StrainProfile):
 	Where \f$ \omega{}_{\mathrm{cr},i} \f$ is the \f$i\f$th crack and
 	- \f$ \varepsilon^{\mathrm{DOFS}}(x) \f$ is the strain reported by the sensor,
 	- \f$ \hat{\varepsilon}(x) \f$ the linear interpolation of the strain between crack positions,
-	- \f$ \alpha \f$: \copydoc tensionstiffening.Berrocal.alpha
-	- \f$ \rho \f$: \copydoc tensionstiffening.Berrocal.rho
+	- \f$ \alpha \f$: \copydoc compensation.tensionstiffening.Berrocal.alpha
+	- \f$ \rho \f$: \copydoc compensation.tensionstiffening.Berrocal.rho
 	"""
 	def __init__(self,
 			alpha: float,
@@ -361,19 +360,19 @@ class Rebar(StrainProfile):
 			*args, **kwargs):
 		"""
 		Constructs a strain profile object, of a sensor attached to a reinforcement rebar.
-		\param alpha \copybrief tensionstiffening.Berrocal.alpha For more, see \ref tensionstiffening.Berrocal.alpha.
-		\param rho \copybrief tensionstiffening.Berrocal.rho For more, see \ref tensionstiffening.Berrocal.rho.
+		\param alpha \copybrief compensation.tensionstiffening.Berrocal.alpha For more, see \ref compensation.tensionstiffening.Berrocal.alpha.
+		\param rho \copybrief compensation.tensionstiffening.Berrocal.rho For more, see \ref compensation.tensionstiffening.Berrocal.rho.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
 		"""
 		default_values = {
-			"ts_compensator": tensionstiffening.Berrocal(alpha=alpha, rho=rho)
+			"ts_compensator": compensation.tensionstiffening.Berrocal(alpha=alpha, rho=rho)
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
-		## \copydoc tensionstiffening.Berrocal.alpha
+		## \copydoc compensation.tensionstiffening.Berrocal.alpha
 		self.alpha = alpha
-		## \copydoc tensionstiffening.Berrocal.rho
+		## \copydoc compensation.tensionstiffening.Berrocal.rho
 		self.rho = rho
 	def _clean_data_prepare(self) -> dict:
 		"""

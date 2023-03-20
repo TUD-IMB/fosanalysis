@@ -1,3 +1,4 @@
+from . import compensation
 from . import cracks
 from . import cropping
 from . import finding
@@ -5,7 +6,5 @@ from . import fosutils
 from . import integration
 from . import protocols
 from . import separation
-from . import shrinking
 from . import preprocessing
 from . import strainprofile
-from . import tensionstiffening
