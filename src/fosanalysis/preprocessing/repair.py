@@ -7,17 +7,20 @@ Those can be used to attempt the reconstruction of more or less heavily destroye
 \date 2022
 """
 
-from abc import abstractmethod
+import copy
 
 import numpy as np
+import scipy.interpolate
 
 from . import base
+from fosanalysis.utils.interpolation import scipy_interpolate1d
 
 class Repair(base.DataCleaner):
 	"""
 	Base class for algorithms to replace/remove missing data with plausible values.
 	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
-	This is done by replacing the dropouts with plausible values and/or removing dropouts.
+	This is done by replacing the dropouts by plausible values and/or removing dropouts.
+	Because the shape of the arrays might be altered, \ref run() will return both `x` and `strain` data.
 	"""
 
 class NaNFilter(base.Base):
@@ -77,3 +80,81 @@ class NaNFilter(base.Base):
 		if axis == 1 and y.ndim == 1:
 				y = y[keep_array]
 		return x, y, z
+
+class ScipyInterpolation1D(Repair):
+	"""
+	Replace dropouts (`NaN`s) with values interpolated by the given method.
+	The following steps are carried out:
+	1. The `NaN` values are removed using \ref NaNFilter.
+		Hence, an extra dropout removal before is not beneficial.
+	2. An interpolation function is calulated based on the dropout-free `x` and `z`.
+	3. The interpolation function is evaluated on the original `x`.
+	
+	This is a wrapper for \ref fosanalysis.utils.interpolation.scipy_interpolate1d().
+	"""
+	def __init__(self,
+				method: str = "Akima1DInterpolator",
+				*args, **kwargs):
+		"""
+		Construct an ScipyInterpolation1D object.
+		\param method \copydoc method
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		"""
+		super().__init__(*args, **kwargs)
+		## \ref NaNFilter object used to temporarily remove `NaN`s.
+		self.nanfilter = NaNFilter()
+		## Name of the interpolation function to use.
+		## Defaults to `"Akima1DInterpolator"`.
+		## The interpolation function expects two parameters (`x` and `y`) and returns a callable.
+		## The returned callable should expect only a single parameter (the `x_new`).
+		## According to [scipy.interpolate](https://docs.scipy.org/doc/scipy/reference/interpolate.html),
+		## the following options are available (consult the `scipy` documentation for details):
+		## - `"interp1d"` (legacy)
+		## - `"BarycentricInterpolator"`
+		## - `"KroghInterpolator"`
+		## - `"PchipInterpolator"`
+		## - `"Akima1DInterpolator"`
+		## - `"CubicSpline"`
+		## - `"make_interp_spline"`
+		## - `"make_smoothing_spline"`
+		## - `"UnivariateSpline"`
+		## - `"InterpolatedUnivariateSpline"`
+		self.method = method
+		## Dictionary of additional keyword arguments.
+		## These are passed to the interpolation function at runtime.
+		self.kwargs = kwargs
+	def _run_1d(self,
+			x: np.array,
+			z: np.array,
+			method: str = None,
+			*args, **kwargs) -> tuple:
+		"""
+		Replace dropouts (`NaN`s) with values interpolated by the given method.
+		\param x Array of measuring point positions in accordance to `z`.
+		\param z Array of strain data in accordance to `x`.
+		\param method \copydoc method
+		\return Returns a `np.array` of the same shape as `x`.
+		"""
+		object_kwargs = copy.deepcopy(self.kwargs)
+		method = method if method is not None else self.method
+		object_kwargs.update(**kwargs)
+		x_clean, y_clean, z_clean = self.nanfilter.run(x, None, z)
+		z_new = scipy_interpolate1d(
+							x=x_clean,
+							y=z_clean,
+							x_new=x,
+							method=method,
+							*args, **object_kwargs)
+		return x, z_new
+	def _run_2d(self, 
+		x: np.array, 
+		y: np.array, 
+		z: np.array,
+		SRA_array: np.array,
+		*args, **kwargs)->tuple:
+		"""
+		ScipyInterpolation1D has no true 2D operation mode.
+		Set \ref timespace to `"1D_space"`!
+		"""
+		raise NotImplementedError("ScipyInterpolation1D does not support true 2D operation. Please use `timepace='1D-space'` instead.")
