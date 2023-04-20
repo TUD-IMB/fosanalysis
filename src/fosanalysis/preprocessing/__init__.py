@@ -42,6 +42,6 @@ def strip_smooth_crop(x,
 				y_smooth = filter_object.run(y_strip)
 				x_crop, y_crop = crop.run(x_strip, y_smooth, start_pos=start_pos, end_pos=end_pos, length=length, offset=offset)
 				y_list_smooth.append(y_crop)
-			return x_crop, y_list_smooth[0] if len(y_list_smooth) == 1 else tuple(y_list_smooth)
+			return (x_crop, y_list_smooth[0]) if len(y_list_smooth) == 1 else (x_crop, *y_list_smooth)
 		else:
 			raise ValueError("Either x, any of y_tuple is None or they differ in lengths.")
