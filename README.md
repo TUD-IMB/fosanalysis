@@ -10,13 +10,11 @@ To install the latest stable version, please run:
 A quick guide on how to use this framework is provided in [Getting Started](./doc/GettingStarted.md).
 To build the full documentation, run `doxygen` in the root directory of the project (this directory) and it will generate it in the directory `./Documentation/`
 
----
-
-## Contributing, License, and Citation
-
 See [CONTRIBUTING](./CONTRIBUTING.md) for details on how to contribute to `fosanalysis`.
 
-If you use this framework, please cite this paper (not yet published):
+Overview of news is given in [CHANGELOG](./CHANGELOG.md).
+
+If you use this framework, please cite this paper:
 
 ```
 @article{Richter_2023_Crack_Monitoring_on_Concrete,
