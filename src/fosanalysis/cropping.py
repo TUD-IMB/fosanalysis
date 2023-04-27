@@ -9,7 +9,7 @@ Contains functionality to compensate crop a set of data.
 
 import numpy as np
 
-from fosanalysis import fosutils
+from . import fosutils
 
 class Crop(fosutils.Base):
 	"""

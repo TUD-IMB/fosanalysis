@@ -12,9 +12,9 @@ from abc import abstractmethod
 
 import numpy as np
 
-import fosanalysis.fosutils
+from fosanalysis import fosutils
 
-class Compensator(fosanalysis.fosutils.Base):
+class Compensator(fosutils.Base):
 	def __init__(self, *args, **kwargs):
 		"""
 		Base class for any compensatory class.

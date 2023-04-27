@@ -37,29 +37,29 @@ class Crack():
 		self.index = index
 		## Absolute location along the fibre optical sensor.
 		self.location = location
-		## Absolute location left-hand side end of its effective length.
+		## Absolute location left-hand side end of its transfer length.
 		self.x_l = x_l
-		## Absolute location right-hand side end of its effective length.
+		## Absolute location right-hand side end of its transfer length.
 		self.x_r = x_r
-		## The opening width of the crack. The width is calculated by integrating the strain over the effective length. 
+		## The opening width of the crack. The width is calculated by integrating the strain over the transfer length. 
 		self.width = width
 		## The strain in the fibre-optical sensor at the \ref location. 
 		self.max_strain = max_strain
 		## Name of the crack.
 		self.name = name
 	@property
-	def leff(self):
+	def lt(self):
 		"""
-		Returns the length of the effective length.
+		Returns the length of the transfer length.
 		"""
 		return self.x_r - self.x_l
 	@property
-	def leff_l(self):
-		"""" Distance from the crack position to the left-hand side end of its effective length. """
+	def lt_l(self):
+		"""" Distance from the crack position to the left-hand side end of its transfer length. """
 		return self.location - self.x_l
 	@property
-	def leff_r(self):
-		"""" Distance from the crack position to the right-hand side end of its effective length. """
+	def lt_r(self):
+		"""" Distance from the crack position to the right-hand side end of its transfer length. """
 		return self.x_r - self.location
 	@property
 	def segment(self):
@@ -86,11 +86,11 @@ class CrackList(list):
 		super().__init__(crack_list)
 	@property
 	def x_l(self) -> list:
-		""" Returns a list with the left-hand side border of effective length of all cracks. """
+		""" Returns a list with the left-hand side border of transfer length of all cracks. """
 		return [crack.x_l for crack in self]
 	@property
 	def x_r(self) -> list:
-		""" Returns a list with the right-hand side border of effective length of all cracks. """
+		""" Returns a list with the right-hand side border of transfer length of all cracks. """
 		return [crack.x_r for crack in self]
 	@property
 	def locations(self) -> list:
@@ -110,7 +110,7 @@ class CrackList(list):
 		\param x Position along the Sensor.
 		\param method Method, that is used, to use decide, how the crack is chosen. Available methods:
 			- `"nearest"` (default): returns the crack, for which the distance between the location and `x` is the smallest among all cracks.
-			- `"leff"`: returns the first crack, for which holds: \f$x_{\mathrm{eff,l}} < x \leq x_{\mathrm{eff,r}}\f$.
+			- `"lt"`: returns the first crack, for which holds: \f$x_{\mathrm{t,l}} < x \leq x_{\mathrm{t,r}}\f$.
 		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
 		"""
 		crack = None
@@ -123,7 +123,7 @@ class CrackList(list):
 					min_dist = dist
 					closest_crack = crack
 			return closest_crack
-		elif method == "leff":
+		elif method == "lt":
 			for crack in self:
 				if crack.x_l < x <= crack.x_r:
 					return crack

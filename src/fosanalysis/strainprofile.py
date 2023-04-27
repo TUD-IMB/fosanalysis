@@ -185,7 +185,7 @@ class StrainProfile(fosutils.Base):
 		Returns the crack widths.
 		The following is done:
 		1. Find the crack positions, see \ref find_cracks().
-		2. Find the effective lengths of the crack, see \ref set_leff().
+		2. Find the effective lengths of the crack, see \ref set_lt().
 		3. Shrinking/creep is taken into account, see \ref compensate_shrink().
 		4. Taking tension stiffening (subtraction of triangular areas) into account, see \ref calculate_tension_stiffening().
 		5. For each crack segment, the crack width is calculated by integrating the strain using fosdata.integrate_segment().
@@ -200,7 +200,7 @@ class StrainProfile(fosutils.Base):
 		
 		if not self.crack_list:
 			self.find_cracks()
-			self.set_leff()
+			self.set_lt()
 		# Compensation
 		strain = self.strain
 		if self.shrink_compensator is not None:
@@ -222,9 +222,9 @@ class StrainProfile(fosutils.Base):
 		"""
 		self.crack_list = self.crackfinder.run(self.x, self.strain)
 		return self.crack_list
-	def set_leff(self) -> list:
+	def set_lt(self) -> list:
 		"""
-		Assing effective length to \ref crack_list, settings are stored in \ref lengthsplitter.
+		Estimating transfer length to \ref crack_list, settings are stored in \ref lengthsplitter.
 		If \ref crack_list is empty, \ref find_cracks() is carried out beforehand.
 		"""
 		if not self.crack_list:
@@ -253,7 +253,7 @@ class StrainProfile(fosutils.Base):
 		"""
 		try:
 			if not self.crack_list:
-				self.set_leff()
+				self.set_lt()
 			self.tension_stiffening_values = self.ts_compensator.run(self.x, self.strain, self.crack_list)
 		except:
 			raise RuntimeError("Something went wrong while attempting to calculate tension stiffening compensation.")
@@ -266,7 +266,7 @@ class StrainProfile(fosutils.Base):
 		"""
 		Use this function to manually add a crack to \ref crack_list at the closest measuring point to `x` after an intial crack identification.
 		It assumes, that \ref find_cracks() is run beforehand at least once.
-		Afterwards, \ref set_leff() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
+		Afterwards, \ref set_lt() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
 		\param cracks_tuple Any number of \ref cracks.Crack objects or numbers (mix is allowed).
 			In case of a number, it is assumed to be the (approximate) position of the crack. The added \ref cracks.Crack object will be put at the closest entry of \ref x.
 			In case of a \ref cracks.Crack object (e.g. imported from another \ref StrainProfile), a copy is placed at the closest measuring of \ref x to \ref cracks.Crack.location.
@@ -292,7 +292,7 @@ class StrainProfile(fosutils.Base):
 								)
 			self.crack_list.append(crack)
 		if recalculate:
-			self.set_leff()
+			self.set_lt()
 			self.calculate_crack_widths(clean=False)
 	def delete_cracks(self,
 						*cracks_tuple: tuple,
@@ -300,7 +300,7 @@ class StrainProfile(fosutils.Base):
 						) -> list:
 		"""
 		Use this function to manually delete cracks from \ref crack_list, that were wrongfully identified automatically by \ref find_cracks().
-		After the deletion, \ref set_leff() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
+		After the deletion, \ref set_lt() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
 		\param cracks_tuple Any number of integers (list indexes) of the cracks that should be deleted.
 		\param recalculate Switch, whether all crack should be updated after the insertion, defaults to `True`.
 		\return Returns a \ref cracks.CrackList of the deleted \ref cracks.Crack objects. 
@@ -310,7 +310,7 @@ class StrainProfile(fosutils.Base):
 		delete_cracks = cracks.CrackList([self.crack_list[i] for i in cracks_tuple if i in range(len(self.crack_list))])
 		self.crack_list = cracks.CrackList([self.crack_list[i] for i in range(len(self.crack_list)) if i not in cracks_tuple])
 		if recalculate:
-			self.set_leff()
+			self.set_lt()
 			self.calculate_crack_widths(clean=False)
 		return delete_cracks
 

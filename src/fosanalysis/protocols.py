@@ -12,7 +12,7 @@ import datetime
 
 import numpy as np
 
-from fosanalysis import fosutils
+from . import fosutils
 
 class SensorRecord(dict):
 	"""

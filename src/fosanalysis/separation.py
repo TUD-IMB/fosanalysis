@@ -1,7 +1,7 @@
 
 """
 \file
-Contains functionality to separate cracks and set effective lengths.
+Contains functionality to separate cracks and set transfer lengths.
 \author Bertram Richter
 \date 2022
 \package fosanalysis.separation \copydoc separation.py
@@ -10,11 +10,11 @@ Contains functionality to separate cracks and set effective lengths.
 import copy
 import numpy as np
 
-from fosanalysis import cracks
+from . import cracks
 
 class CrackLengths():
 	"""
-	Assigns the effective length to a all \ref cracks.Crack objects in a \ref cracks.CrackList.
+	Assigns the transfer length to a all \ref cracks.Crack objects in a \ref cracks.CrackList.
 	"""
 	def __init__(self, **methods: dict):
 		"""
@@ -22,7 +22,7 @@ class CrackLengths():
 		\param methods \copybrief methods For more, see \ref methods.
 		"""
 		## Dictionary of methods to restrict the effetice lengths of a crack with their respective options.
-		## All given methods are carries out, the effective length will be the tightest interval (the limit closest to the cracks location wins).
+		## All given methods are carries out, the transfer length will be the tightest interval (the limit closest to the cracks location wins).
 		## Availabe methods/options:
 		## - `"middle": None`: (default) Crack segments are split in the middle inbetween crack locations. The outer limits of the outermost cracks are not changed.
 		## 	No further options.
@@ -30,7 +30,7 @@ class CrackLengths():
 		## 	No further options.
 		## - `"threshold": <threshold: float>`: Crack segment is limited at the nearest point of `x`, where the `strain` falls below the `threshold` strain.
 		## - `"length": <length: float>`: Crack segment is limited in its radius by the constant value. The last entry in the `x` data, inside this radius is taken as the limit.
-		## - `"reset": "str" = "<option>"` If provided`, the limits of the effective lengths are set to \f$-\infty\f$ for the left and \f$\infty\f$ right limit prior to the assignments.
+		## - `"reset": "str" = "<option>"` If provided`, the limits of the transfer lengths are set to \f$-\infty\f$ for the left and \f$\infty\f$ right limit prior to the assignments.
 		## 	In order to purge the information, that is initially provided e.g. by \ref finding.CrackFinder.run(), use this option.
 		## 	Available options:
 		## 	    - `"no"` (default) Deactivate reset, leave the data as provided.
@@ -50,7 +50,7 @@ class CrackLengths():
 			strain,
 			crack_list: cracks.CrackList) -> cracks.CrackList:
 		"""
-		Estimates the effective length of all cracks according to \ref methods.
+		Estimates the transfer length of all cracks according to \ref methods.
 		Limits that are `None` are replaced by \f$-\infty\f$ for the left and \f$\infty\f$ right limit prior to the assignments
 		\param x Positional x values.
 		\param strain List of strain values.
