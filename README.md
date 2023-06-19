@@ -1,9 +1,14 @@
-# fosanalyis -- A framework to calculate crack widths from fiber optic sensor data
+![fosanalysis](./doc/graphics/fosanalysis_logo.svg)
+# fosanalyis – A framework to evaluate distributed fiber optic sensor data
 
-This project provides a framework for crack width calculation through strain measurement by fiber optic sensors.
+Fiber optic sensors make quasi-continuous strain measurements possible, due to their high spatial resolution.
+Therefore, this measurement technique has great potential for structural health monitoring.
+The rich data enables valuable insights, e.g., for monitoring crack widths or global deformations.
+Aggregating this data to information requires efficient and scientifically substantiated algorithms.
+This project provides a framework for analyzing distributed fiber optic sensor data with the focus on crack width calculation.
 
-`fosanalysis` is developed under Python 3.9 and is available in the [Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
-To install the latest stable version, please run:
+`fosanalysis` is developed under Python 3.9 and is available in the [Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
+To install the latest stable version, please run (or equivalent in your IDE):
 - Linux and Mac: `python3 -m pip install -U fosanalysis`
 - Windows: `py -m pip install -U fosanalysis`
 
@@ -18,16 +23,17 @@ If you use this framework, please cite this paper:
 
 ```
 @article{Richter_2023_Crack_Monitoring_on_Concrete,
-	author = {Richter, Bertram and Herbers, Max and Marx, Steffen},
-	year = {2023},
-	title = {Crack Monitoring on Concrete Structures with Distributed Fiber Optic Sensors~-- Towards Automated Data Evaluation and Assessment},
-	doi = {},
-	journal = {Structural Concrete},
-	note = {(under review)}
+  author   = {Richter, Bertram and Herbers, Max and Marx, Steffen},
+  title    = {Crack Monitoring on Concrete Structures with Distributed Fiber Optic Sensors~-- Towards Automated Data Evaluation and Assessment},
+  year     = {2023},
+  journal  = {Structural Concrete},
+  doi      = {},
+  pubstate = {submitted},
+  note     = {(under review)},
 }
 ```
 
 # Licence and Copyright
-**Author:** Bertram Richter, more see [CONTRIBUTING](./CONTRIBUTING.md)  
+**Author:** Bertram Richter, more see [CONTRIBUTING](./CONTRIBUTING.md).  
 **Copyright:** Copyright by the authors, 2023.  
-**License:** This software is released under GPLv3, see [LICENSE](./LICENSE) for details
+**License:** This software is released under GPLv3, see [LICENSE](./LICENSE) for details.

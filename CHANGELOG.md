@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changelog introduced
 - `fosutils.find_next_neighbor()`
 - The project is now packaged on PyPI.
+- Added a logo
 
 ### Changed
 
