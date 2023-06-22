@@ -134,10 +134,10 @@ class Fischer(TensionStiffeningCompensator):
 		for crack in crack_list:
 			l_i, x_l = fosutils.find_closest_value(x, crack.x_l)
 			r_i, x_r = fosutils.find_closest_value(x, crack.x_r)
-			x_seg = x[l_i:r_i]
+			x_seg = x[l_i:r_i+1]
 			xp = [x_l, crack.location, x_r]
 			fp = np.minimum([strain[l_i], 0, strain[r_i]], self.max_concrete_strain)
-			tension_stiffening_values[l_i:r_i] = np.interp(x_seg, xp, fp)
+			tension_stiffening_values[l_i:r_i+1] = np.interp(x_seg, xp, fp)
 		tension_stiffening_values = np.minimum(tension_stiffening_values, strain)
 		tension_stiffening_values = np.maximum(tension_stiffening_values, np.zeros(len(strain)))
 		return tension_stiffening_values
