@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cracks.CrackList.get_crack()` now returns the nearest crack by default.
 - `crop.Crop` now treats 2D arrays as well.
 - Refactored `integration.Integrator`
+- Transfer length default limits are now the strain minimum or 0.2 m (whatever is closer to the crack).
 
 ### Fixed
 
