@@ -141,15 +141,18 @@ class ODiSI6100TSVFile(Protocol):
 		"""
 		record_list = record_list if record_list is not None else self.y_record_list
 		return [record["data"] for record in record_list]
-	def get_time_stamps(self):
+	def get_time_stamps(self) -> list:
 		"""
 		Get the time stamps of all records in \ref y_record_list.
 		"""
 		return [record["timestamp"] for record in self.y_record_list]
-	def get_record_from_time_stamp(self, time_stamp: datetime.datetime) -> SensorRecord:
+	def get_record_from_time_stamp(self, time_stamp: datetime.datetime) -> tuple:
 		"""
-		Get the record, which is closest to the given time_stamp.
-		\return Returns the full record, which time stamp is closest to the given `time_stamp` and the corresponding index.
+		Get the \ref SensorRecord and its index, which is closest to the given time_stamp.
+		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
+		\return Returns a tuple like `(sensor_record, index)` with
+		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
+		\revtval index the corresponding index in \ref y_record_list.
 		"""
 		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(), time_stamp)
 		return self.y_record_list[index], index
@@ -170,7 +173,7 @@ class ODiSI6100TSVFile(Protocol):
 		if isinstance(start, datetime.date):
 			tmp_record, start = self.get_record_from_time_stamp(start)
 		return self.y_record_list[start:end]
-	def get_time_series(self, x: float) -> np.array:
+	def get_time_series(self, x: float) -> tuple:
 		"""
 		Get the strain time series for a fixed position.
 		Therefore, the closed x-value to the given position is found and the according strain values are collected.
@@ -191,6 +194,7 @@ class ODiSI6100TSVFile(Protocol):
 		If a column consists entirely of `NaN`, nan is written to the returned array.
 		For more, see documentation on `numpy.nanmean()`.
 		\copydetails get_record_slice()
+		\return Returns the mean strain state of sensor in the chosen interval.
 		"""
 		y_table = self.get_y_table(self.get_record_slice(start=start, end=end))
 		return np.nanmean(y_table, axis=0)

@@ -53,7 +53,7 @@ class MultiFilter(fosutils.Base):
 		"""
 		super().__init__(*args, **kwargs)
 		## List of \ref Filter objects.
-		## The filters are executed sequetially, the output of a previous filter is used as the input to the next one.
+		## The filters are executed sequentially, the output of a previous filter is used as the input to the next one.
 		self.filters = filters
 	def run(self, data, *args, **kwargs):
 		"""

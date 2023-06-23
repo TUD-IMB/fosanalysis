@@ -106,7 +106,7 @@ class CrackList(list):
 		return [crack.width for crack in self]
 	def get_crack(self, x, method: str = "nearest") -> Crack:
 		"""
-		Get the \ref Crack, 
+		Get the \ref Crack according to the given position `x` and the `method`.
 		\param x Position along the Sensor.
 		\param method Method, that is used, to use decide, how the crack is chosen. Available methods:
 			- `"nearest"` (default): returns the crack, for which the distance between the location and `x` is the smallest among all cracks.

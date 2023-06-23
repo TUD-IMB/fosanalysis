@@ -38,13 +38,14 @@ def find_next_finite_neighbor(
 	"""
 	Find the next finite neighbor of the entry `array[index]`.
 	An entry `<entry>` is finite, if `np.isfinite(<entry>) == True`.
-	\param array Array, in which neighbor is searched.
+	\param array Array, on which the search is carried out.
 	\param index Position in the `array`, where the search is started.
-	\param to_left `True`, if a neighbor to the left of the starting index is found, `False` for a neighbor to the right.
-	\param recurse Number of recursions, that are done.
-		- `0`: direct neighbors of the starting index.
+	\param to_left `True`, if a neighbor to the left of the starting index should be found, `False` for a neighbor to the right.
+	\param recurse Number of recursions, that are done. Examples:
+		- `0`: direct neighbors of the starting index
 		- `1`: neighbors of the neighbors
 		- `2`: neighbors of the neighbors' neighbors
+		- and so on.
 	\return Tuple like `(<index>, <entry>)`.
 		If no finite value could be found before reaching the end of `array` `(None, None)` is returned.
 	"""
