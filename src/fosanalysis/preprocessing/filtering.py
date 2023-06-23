@@ -202,7 +202,7 @@ class SlidingMean(SlidingFilter):
 			x_{i} \gets \frac{\sum{x_{j,\:\ldots,\:k}}}{2r + 1}
 		\f]
 		"""
-		return np.mean(sliding_window)
+		return np.nanmean(sliding_window)
 
 class SlidingMedian(SlidingFilter):
 	"""
@@ -221,4 +221,4 @@ class SlidingMedian(SlidingFilter):
 			\text{ with } m = 2r + 1
 		\f]
 		"""
-		return np.median(sliding_window)
+		return np.nanmedian(sliding_window)

@@ -30,7 +30,7 @@ plt.show()
 
 # Generate cropping and filtering objects and assemble the strain profile object
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
-fo = fa.preprocessing.filtering.SlidingMean(radius=1)
+fo = fa.preprocessing.filtering.SlidingMedian(radius=3)
 sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
