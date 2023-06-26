@@ -40,7 +40,7 @@ sp = fa.strainprofile.Concrete(x=x,
 sp.calculate_crack_widths()
 
 # Correct cracks
-sp.delete_cracks(3)
+sp.delete_cracks(3,4)
 sp.add_cracks(3.9)
 
 # Get the data of the calculated cracks

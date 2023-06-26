@@ -2,9 +2,11 @@
 
 ## Installation
 `fosanalysis` is developed under Python 3.9 and is available in the [Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
-To install the latest stable version, please run:
+To install the latest stable version, please run
 - Linux and Mac: `python3 -m pip install -U fosanalysis`
 - Windows: `py -m pip install -U fosanalysis`
+
+It is generally recommendend, to install it in a virtual environment, which is not scope of this tutorial.
 
 In order to obtain the one of the development versions:
 - clone or download the project from [GitHub](https://github.com/TUD-IMB/fosanalysis).
@@ -20,7 +22,18 @@ An object to calculate cracks is put together by several exchangeable components
 This workflow enables a fine grained access to algorithm settings in a flexible, yet easily comprehensive  algorithm construction.
 
 ## Getting Started
-Assuming a successful installation, the script to get started begins with importing the necessary modules.
+Assuming a successful installation, you can followin the this short tutorial.
+For this, we need two scripts:
+- `generatedemofile.py` writes some artificial data, to `./data/demofile.tsv` relative to the working directory, when executed.
+- `gettingstarted.py` contains the code, resulting from following along with this tutorial.
+
+Both scripts are available with the source code of `fosanalysis`.
+It is suggested, to simply download the `examples` directory, which contains both.
+
+We start with generating the demonstration data file by running `generatedemofile.py`.
+This file contains artificial data in the format of a file, as it is exported by the Luna Inc ODiSI Software.
+To (re-)generate this file, the `generatedemofile` script needs to be run once (again).
+Then, we begin our analysis by importing the necessary modules.
 We use `matplotlib` for visualization.
 
 ```.py
@@ -29,8 +42,7 @@ import fosanalysis as fa
 ```
 
 After that, data can be imported from a demonstration file.
-This file contains artificial data in the format of a file, as it is exported by the Luna Inc ODiSI Software.
-To (re-)generate this file, the script \ref examples.generatedemofile needs to be run once.
+
 
 ```.py
 sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
@@ -59,22 +71,22 @@ plt.show()
 ```
 
 We want to process it further and calculate crack widths.
-Since we know, the sensor was embedded in concrete or attached to the surface, we use the \ref fosanalysis.strainprofile.Concrete class.
-Beforehand, some of those exchangeable objects need to be generated, a \ref fosanalysis.preprocessing.filtering.Filter object for smoothing/treating strain reading anomalies and a \ref fosanalysis.cropping.Crop object for restricting the data to the interesting area.
+Since we know, the sensor was embedded in concrete or attached to the surface, we use the `fosanalysis.strainprofile.Concrete` class.
+Beforehand, some of those exchangeable objects need to be generated, a `fosanalysis.preprocessing.filtering.Filter` object for smoothing/treating strain reading anomalies and a `fosanalysis.cropping.Crop` object for restricting the data to the interesting area.
 It is known and visible in the data, that the area of interest ranges from 3 m -- 5 m.
-Both are passed to the \ref fosanalysis.strainprofile.Concrete object.
-The object, which compensates the tension stiffening (see \ref fosanalysis.compensation.tensionstiffening) and indentifies the cracks (see \ref fosanalysis.finding.CrackFinder) is picked by default, but could be configured in a similar way.
+Both are passed to the `fosanalysis.strainprofile.Concrete` object.
+Other objects, such like objects, which indentifies the cracks (`fosanalysis.finding.CrackFinder`) or the one which compensates the tension stiffening (`fosanalysis.compensation.tensionstiffening`) are picked by default, but could be configured in a similar way.
 
 ```.py
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
-fo = fa.preprocessing.filtering.SlidingMean(radius=1)
+fo = fa.preprocessing.filtering.SlidingMedian(radius=3)
 sp = fa.strainprofile.Concrete(x=x,
 		strain=strain,
 		crop=crop,
 		filter_object=fo)
 ```
 
-During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the \ref fosanalysis.preprocessing.filtering.Filter object and finally cropped to the start and end values by the \ref fosanalysis.cropping.Crop object.
+During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the `fosanalysis.preprocessing.filtering.Filter` object and finally cropped to the start and end values by the `fosanalysis.cropping.Crop` object.
 
 Now, identifying crack locations, crack segments and calculating their respective widths is as simple as:
 
@@ -83,13 +95,15 @@ sp.calculate_crack_widths()
 ```
 
 As the peak identification could be missing valid cracks or identify peaks which are no cracks, this automatic approach is not always successful.
-To demonstrate how to correct those errors, we want to delete an obvious misreading, which results in the fourth crack.
-Also, from manual inspection of the specimen, we know, that at 3.9 m, whose rather small peak is not recognized as a crack.
-If the peak recognition is faulty in general, readjusting the parameters of \ref fosanalysis.finding.CrackFinder and/or \ref fosanalysis.preprocessing.filtering.Filter is suggested.
+To demonstrate how to correct those, we take a look at the position 3.9 m.
+We observe, that the twin peaks are recognized as two separate cracks.
+From manual inspection of the specimen, however, we might know, that those could correspond to a single crack only.
+So we first delete the wrong cracks by their index (the foruth and fifth crack) and add a single crack at the "correct" position 3.9 m afterwards.
+If the peak recognition is faulty in general, readjusting the parameters of `fosanalysis.finding.CrackFinder` and/or `fosanalysis.preprocessing.filtering.Filter` is suggested.
 The cracks are recalulated by default after modifying the list of cracks.
 
 ```.py
-sp.delete_cracks(3)
+sp.delete_cracks(3,4)
 sp.add_cracks(3.9)
 ```
 
@@ -124,4 +138,4 @@ ax2.legend(loc="best", handles=h1+h2, labels=l1+l2)
 plt.show()
 ```
 
-For the full script, see \ref examples.gettingstarted.
+For the full script, see `examples.gettingstarted`.

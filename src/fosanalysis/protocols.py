@@ -152,7 +152,7 @@ class ODiSI6100TSVFile(Protocol):
 		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
 		\return Returns a tuple like `(sensor_record, index)` with
 		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
-		\revtval index the corresponding index in \ref y_record_list.
+		\retval index the corresponding index in \ref y_record_list.
 		"""
 		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(), time_stamp)
 		return self.y_record_list[index], index
