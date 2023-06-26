@@ -8,12 +8,10 @@ The demofile simulates a real file exported by the ODiSI Software by Luna Inc.
 \package examples.generatedemofile \copydoc generatedemofile.py
 """
 
-import codecs
 import datetime
 import numpy as np
 import os
 import scipy.stats
-import time
 
 def generate_header():
 	"""
@@ -25,11 +23,11 @@ def generate_header():
 	return file_contents
 	raise NotImplementedError()
 
-def generate_data():
+def generate_data(start, end, gage_length):
 	"""
 	Generates the body data.
 	"""
-	x_data = np.arange(0.08, 5.07925, 0.0065)
+	x_data = np.arange(start, end, gage_length)
 	y_data = []
 	y_base = np.zeros(x_data.shape)
 	nan_array = np.full(x_data.shape, np.nan)
@@ -38,18 +36,18 @@ def generate_data():
 	
 	# Peaks: location, height, width
 	peaks = [
-		(3.18,	1000,	.07),
-		(3.36,	6555,	.03),
-		(3.6,	7123,	.03),
-		(3.77,	10000,	.002),
-		(3.83,	6000,	.02),
-		(3.9,	500,	.015),
-		(4.07,	8310,	.03),
-		(4.27,	7826,	.03),
-		(4.4,	4200,	.02),
-		(4.56,	5560,	.02),
-		(4.75,	8000,	.02),
-		(4.93,	1067,	.03),
+		(3.4,	500,	.04),
+		(3.6,	1200,	.02),
+		(3.75,	4050,	.03),
+		(3.88,	5000,	.015),
+		(3.92,	5500,	.015),
+		(4.0,	1200,	.014),
+		(4.15,	5800,	.03),
+		(4.30,	7150,	.015),
+		(4.48,	6050,	.012),
+		(4.7,	3000,	.02),
+		(4.85,	2200,	.01),
+		(5.0,	500,	.01),
 		]
 	for loc, h, w in peaks:
 		peak = scipy.stats.norm.pdf(x_data, loc, w)
@@ -76,12 +74,18 @@ def main():
 	file = "data/demofile.tsv"
 	if not os.path.exists(os.path.dirname(file)):
 			os.makedirs(os.path.dirname(file))
-	x_data, y_data = generate_data()
+	now = datetime.datetime.now()
+	start = 0.08
+	end = 5.07925
+	gage_length = 1.3 / 1000
+	frequency = 1.5625
+	dt = datetime.timedelta(seconds=1/frequency)
+	x_data, y_data = generate_data(start, end, gage_length)
 	with open(file, "w", encoding="utf-8") as f:
 		f.write("Test name:	Getting Started" + "\n")
 		f.write("Notes:	" + "\n")
 		f.write("Product:	ODiSI 6102" + "\n")
-		f.write("Date:	{}".format(datetime.datetime.today().isoformat(sep=" ")) + "\n")
+		f.write("Date:	{}".format(now.isoformat(sep=" ")) + "\n")
 		f.write("Timezone: 	UTC+0" + "\n")
 		f.write("File Type:	ODiSI 6xxx Data File" + "\n")
 		f.write("File Version:	7" + "\n")
@@ -90,7 +94,7 @@ def main():
 		f.write("Hardware Version:	 1" + "\n")
 		f.write("Firmware Version:	1.6.6 (08/18/2020)" + "\n")
 		f.write("FPGA Version:	v7.3.1-15016 (08/14/2020)" + "\n")
-		f.write("Measurement Rate Per Channel:	1.5625 Hz" + "\n")
+		f.write("Measurement Rate Per Channel:	{} Hz".format(frequency) + "\n")
 		f.write("Gage Pitch (mm):	0.65" + "\n")
 		f.write("Standoff Cable Length (m):	50" + "\n")
 		f.write("Temperature offset:	0.0" + "\n")
@@ -102,15 +106,15 @@ def main():
 		f.write("Sensor Type:	Strain" + "\n")
 		f.write("Units:	microstrain" + "\n")
 		f.write("x-axis units:	m" + "\n")
-		f.write("Length (m):	5.07925" + "\n")
+		f.write("Length (m):	{}".format(end) + "\n")
 		f.write("Patch cord length (m):	0" + "\n")
 		f.write("Key name:	" + "\n")
 		f.write("Tare name:	" + "\n")
 		f.write("----------------------------------------" + "\n")
-		print("x-axis", *x_data, sep="\t", end="\n", file=f)
+		print("x-axis", "", "", *x_data, sep="\t", end="\n", file=f)
 		for record in y_data:
-			time.sleep(1)
-			print("{}".format(datetime.datetime.now().isoformat(sep=" ")), *record, sep="\t", end="\n", file=f)
+			now = now + dt
+			print("{}".format(now.isoformat(sep=" ")), "measurement", "strain", *record, sep="\t", end="\n", file=f)
 
 if __name__ == "__main__":
 	main()
