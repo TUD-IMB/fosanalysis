@@ -459,25 +459,3 @@ class ODiSI6100TSVFile(Protocol):
 			return self.metadata.get(file, None)
 		else:
 			raise RuntimeError("Found no file for the metadata")
-
-class NetworkStream(Protocol):
-	"""
-	\todo Implement and document
-	"""
-	def __init__(self,
-				*args, **kwargs):
-		"""
-		\todo Implement and document
-		"""
-		super().__init__(*args, **kwargs)
-	def get_x_values(self) -> np.array:
-		"""
-		Returns the values of the x-axis record (location data). 
-		"""
-		raise NotImplementedError()
-	def get_y_table(self, *args, **kwargs) -> list:
-		"""
-		Returns the table of the strain data.
-		"""
-		raise NotImplementedError()
-
