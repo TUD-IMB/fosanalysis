@@ -49,8 +49,8 @@ class Protocol(fosutils.Base):
 		\todo Implement and document
 		"""
 		super().__init__(*args, **kwargs)
-		## Dictionary containting header information.
-		self.header = {}
+		## Dictionary containting metadata information.
+		self.metadata = {}
 	@abstractmethod
 	def get_x_values(self) -> np.array:
 		"""
@@ -97,6 +97,7 @@ class ODiSI6100TSVFile(Protocol):
 		status_gages_segments = None # If the input data is of the type "Gages", another kind of reading the input is commenced
 		gages = OrderedDict()
 		segments = OrderedDict()
+		metadata = {}
 		with open(file) as f:
 			for line in f:
 				line_list = line.strip().split(itemsep)
@@ -106,9 +107,9 @@ class ODiSI6100TSVFile(Protocol):
 						# Switch reading modes from header to data
 						in_header = False
 					else:
-						# Read in header data
+						# Read in metadata
 						fieldname = line_list[0][:-1]	# First entry and strip the colon (:)
-						self.header[fieldname] = line_list[1] if len(line_list) > 1 else None
+						metadata[fieldname] = line_list[1] if len(line_list) > 1 else None
 				else:
 					record_name, message_type, sensor_type, *data = line_list
 					if status_gages_segments is None:
@@ -127,6 +128,7 @@ class ODiSI6100TSVFile(Protocol):
 							self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
 					else:
 						self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
+		self.metadata[file] = metadata
 		self.gages.update(gages)
 		self.segments.update(segments)
 	def _read_gage_segments_info(self,
@@ -343,6 +345,17 @@ class ODiSI6100TSVFile(Protocol):
 									is_gage=is_gage)
 		y_table = self.get_y_table(record_list=slice)
 		return np.nanmean(y_table, axis=0)
+	def get_metadata(self,
+			name: str = None,
+			is_gage: bool = False) -> dict:
+		"""
+		"""
+		target = self._get_dict(name, is_gage)
+		file = target.get("file", None)
+		if file is not None:
+			return self.metadata.get(file, None)
+		else:
+			raise RuntimeError("Found no file for the metadata")
 
 class NetworkStream(Protocol):
 	"""
