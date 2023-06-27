@@ -51,10 +51,6 @@ class Protocol(fosutils.Base):
 		super().__init__(*args, **kwargs)
 		## Dictionary containting header information.
 		self.header = {}
-		## \ref SensorRecord, which contains the x-axis (location) values.
-		self.x_record = None
-		## List of \ref SensorRecord, which contain the strain values.
-		self.y_record_list = []
 	@abstractmethod
 	def get_x_values(self) -> np.array:
 		"""
