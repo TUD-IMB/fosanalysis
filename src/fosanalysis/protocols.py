@@ -8,8 +8,9 @@ Contains functionality for interfacing files and network ports.
 """
 
 from abc import abstractmethod
+from collections import OrderedDict
+import copy
 import datetime
-
 import numpy as np
 
 from . import fosutils
@@ -73,13 +74,11 @@ class ODiSI6100TSVFile(Protocol):
 	"""
 	def __init__(self, file: str,
 						itemsep: str = "\t",
-						start_index: int = None,
 						*args, **kwargs):
 		"""
 		Constructs the object containing the imported data.
 		\param file Path to the file, wich is to be read in.
 		\param itemsep Item separator used in the file. Will be used to split the several entries.
-		\param start_index Start index of the data. This can be used to omit additional data in the beginning. Defaults to `None` (no restriction).
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
@@ -89,49 +88,123 @@ class ODiSI6100TSVFile(Protocol):
 		self.tare = None
 		## File name (fully specified path), from which the data has been read.
 		self.file = file
+		## Dictionary of segments
+		self.segments = OrderedDict()
+		## Dictionary of gages
+		self.gages = OrderedDict()
 		in_header = True
+		status_gages_segments = None # If the input data is of the type "Gages", another kind of reading the input is commenced
 		with open(file) as f:
 			for line in f:
 				line_list = line.strip().split(itemsep)
 				if in_header:
-					# Find the header to body separator 
+					# Find the header to body separator
 					if line_list[0] == "----------------------------------------":
 						# Switch reading modes from header to data
 						in_header = False
 					else:
 						# Read in header data
-						head_entry = line.strip().split(itemsep)
-						fieldname = head_entry[0][:-1]	# First entry and strip the colon (:)
-						self.header[fieldname] = head_entry[1] if len(head_entry) > 1 else None
+						fieldname = line_list[0][:-1]	# First entry and strip the colon (:)
+						self.header[fieldname] = line_list[1] if len(line_list) > 1 else None
 				else:
-					# Read in value table
-					record_name, message_type, sensor_type, *data = line.strip().split(itemsep)
-					data = data[start_index:None]			#
-					if record_name != "Gage/segment name":
-						data = np.array([float(entry) for entry in data])	# convert to float
-					record = SensorRecord(
-										record_name=record_name,
-										message_type=message_type,
-										sensor_type=sensor_type,
-										data=data,
-										)
-					if record["record_name"] == "x-axis":
-						self.x_record = record
-					elif record["record_name"] == "Tare":
-						self.tare = record
-					elif record["record_name"] == "Gage/segment name":
-						self.gage_names = record
-					else: 
-						record["timestamp"] = datetime.datetime.fromisoformat(record_name)
-						self.y_record_list.append(record)
+					record_name, message_type, sensor_type, *data = line_list
+					if status_gages_segments is None:
+						# Decide if input data is a full or a gage/segment
+						status_gages_segments = (record_name.lower() == "Gage/Segment Name".lower())
+						if status_gages_segments:
+							# The reading data gets separated into gages and the segments
+							self._read_gage_segments(record_name, message_type, sensor_type, data)
+					elif not status_gages_segments:
+						self._read_full(record_name, message_type, sensor_type, data)
+					elif status_gages_segments:
+						self._read_gage_segment_data(record_name, message_type, sensor_type, data)
+					else:
+						raise RuntimeError("The data file does not meet contain a comprehendable format.")
+	def _read_gage_segments(self, data):
+		"""
+		\todo Document
+		Read the segment spaces
+		"""
+		segment_name = None
+		# loop over all the entries in the line
+		for index, value in enumerate(data):
+			# A new segments always has <segment name>[0]
+			if "[0]" in value:
+				# New segment
+				if segment_name is not None:
+					# Finish the last segment
+					self.segments[segment_name]["end"] = index
+					self.segments[segment_name]["length"] = index - self.segments[segment_name]["start"]
+				# get the segment name and start a new segment
+				segment_name = value.split("[")[0]
+				self.segments[segment_name] = {"start": index, "end": None, "x": None, "y_array": None, "tare":None}
+			elif segment_name is None:
+					# Gage reading
+					self.gages[value] = {"index": index, "x": None, "y_array": None, "tare":None}
+		# After the loop is finished, we can assume, that the last entry's end_index is equal to the length of the data set
+		self.segments[segment_name]["end"] = len(data)
+		self.segments[segment_name]["length"] = len(data) - self.segments[segment_name]["start"]
+	def _read_gage_segment_data(self, record_name, message_type, sensor_type, data):
+		"""
+		\todo Document
+		"""
+		# Convert data to float
+		data = np.array([float(entry) for entry in data])
+		gage_names = list(self.gages.keys())
+		segment_names = list(self.segments.keys())
+		## Reading data for each Gage element
+		for index, entry in zip(range(self.gages.__len__()),data):
+			if record_name == "Tare":
+				gage_key = gage_names[index]
+				(self.gages[gage_key])["tare"] = entry
+			elif record_name == "x-axis":
+				gage_key = gage_names[index]
+				(self.gages[gage_key])["x"] = entry
+			else:
+				gage_key = gage_names[index]
+				((self.gages[gage_key])["y_array"]).append(entry)
+		## Using slices of the whole line of data and append them onto the y-data list of each segment
+		for segment_key in self.segments:
+			index_start = (self.segments[segment_key])["start"]
+			index_end = (self.segments[segment_key])["end"]
+			if record_name == "Tare":
+				# Assign the data strip to the y-data list
+				data_section = copy.deepcopy(data)[index_start:index_end]
+				(self.segments[segment_key])["tare"] = data_section
+			elif record_name == "x-axis":
+				# Assign the data strip to the y-data list
+				data_section = copy.deepcopy(data)[index_start:index_end]
+				((self.segments[segment_key])["x"]) = data_section
+			else:
+				# Assign the data strip to the y-data list
+				data_section = copy.deepcopy(data)[index_start:index_end]
+				((self.segments[segment_key])["y_array"]).append(data_section)
+	def _read_full(self, record_name, message_type, sensor_type, data):
+		"""
+		\todo Document
+		"""
+		data = np.array([float(entry) for entry in data])  # convert to float
+		record = SensorRecord(
+					record_name=record_name,
+					message_type=message_type,
+					sensor_type=sensor_type,
+					data=data,
+					)
+		if record["record_name"] == "x-axis":
+			self.x_record = record
+		elif record["record_name"] == "Tare":
+			self.tare = record
+		else:
+			record["timestamp"] = datetime.datetime.fromisoformat(record_name)
+			self.y_record_list.append(record)
 	def get_tare(self) -> np.array:
 		"""
-		Returns the values of the tare record (calibration data). 
+		Returns the values of the tare record (calibration data).
 		"""
 		return self.tare["data"]
 	def get_x_values(self) -> np.array:
 		"""
-		Returns the values of the x-axis record (location data). 
+		Returns the values of the x-axis record (location data).
 		"""
 		return self.x_record["data"]
 	def get_y_table(self, record_list: list = None) -> list:
@@ -219,3 +292,4 @@ class NetworkStream(Protocol):
 		Returns the table of the strain data.
 		"""
 		raise NotImplementedError()
+
