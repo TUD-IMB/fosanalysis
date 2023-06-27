@@ -72,7 +72,7 @@ class ODiSI6100TSVFile(Protocol):
 	"""
 	Object contains fibre optical sensor data exported by the Luna Inc. Optical Distributed Sensor Interrogator (ODiSI), and provides some function to retrieve those.
 	"""
-	def __init__(self, file: str,
+	def __init__(self, file: str = None,
 						itemsep: str = "\t",
 						*args, **kwargs):
 		"""
@@ -92,8 +92,18 @@ class ODiSI6100TSVFile(Protocol):
 		self.segments = OrderedDict()
 		## Dictionary of gages
 		self.gages = OrderedDict()
+		if file is not None:
+			self.read_file(file)
+	def read_file(self, file: str,
+				itemsep: str = "\t",
+				*args, **kwargs):
+		"""
+		\todo Document
+		"""
 		in_header = True
 		status_gages_segments = None # If the input data is of the type "Gages", another kind of reading the input is commenced
+		gages = OrderedDict()
+		segments = OrderedDict()
 		with open(file) as f:
 			for line in f:
 				line_list = line.strip().split(itemsep)
@@ -113,17 +123,30 @@ class ODiSI6100TSVFile(Protocol):
 						status_gages_segments = (record_name.lower() == "Gage/Segment Name".lower())
 						if status_gages_segments:
 							# The reading data gets separated into gages and the segments
-							self._read_gage_segments(record_name, message_type, sensor_type, data)
-					elif not status_gages_segments:
-						self._read_full(record_name, message_type, sensor_type, data)
-					elif status_gages_segments:
-						self._read_gage_segment_data(record_name, message_type, sensor_type, data)
+							gages, segments = self._read_gage_segments_info(gages, segments, data)
+						else:
+							segments["full"] = {"start": 0,
+													"end": len(data),
+													"length": len(data),
+													"x": None,
+													"y_data": []}
+					#elif not status_gages_segments:
+					#	self._read_full(record_name, message_type, sensor_type, data)
+					#elif status_gages_segments:
+					#	self._read_gage_segment_data(record_name, message_type, sensor_type, data)
 					else:
-						raise RuntimeError("The data file does not meet contain a comprehendable format.")
-	def _read_gage_segments(self, data):
+						self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
+						#raise RuntimeError("The data file does not meet contain a comprehendable format.")
+		self.gages.update(gages)
+		self.segments.update(segments)
+	def _read_gage_segments_info(self, gages, segments, data):
 		"""
 		\todo Document
-		Read the segment spaces
+		Read gage and segment line to discover the gages and segments.
+		The gages are written into \ref gages.
+		The segments are written into \ref gages.
+		These information is used later on to split the data by \ref _read_gage_segment_data().
+		When retrieving data, it used as well to select the segment. 
 		"""
 		segment_name = None
 		# loop over all the entries in the line
@@ -133,70 +156,81 @@ class ODiSI6100TSVFile(Protocol):
 				# New segment
 				if segment_name is not None:
 					# Finish the last segment
-					self.segments[segment_name]["end"] = index
-					self.segments[segment_name]["length"] = index - self.segments[segment_name]["start"]
+					segments[segment_name]["end"] = index
+					segments[segment_name]["length"] = index - segments[segment_name]["start"]
 				# get the segment name and start a new segment
 				segment_name = value.split("[")[0]
-				self.segments[segment_name] = {"start": index, "end": None, "x": None, "y_array": None, "tare":None}
+				segments[segment_name] = {"start": index, "end": None, "x": None, "y_data": []}
 			elif segment_name is None:
 					# Gage reading
-					self.gages[value] = {"index": index, "x": None, "y_array": None, "tare":None}
+					gages[value] = {"index": index, "x": None, "y_data": []}
 		# After the loop is finished, we can assume, that the last entry's end_index is equal to the length of the data set
-		self.segments[segment_name]["end"] = len(data)
-		self.segments[segment_name]["length"] = len(data) - self.segments[segment_name]["start"]
-	def _read_gage_segment_data(self, record_name, message_type, sensor_type, data):
+		segments[segment_name]["end"] = len(data)
+		segments[segment_name]["length"] = len(data) - segments[segment_name]["start"]
+		return gages, segments
+	def _read_gage_segment_data(self, gages, segments, record_name, message_type, sensor_type, data):
 		"""
 		\todo Document
 		"""
 		# Convert data to float
-		data = np.array([float(entry) for entry in data])
 		gage_names = list(self.gages.keys())
 		segment_names = list(self.segments.keys())
 		## Reading data for each Gage element
-		for index, entry in zip(range(self.gages.__len__()),data):
-			if record_name == "Tare":
-				gage_key = gage_names[index]
-				(self.gages[gage_key])["tare"] = entry
-			elif record_name == "x-axis":
-				gage_key = gage_names[index]
-				(self.gages[gage_key])["x"] = entry
-			else:
-				gage_key = gage_names[index]
-				((self.gages[gage_key])["y_array"]).append(entry)
-		## Using slices of the whole line of data and append them onto the y-data list of each segment
-		for segment_key in self.segments:
-			index_start = (self.segments[segment_key])["start"]
-			index_end = (self.segments[segment_key])["end"]
-			if record_name == "Tare":
-				# Assign the data strip to the y-data list
-				data_section = copy.deepcopy(data)[index_start:index_end]
-				(self.segments[segment_key])["tare"] = data_section
-			elif record_name == "x-axis":
-				# Assign the data strip to the y-data list
-				data_section = copy.deepcopy(data)[index_start:index_end]
-				((self.segments[segment_key])["x"]) = data_section
-			else:
-				# Assign the data strip to the y-data list
-				data_section = copy.deepcopy(data)[index_start:index_end]
-				((self.segments[segment_key])["y_array"]).append(data_section)
-	def _read_full(self, record_name, message_type, sensor_type, data):
+		
+		for gage_name, gage in gages.items():
+			self._store_data(gage, record_name, message_type, sensor_type, data)
+		for segment_name, segment in segments.items():
+			self._store_data(segment, record_name, message_type, sensor_type, data)
+		
+		#for index, entry in zip(range(self.gages.__len__()),data):
+		#	if record_name.lower() == "Tare".lower():
+		#		gage_key = gage_names[index]
+		#		(self.gages[gage_key])["tare"] = entry
+		#	elif record_name.lower() == "x-axis".lower():
+		#		gage_key = gage_names[index]
+		#		(self.gages[gage_key])["x"] = entry
+		#	else:
+		#		gage_key = gage_names[index]
+		#		((self.gages[gage_key])["y_array"]).append(entry)
+		### Using slices of the whole line of data and append them onto the y-data list of each segment
+		#for segment_key in self.segments:
+		#	index_start = (self.segments[segment_key])["start"]
+		#	index_end = (self.segments[segment_key])["end"]
+		#	if record_name == "Tare":
+		#		# Assign the data strip to the y-data list
+		#		data_section = copy.deepcopy(data)[index_start:index_end]
+		#		(self.segments[segment_key])["tare"] = data_section
+		#	elif record_name == "x-axis":
+		#		# Assign the data strip to the y-data list
+		#		data_section = copy.deepcopy(data)[index_start:index_end]
+		#		((self.segments[segment_key])["x"]) = data_section
+		#	else:
+		#		# Assign the data strip to the y-data list
+		#		data_section = copy.deepcopy(data)[index_start:index_end]
+		#		((self.segments[segment_key])["y_array"]).append(data_section)
+	def _store_data(self, gage_segment, record_name, message_type, sensor_type, data):
 		"""
 		\todo Document
 		"""
-		data = np.array([float(entry) for entry in data])  # convert to float
-		record = SensorRecord(
-					record_name=record_name,
-					message_type=message_type,
-					sensor_type=sensor_type,
-					data=data,
-					)
-		if record["record_name"] == "x-axis":
-			self.x_record = record
-		elif record["record_name"] == "Tare":
-			self.tare = record
+		data = np.asarray(data, dtype=float)
+		if "length" in gage_segment:
+			start = gage_segment["start"]
+			end = gage_segment["start"]+gage_segment["length"]
+			data = copy.deepcopy(data[start:end])
 		else:
-			record["timestamp"] = datetime.datetime.fromisoformat(record_name)
-			self.y_record_list.append(record)
+			data = copy.deepcopy(data[gage_segment["index"]])
+		if record_name.lower() == "x-axis":
+			gage_segment["x"] = data
+		elif record_name.lower() == "tare":
+			gage_segment["tare"] = data
+		else:
+			record = SensorRecord(
+						record_name=record_name.lower(),
+						timestamp=datetime.datetime.fromisoformat(record_name),
+						message_type=message_type.lower(),
+						sensor_type=sensor_type.lower(),
+						data=data,)
+			gage_segment["y_data"].append(record)
 	def get_tare(self) -> np.array:
 		"""
 		Returns the values of the tare record (calibration data).
