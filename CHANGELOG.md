@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New sub-packages for compensation and preprocessing and moved functionality there
+- Added gage file support ODiSI6100TSVFile can import both full .tsv files, gage .tsv files or both into the same object now
 - Sliding filters and possibility to chain filters
 - Changelog introduced
 - `fosutils.find_next_neighbor()`
