@@ -70,33 +70,30 @@ class Protocol(fosutils.Base):
 
 class ODiSI6100TSVFile(Protocol):
 	"""
-	Object contains fibre optical sensor data exported by the Luna Inc. Optical Distributed Sensor Interrogator (ODiSI), and provides some function to retrieve those.
+	Implements the import of data from the Optical Distributed Sensor Interrogator (ODiSI) 610x series by Luna Inc.
 	"""
-	def __init__(self, file: str = None,
-						itemsep: str = "\t",
-						*args, **kwargs):
+	def __init__(self,
+			file: str = None,
+			itemsep: str = "\t",
+			*args, **kwargs):
 		"""
 		Constructs the object containing the imported data.
-		\param file Path to the file, wich is to be read in.
+		\param file File name (fully specified path), from which the data has been read.
 		\param itemsep Item separator used in the file. Will be used to split the several entries.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## \ref SensorRecord, which contains the tare data values.
-		## This is only set, if \ref file contains such a line.
-		self.tare = None
-		## File name (fully specified path), from which the data has been read.
-		self.file = file
 		## Dictionary of segments
 		self.segments = OrderedDict()
 		## Dictionary of gages
 		self.gages = OrderedDict()
 		if file is not None:
-			self.read_file(file)
-	def read_file(self, file: str,
-				itemsep: str = "\t",
-				*args, **kwargs):
+			self.read_file(file=file, itemsep=itemsep)
+	def read_file(self,
+			file: str,
+			itemsep: str = "\t",
+			*args, **kwargs):
 		"""
 		\todo Document
 		"""
@@ -123,23 +120,24 @@ class ODiSI6100TSVFile(Protocol):
 						status_gages_segments = (record_name.lower() == "Gage/Segment Name".lower())
 						if status_gages_segments:
 							# The reading data gets separated into gages and the segments
-							gages, segments = self._read_gage_segments_info(gages, segments, data)
+							gages, segments = self._read_gage_segments_info(gages, segments, data, file)
 						else:
 							segments["full"] = {"start": 0,
-													"end": len(data),
-													"length": len(data),
-													"x": None,
-													"y_data": []}
-					#elif not status_gages_segments:
-					#	self._read_full(record_name, message_type, sensor_type, data)
-					#elif status_gages_segments:
-					#	self._read_gage_segment_data(record_name, message_type, sensor_type, data)
+												"end": len(data),
+												"length": len(data),
+												"x": None,
+												"y_data": [],
+												"file": file,}
+							self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
 					else:
 						self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
-						#raise RuntimeError("The data file does not meet contain a comprehendable format.")
 		self.gages.update(gages)
 		self.segments.update(segments)
-	def _read_gage_segments_info(self, gages, segments, data):
+	def _read_gage_segments_info(self,
+			gages: dict,
+			segments: dict,
+			data: list,
+			file: str):
 		"""
 		\todo Document
 		Read gage and segment line to discover the gages and segments.
@@ -160,55 +158,34 @@ class ODiSI6100TSVFile(Protocol):
 					segments[segment_name]["length"] = index - segments[segment_name]["start"]
 				# get the segment name and start a new segment
 				segment_name = value.split("[")[0]
-				segments[segment_name] = {"start": index, "end": None, "x": None, "y_data": []}
+				segments[segment_name] = {"start": index, "end": None, "x": None, "y_data": [], "file": file}
 			elif segment_name is None:
 					# Gage reading
-					gages[value] = {"index": index, "x": None, "y_data": []}
+					gages[value] = {"index": index, "x": None, "y_data": [], "file": file}
 		# After the loop is finished, we can assume, that the last entry's end_index is equal to the length of the data set
 		segments[segment_name]["end"] = len(data)
 		segments[segment_name]["length"] = len(data) - segments[segment_name]["start"]
 		return gages, segments
-	def _read_gage_segment_data(self, gages, segments, record_name, message_type, sensor_type, data):
+	def _read_gage_segment_data(self,
+			gages: dict,
+			segments: dict,
+			record_name: str,
+			message_type: str,
+			sensor_type: str,
+			data: list):
 		"""
 		\todo Document
 		"""
-		# Convert data to float
-		gage_names = list(self.gages.keys())
-		segment_names = list(self.segments.keys())
-		## Reading data for each Gage element
-		
-		for gage_name, gage in gages.items():
+		for gage in gages.values():
 			self._store_data(gage, record_name, message_type, sensor_type, data)
-		for segment_name, segment in segments.items():
+		for segment in segments.values():
 			self._store_data(segment, record_name, message_type, sensor_type, data)
-		
-		#for index, entry in zip(range(self.gages.__len__()),data):
-		#	if record_name.lower() == "Tare".lower():
-		#		gage_key = gage_names[index]
-		#		(self.gages[gage_key])["tare"] = entry
-		#	elif record_name.lower() == "x-axis".lower():
-		#		gage_key = gage_names[index]
-		#		(self.gages[gage_key])["x"] = entry
-		#	else:
-		#		gage_key = gage_names[index]
-		#		((self.gages[gage_key])["y_array"]).append(entry)
-		### Using slices of the whole line of data and append them onto the y-data list of each segment
-		#for segment_key in self.segments:
-		#	index_start = (self.segments[segment_key])["start"]
-		#	index_end = (self.segments[segment_key])["end"]
-		#	if record_name == "Tare":
-		#		# Assign the data strip to the y-data list
-		#		data_section = copy.deepcopy(data)[index_start:index_end]
-		#		(self.segments[segment_key])["tare"] = data_section
-		#	elif record_name == "x-axis":
-		#		# Assign the data strip to the y-data list
-		#		data_section = copy.deepcopy(data)[index_start:index_end]
-		#		((self.segments[segment_key])["x"]) = data_section
-		#	else:
-		#		# Assign the data strip to the y-data list
-		#		data_section = copy.deepcopy(data)[index_start:index_end]
-		#		((self.segments[segment_key])["y_array"]).append(data_section)
-	def _store_data(self, gage_segment, record_name, message_type, sensor_type, data):
+	def _store_data(self,
+			gage_segment: dict,
+			record_name: str,
+			message_type: str,
+			sensor_type: str,
+			data:list):
 		"""
 		\todo Document
 		"""
@@ -231,29 +208,63 @@ class ODiSI6100TSVFile(Protocol):
 						sensor_type=sensor_type.lower(),
 						data=data,)
 			gage_segment["y_data"].append(record)
-	def get_tare(self) -> np.array:
+	def _get_dict(self,
+				name: str = None,
+				is_gage: bool =False) -> dict:
+		"""
+		\todo Document
+		"""
+		target = self.gages if is_gage else self.segments
+		name = name if name is not None else next(iter(target))
+		result = target.get(name, None)
+		if result is None:
+			requesttype = "gage" if is_gage else "segment"
+			message = "No {} with the name '{}' known!"
+			raise RuntimeError(message.format(requesttype, name))
+		return result
+	def get_tare(self,
+				name: str = None,
+				is_gage: bool = False) -> np.array:
 		"""
 		Returns the values of the tare record (calibration data).
 		"""
-		return self.tare["data"]
-	def get_x_values(self) -> np.array:
+		target = self._get_dict(name, is_gage)
+		return target.get("tare", None)
+	def get_x_values(self,
+			name: str = None,
+			is_gage: bool = False) -> np.array:
 		"""
 		Returns the values of the x-axis record (location data).
 		"""
-		return self.x_record["data"]
-	def get_y_table(self, record_list: list = None) -> list:
+		target = self._get_dict(name, is_gage)
+		return target.get("x", None)
+	def get_y_table(self,
+			name: str = None,
+			is_gage: bool = False,
+			record_list: list = None) -> list:
 		"""
 		Returns the table of the strain data.
 		\param record_list List of records, defaults to \ref y_record_list.
 		"""
-		record_list = record_list if record_list is not None else self.y_record_list
+		if record_list is None:
+			target = self._get_dict(name, is_gage)
+			record_list = target.get("y_data", None)
 		return [record["data"] for record in record_list]
-	def get_time_stamps(self) -> list:
+	def get_time_stamps(self,
+			name: str = None,
+			is_gage: bool = False,
+			record_list: list = None) -> list:
 		"""
 		Get the time stamps of all records in \ref y_record_list.
 		"""
-		return [record["timestamp"] for record in self.y_record_list]
-	def get_record_from_time_stamp(self, time_stamp: datetime.datetime) -> tuple:
+		if record_list is None:
+			target = self._get_dict(name, is_gage)
+			record_list = target.get("y_data", None)
+		return [record["timestamp"] for record in record_list]
+	def get_record_from_time_stamp(self,
+			time_stamp: datetime.datetime,
+			name: str = None,
+			is_gage: bool = False,) -> tuple:
 		"""
 		Get the \ref SensorRecord and its index, which is closest to the given time_stamp.
 		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
@@ -261,9 +272,14 @@ class ODiSI6100TSVFile(Protocol):
 		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
 		\retval index the corresponding index in \ref y_record_list.
 		"""
-		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(), time_stamp)
-		return self.y_record_list[index], index
-	def get_record_slice(self, start = None, end = None) -> list:
+		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(name, is_gage), time_stamp)
+		target = self._get_dict(name, is_gage)
+		return target.get("y_data", None)[index], index
+	def get_record_slice(self,
+			start = None,
+			end = None,
+			name: str = None,
+			is_gage: bool = False,) -> list:
 		"""
 		Get a portion of the records in the table and return is as a list of \ref SensorRecord.
 		Both `start` and `end` can be of the following types and combined arbitrarily:
@@ -275,12 +291,22 @@ class ODiSI6100TSVFile(Protocol):
 		\param end The first record to not be included anymore.
 			Defaults to `None` (no restriction).
 		"""
-		if isinstance(end, datetime.date):
-			tmp_record, end = self.get_record_from_time_stamp(end)
 		if isinstance(start, datetime.date):
-			tmp_record, start = self.get_record_from_time_stamp(start)
-		return self.y_record_list[start:end]
-	def get_time_series(self, x: float) -> tuple:
+			tmp_record, start = self.get_record_from_time_stamp(start, name, is_gage)
+		if isinstance(end, datetime.date):
+			tmp_record, end = self.get_record_from_time_stamp(end, name, is_gage)
+		target = self._get_dict(name, is_gage)
+		record_list = target.get("y_data", None)
+		if record_list is not None:
+			return record_list[start:end]
+		else:
+			requesttype = "gage" if is_gage else "segment"
+			message = "No data found for {} with the name '{}'!"
+			raise RuntimeError(message.format(requesttype, name))
+	def get_time_series(self,
+			x: float = 0.0,
+			name: str = None,
+			is_gage: bool = False,) -> tuple:
 		"""
 		Get the strain time series for a fixed position.
 		Therefore, the closed x-value to the given position is found and the according strain values are collected.
@@ -289,12 +315,24 @@ class ODiSI6100TSVFile(Protocol):
 		\retval time_series List of strain values for at the position of `x_value`.
 		\retval x_value The accurate position, that was found.
 		"""
-		time_stamps = self.get_time_stamps()
-		x_values = self.get_x_values()
-		index, x_value = fosutils.find_closest_value(x_values, x)
-		time_series = np.array([data[index] for data in self.get_y_table()])
+		time_stamps = self.get_time_stamps(name, is_gage)
+		x_values = self.get_x_values(name, is_gage)
+		y_data = self.get_y_table(name, is_gage)
+		try:
+			iterator = iter(x_values)
+		except TypeError:
+			# not iterable: a gage
+			x_value = x_values
+			time_series = y_data
+		else:
+			index, x_value = fosutils.find_closest_value(x_values, x)
+			time_series = np.array([data[index] for data in y_data])
 		return time_stamps, time_series, x_value
-	def mean_over_y_records(self, start = None, end = None) -> np.array:
+	def mean_over_y_records(self,
+			start = None,
+			end = None,
+			name: str = None,
+			is_gage: bool = False) -> np.array:
 		"""
 		Takes the arithmetic mean for each position over all records in the slice and return the strain values as `np.array`.
 		During the operation, `NaN` entries are stripped.
@@ -303,7 +341,11 @@ class ODiSI6100TSVFile(Protocol):
 		\copydetails get_record_slice()
 		\return Returns the mean strain state of sensor in the chosen interval.
 		"""
-		y_table = self.get_y_table(self.get_record_slice(start=start, end=end))
+		slice = self.get_record_slice(start=start,
+									end=end,
+									name=name,
+									is_gage=is_gage)
+		y_table = self.get_y_table(record_list=slice)
 		return np.nanmean(y_table, axis=0)
 
 class NetworkStream(Protocol):
