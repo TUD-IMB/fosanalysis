@@ -46,7 +46,8 @@ class Protocol(fosutils.Base):
 	@abstractmethod
 	def __init__(self, *args, **kwargs):
 		"""
-		\todo Implement and document
+		Constructs a Protocla object.
+		Needs to be reimplemented by sub-classes.
 		"""
 		super().__init__(*args, **kwargs)
 		## Dictionary containting metadata information.
@@ -75,26 +76,55 @@ class ODiSI6100TSVFile(Protocol):
 		"""
 		Constructs the object containing the imported data.
 		\param file File name (fully specified path), from which the data has been read.
-		\param itemsep Item separator used in the file. Will be used to split the several entries.
+			If not left empty (default: `None`), it is immediately read by \ref read_file().
+		\param itemsep String, which separates items (columns) in the file.
+			Defaults to `"\t"` (tab).
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## Dictionary of segments
+		## Dictionary of segments.
+		## Each segment is stored as a sub-dictionary with its name as a key.
+		## Each sub-dictionary requires the following keys:
+		## - `start`: Start index of the segment
+		## - `length`: Number of measurement points in the segment.
+		## - `end`: End index of the segment (not strictly required).
+		## 	As it is used as the ending slicing index, actually one more.
+		## - `x`: Positional data for the segment.
+		## - `y_data`: List of \ref SensorRecord for the measurement data.
+		## - `file`: File path, from where the data was imported.
 		self.segments = OrderedDict()
 		## Dictionary of gages
+		## Each gage is stored as a sub-dictionary with its name as a key.
+		## Each sub-dictionary requires the following keys:
+		## - `index`: Start index of the gage
+		## - `x`: Positional data for the gage.
+		## - `y_data`: List of \ref SensorRecord for the measurement data.
+		## - `file`: File path, from where the data was imported.
 		self.gages = OrderedDict()
 		if file is not None:
 			self.read_file(file=file, itemsep=itemsep)
 	def read_file(self,
 			file: str,
-			itemsep: str = "\t",
-			*args, **kwargs):
+			itemsep: str = "\t"):
 		"""
-		\todo Document
+		Read a file, parse its contents and extract the measurement data.
+		This function can be called multiple times, once for each file to read.
+		Both gage files (`*_gages.tsv`) and full (`*_full.tsv`) are supported.
+		The content is added to the \ref gages and \ref segments dictionaries.
+		The metadata is stored as sub-dictionary in \ref metadata with `file` as key.
+		
+		\note
+		This works fine for importing associated full and gage files.
+		However, importing a second file of the same type is discuraged.
+		It will overwrite some (but not all) previously data.
+		
+		\param file File name (fully specified path), from which the data has been read.
+		\param itemsep String, which separates items (columns) in the file.
+			Defaults to `"\t"` (tab).
 		"""
 		in_header = True
-		status_gages_segments = None # If the input data is of the type "Gages", another kind of reading the input is commenced
+		status_gages_segments = None
 		gages = OrderedDict()
 		segments = OrderedDict()
 		metadata = {}
@@ -117,7 +147,10 @@ class ODiSI6100TSVFile(Protocol):
 						status_gages_segments = (record_name.lower() == "Gage/Segment Name".lower())
 						if status_gages_segments:
 							# The reading data gets separated into gages and the segments
-							gages, segments = self._read_gage_segments_info(gages, segments, data, file)
+							gages, segments = self._read_gage_segments_info(gages,
+																		segments,
+																		data,
+																		file)
 						else:
 							segments["full"] = {"start": 0,
 												"end": len(data),
@@ -125,9 +158,19 @@ class ODiSI6100TSVFile(Protocol):
 												"x": None,
 												"y_data": [],
 												"file": file,}
-							self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
+							self._read_gage_segment_data(gages,
+														segments,
+														record_name,
+														message_type,
+														sensor_type,
+														data)
 					else:
-						self._read_gage_segment_data(gages, segments, record_name, message_type, sensor_type, data)
+						self._read_gage_segment_data(gages,
+													segments,
+													record_name,
+													message_type,
+													sensor_type,
+													data)
 		self.metadata[file] = metadata
 		self.gages.update(gages)
 		self.segments.update(segments)
@@ -137,12 +180,15 @@ class ODiSI6100TSVFile(Protocol):
 			data: list,
 			file: str):
 		"""
-		\todo Document
 		Read gage and segment line to discover the gages and segments.
 		The gages are written into \ref gages.
-		The segments are written into \ref gages.
-		These information is used later on to split the data by \ref _read_gage_segment_data().
-		When retrieving data, it used as well to select the segment. 
+		The segments are written into \ref segments.
+		This information is used later on to split the data by \ref _read_gage_segment_data().
+		\param gages Dictionary, to which data of named gages is written.
+		\param segments Dictionary, to which data of named segments is written.
+		\param data List of split line, assumed to contain the gage and segment names.
+		\param file File name (fully specified path), from which the data has been read.
+			This will be stored in each segment or gage to know, where it came from.
 		"""
 		segment_name = None
 		# loop over all the entries in the line
@@ -160,9 +206,10 @@ class ODiSI6100TSVFile(Protocol):
 			elif segment_name is None:
 					# Gage reading
 					gages[value] = {"index": index, "x": None, "y_data": [], "file": file}
-		# After the loop is finished, we can assume, that the last entry's end_index is equal to the length of the data set
-		segments[segment_name]["end"] = len(data)
-		segments[segment_name]["length"] = len(data) - segments[segment_name]["start"]
+		# end the last segment
+		if segment_name is not None:
+			segments[segment_name]["end"] = len(data)
+			segments[segment_name]["length"] = len(data) - segments[segment_name]["start"]
 		return gages, segments
 	def _read_gage_segment_data(self,
 			gages: dict,
@@ -172,7 +219,24 @@ class ODiSI6100TSVFile(Protocol):
 			sensor_type: str,
 			data: list):
 		"""
-		\todo Document
+		Run the extraction for all gages and segments.
+		\param gages Dictionary, containing gage information.
+			This includes, the position of the gage in the data.
+		\param segments Dictionary, containing segment information.
+			This includes, the start and the length of the segment.
+		\param record_name The first entry in line, passed to \ref _store_data().
+			Contains the information such as:
+			- `"x-axis"` for the coordinate line,
+			- `"tare"` for the tare data,
+			- a datetime string for regular measurement lines.
+		\param message_type The second entry in line, passed to \ref _store_data().
+			For regular measurement lines this is `"measurement"`.
+			Else, it is emtpy.
+		\param sensor_type The third entry in line, passed to \ref _store_data().
+			For regular measurement lines this is `"strain"`.
+			Else, it is emtpy.
+		\param data The rest of the line, split up as a list of `str`.
+			This contains the measurement data.
 		"""
 		for gage in gages.values():
 			self._store_data(gage, record_name, message_type, sensor_type, data)
@@ -183,9 +247,26 @@ class ODiSI6100TSVFile(Protocol):
 			record_name: str,
 			message_type: str,
 			sensor_type: str,
-			data:list):
+			data: list):
 		"""
-		\todo Document
+		Store the data into the dictionary.
+		Here, the differenciation between a gage and segment is done.
+		\param gage_segment Dictionary, containing information, which data to extract.
+			A segment is assumed, if the dictionary contains the key `"length"`.
+			Otherwise, it is assumed to be a gage.
+		\param record_name The first entry in line, passed to \ref _store_data().
+			Contains the information such as:
+			- `"x-axis"` for the coordinate line
+			- `"tare"` for the tare data
+			- a datetime string for regular measurement lines
+		\param message_type The second entry in line, passed to \ref _store_data().
+			For regular measurement lines this is `"measurement"`.
+			Else, it is emtpy.
+		\param sensor_type The third entry in line, passed to \ref _store_data().
+			For regular measurement lines this is `"strain"`.
+			Else, it is emtpy.
+		\param data The rest of the line, split up as a list of `str`.
+			This contains the measurement data.
 		"""
 		data = np.asarray(data, dtype=float)
 		if "length" in gage_segment:
@@ -207,10 +288,18 @@ class ODiSI6100TSVFile(Protocol):
 						data=data,)
 			gage_segment["y_data"].append(record)
 	def _get_dict(self,
-				name: str = None,
-				is_gage: bool =False) -> dict:
+			name: str = None,
+			is_gage: bool =False) -> dict:
 		"""
-		\todo Document
+		Return the dictionary matching the search criteria.
+		If no matching segment/gage is found, a `RuntimeError` is raised.
+		\param name Name of the gage or segment.
+			Defaults to the first gage or segment, depending on `is_gage`.
+			This name needs to exactly match the key in the dictionary.
+		\param is_gage Switch, whether `name` is a gage or a segment.
+			Defaults to `False`.
+			If `True`, look in \ref gages for `name`.
+			If `False`, look in \ref segments for `name`.
 		"""
 		target = self.gages if is_gage else self.segments
 		name = name if name is not None else next(iter(target))
@@ -221,10 +310,11 @@ class ODiSI6100TSVFile(Protocol):
 			raise RuntimeError(message.format(requesttype, name))
 		return result
 	def get_tare(self,
-				name: str = None,
-				is_gage: bool = False) -> np.array:
+			name: str = None,
+			is_gage: bool = False) -> np.array:
 		"""
 		Returns the values of the tare record (calibration data).
+		\copydetails _get_dict()
 		"""
 		target = self._get_dict(name, is_gage)
 		return target.get("tare", None)
@@ -233,6 +323,7 @@ class ODiSI6100TSVFile(Protocol):
 			is_gage: bool = False) -> np.array:
 		"""
 		Returns the values of the x-axis record (location data).
+		\copydetails _get_dict()
 		"""
 		target = self._get_dict(name, is_gage)
 		return target.get("x", None)
@@ -242,7 +333,8 @@ class ODiSI6100TSVFile(Protocol):
 			record_list: list = None) -> list:
 		"""
 		Returns the table of the strain data.
-		\param record_list List of records, defaults to \ref y_record_list.
+		\copydetails _get_dict()
+		\param record_list List of records, defaults to to the first segment found.
 		"""
 		if record_list is None:
 			target = self._get_dict(name, is_gage)
@@ -253,7 +345,9 @@ class ODiSI6100TSVFile(Protocol):
 			is_gage: bool = False,
 			record_list: list = None) -> list:
 		"""
-		Get the time stamps of all records in \ref y_record_list.
+		Get the time stamps of all stored records.
+		\copydetails _get_dict()
+		\param record_list List of records, defaults to to the first segment found.
 		"""
 		if record_list is None:
 			target = self._get_dict(name, is_gage)
@@ -266,9 +360,10 @@ class ODiSI6100TSVFile(Protocol):
 		"""
 		Get the \ref SensorRecord and its index, which is closest to the given time_stamp.
 		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
+		\copydetails _get_dict()
 		\return Returns a tuple like `(sensor_record, index)` with
 		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
-		\retval index the corresponding index in \ref y_record_list.
+		\retval index the corresponding index in of the \ref SensorRecord.
 		"""
 		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(name, is_gage), time_stamp)
 		target = self._get_dict(name, is_gage)
@@ -288,6 +383,7 @@ class ODiSI6100TSVFile(Protocol):
 			Defaults to `None` (no restriction).
 		\param end The first record to not be included anymore.
 			Defaults to `None` (no restriction).
+		\copydetails _get_dict()
 		"""
 		if isinstance(start, datetime.date):
 			tmp_record, start = self.get_record_from_time_stamp(start, name, is_gage)
@@ -307,7 +403,11 @@ class ODiSI6100TSVFile(Protocol):
 			is_gage: bool = False,) -> tuple:
 		"""
 		Get the strain time series for a fixed position.
-		Therefore, the closed x-value to the given position is found and the according strain values are collected.
+		Therefore, the closest x-value to the given position is found and the according strain values are collected.
+		\param x Position, for which the time series should be retrieved.
+			This is used to serach the nearest position in the segment.
+			For time series of gages (`is_gage=True`), this has no influence.
+		\copydetails _get_dict()
 		\return Returns a tuple of `(time_stamps, time_series, x_value)`.
 		\retval time_stamps List of time stamps.
 		\retval time_series List of strain values for at the position of `x_value`.
@@ -332,9 +432,10 @@ class ODiSI6100TSVFile(Protocol):
 			name: str = None,
 			is_gage: bool = False) -> np.array:
 		"""
-		Takes the arithmetic mean for each position over all records in the slice and return the strain values as `np.array`.
+		Get the mean strain state of the sensor in the given period.
+		For each position, the arithmetic mean is calculated over the time series.
 		During the operation, `NaN` entries are stripped.
-		If a column consists entirely of `NaN`, nan is written to the returned array.
+		If a column consists entirely of `NaN`, the entry is `NaN` as well.
 		For more, see documentation on `numpy.nanmean()`.
 		\copydetails get_record_slice()
 		\return Returns the mean strain state of sensor in the chosen interval.
@@ -349,6 +450,8 @@ class ODiSI6100TSVFile(Protocol):
 			name: str = None,
 			is_gage: bool = False) -> dict:
 		"""
+		Get the metadata dictionary, belonging to the segment/gage.
+		\copydetails _get_dict()
 		"""
 		target = self._get_dict(name, is_gage)
 		file = target.get("file", None)
