@@ -118,7 +118,7 @@ class Limit(Filter):
 class SlidingFilter(Filter):
 	"""
 	Abstract base class for filter classes, which work with a sliding window.
-	For each entry, the sliding mean extends \ref radius \f$r\f$ entries to both sides.
+	For each entry, the sliding window extends \ref radius \f$r\f$ entries to both sides.
 	The margins (first and last \f$r\f$ entries of `data`) will be treated according to the \ref margins parameter.
 	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 	"""
@@ -127,7 +127,7 @@ class SlidingFilter(Filter):
 			margins: str = "reduced",
 			*args, **kwargs):
 		"""
-		Constructs a SlidingMean object.
+		Constructs a SlidingFilter object.
 		\param radius \copybrief radius For more, see \ref radius.
 		\param margins \copybrief margins For more, see \ref margins.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -147,8 +147,8 @@ class SlidingFilter(Filter):
 			margins: str = None,
 			) -> np.array:
 		"""
-		\copydoc SlidingMean
-		\param data List of data to be smoothed.
+		\copydetails SlidingFilter
+		\param data One-dimensional array (or list) of data to be smoothed.
 		\param radius \copybrief radius Defaults to \ref radius. For more, see \ref radius.
 		\param margins \copybrief margins Defaults to \ref margins. For more, see \ref margins.
 		"""
@@ -156,9 +156,9 @@ class SlidingFilter(Filter):
 		r = radius if radius is not None else self.radius
 		if radius == 0:
 			return data
+		assert len(data) > 2*r, "The window of the sliding filter is larger ({}) than the given data ({})! Reduce its radius and/or check the data.".format(2*r+1, len(data))
 		start = r
 		end = len(data) - r
-		assert end > 0, "r is greater than the given data!"
 		smooth_data = copy.deepcopy(data)
 		# Smooth the middle
 		for i in range(start, end):
