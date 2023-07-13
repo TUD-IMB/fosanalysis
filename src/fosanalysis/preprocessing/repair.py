@@ -17,36 +17,40 @@ from fosanalysis import fosutils
 
 class Repair(fosutils.Base):
 	"""
-	\todo Implement and document
-	
-	Should implement algorithms to replace missing data with plausible values.
-	
+	Base class for algorithms to replace/remove missing data with plausible values.
+	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
+	This is done by replacing the dropouts by plausible values and/or removing dropouts.
+	Because the shape of the arrays might be altered, \ref run() will return both `x` and `strain` data.
 	"""
 	def __init__(self, *args, **kwargs):
 		"""
-		\todo Implement and document
+		Constructs a \ref Repair object.
+		As this is an abstract class, it may not be instantiated directly itself.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 	@abstractmethod
-	def run(self, *args, **kwargs) -> tuple:
+	def run(self,
+			x_data: np.array,
+			y_data: np.array,
+			*args, **kwargs) -> tuple:
 		"""
-		\todo Implement and document
 		Make the given data valid.
-		This can change the dimension of the data.
+		This can change the shape of the data.
+		\param x_data Array of measuring point positions in accordance to `y_data`.
+		\param y_data Array of strain data in accordance to `x_data`.
+		\param *args Additional positional arguments, to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+		\return Returns a tuple of two arrays: `(x_data, y_data)` with the altered position and strain data.
+			Those are will be free of dropouts (`NaN`s).
 		"""
 		raise NotImplementedError()
-	def estimate_treshold(self):
-		"""
-		\todo Implement and document
-		Replace missing data with plausible values.
-		"""
-		raise NotImplementedError()
-		
+		return x_data, y_data
+
 class NaNFilter(Repair):
 	"""
-	A filter, that removes any columns from a given number of data sets (matrix), tha contain `not a number` entries.
+	A filter, that removes any columns from a given number of data sets (matrix), that contain `not a number` entries.
 	"""
 	def __init__(self,
 			*args, **kwargs):
@@ -59,11 +63,12 @@ class NaNFilter(Repair):
 	def run(self,
 			*data_list,
 			exclude: list = None,
-			) -> tuple:
+			**kwargs) -> tuple:
 		"""
 		In all given arrays of `data_list`, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
 		\param data_list Tuple of arrays (matrix), which should be cleaned.
 		\param exclude Additional values that should be excluded. Defaults to nothing.
+		\param **kwargs Additional keyword arguments, will be ignored.
 		\return Returns a tuple with copies of the arrays, without columns containing any of the specified values. If only a single array is given, only the stripped copy returned.
 		"""
 		exclude = exclude if exclude is not None else []
