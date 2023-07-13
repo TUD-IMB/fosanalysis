@@ -78,13 +78,17 @@ class Berrocal(TensionStiffeningCompensator):
 		"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""
-		assert len(crack_list) > 1
-		tension_stiffening_values = np.interp(x=x, xp=crack_list.locations, fp=crack_list.max_strains)
-		# Difference of steel strain to the linear interpolation
-		tension_stiffening_values = tension_stiffening_values - strain
-		# Reduce by rho  and alpha
-		tension_stiffening_values = tension_stiffening_values * self.alpha * self.rho
-		return tension_stiffening_values
+		if not crack_list:
+			# crack_list is empty
+			return np.zeros_like(strain)
+		else:
+			tension_stiffening_values = np.interp(x=x, xp=crack_list.locations, fp=crack_list.max_strains)
+			# Difference of steel strain to the linear interpolation
+			tension_stiffening_values = tension_stiffening_values - strain
+			# Reduce by rho  and alpha
+			tension_stiffening_values = tension_stiffening_values * self.alpha * self.rho
+			tension_stiffening_values = np.maximum(tension_stiffening_values, 0)
+			return tension_stiffening_values
 
 class Fischer(TensionStiffeningCompensator):
 	"""
@@ -130,7 +134,7 @@ class Fischer(TensionStiffeningCompensator):
 		"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""
-		tension_stiffening_values = np.zeros(len(strain))
+		tension_stiffening_values = np.zeros_like(strain)
 		for crack in crack_list:
 			l_i, x_l = fosutils.find_closest_value(x, crack.x_l)
 			r_i, x_r = fosutils.find_closest_value(x, crack.x_r)
@@ -139,5 +143,5 @@ class Fischer(TensionStiffeningCompensator):
 			fp = np.minimum([strain[l_i], 0, strain[r_i]], self.max_concrete_strain)
 			tension_stiffening_values[l_i:r_i+1] = np.interp(x_seg, xp, fp)
 		tension_stiffening_values = np.minimum(tension_stiffening_values, strain)
-		tension_stiffening_values = np.maximum(tension_stiffening_values, np.zeros(len(strain)))
+		tension_stiffening_values = np.maximum(tension_stiffening_values, 0)
 		return tension_stiffening_values
