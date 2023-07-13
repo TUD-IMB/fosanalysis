@@ -3,7 +3,7 @@
 \file
 Contains functionality for interfacing files and network ports.
 \author Bertram Richter
-\date 2022
+\date 2023
 \package fosanalysis.protocols \copydoc protocols.py
 """
 
@@ -46,7 +46,7 @@ class Protocol(fosutils.Base):
 	@abstractmethod
 	def __init__(self, *args, **kwargs):
 		"""
-		Constructs a Protocla object.
+		Constructs a Protocol object.
 		Needs to be reimplemented by sub-classes.
 		"""
 		super().__init__(*args, **kwargs)
