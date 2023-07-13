@@ -92,7 +92,7 @@ class Berrocal(TensionStiffeningCompensator):
 
 class Fischer(TensionStiffeningCompensator):
 	"""
-	Implements the tension stiffening approach based on \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	Implements the tension stiffening approach based on \cite Fischer_2019_Distributedfiberoptic.
 	The calculative tension stiffening strain \f(\varepsilon^{\mathrm{ts}}_{\mathrm{concrete}}\f) is idealized to increase linearly from the crack's position
 	\f[
 		\varepsilon^{\mathrm{TS}}_{\mathrm{concrete}}(x) = \min{\left(\delta_{\varepsilon}(x) \times \varepsilon_{\mathrm{lim}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)\right)}
@@ -120,7 +120,7 @@ class Fischer(TensionStiffeningCompensator):
 			max_concrete_strain: int = 100,
 			*args, **kwargs):
 		"""
-		Constructs a TensionStiffeningCompensator object with according to the proposal by \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+		Constructs a TensionStiffeningCompensator object with according to the proposal by \cite Fischer_2019_Distributedfiberoptic.
 		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.

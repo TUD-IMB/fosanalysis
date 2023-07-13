@@ -317,7 +317,7 @@ class StrainProfile(fosutils.Base):
 class Concrete(StrainProfile):
 	"""
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
-	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	The crack width calculation is carried out according to \cite Fischer_2019_Distributedfiberoptic.
 	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Fischer.
 	"""
 	def __init__(self,
