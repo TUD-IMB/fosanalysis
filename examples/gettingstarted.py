@@ -27,6 +27,12 @@ strain_table = sd.get_y_table()
 times = sd.get_time_stamps()
 
 # Generate objects for the preprocessing workflow.
+# Convert strain reading anomalies to dropouts
+maskingobject = fa.preprocessing.masking.GTM(delta_max=400,
+								forward_comparison_range=1,
+								activate_reverse_sweep=False,
+								)
+
 # Combine multiple readings of data into a 1D array.
 aggregateobject = fa.preprocessing.aggregate.Median()
 
@@ -38,6 +44,7 @@ filterobject = fa.preprocessing.filtering.SlidingMean(radius=2)
 
 ## Set the order of the preprocessing tasks.
 tasklist=[
+	maskingobject,
 	aggregateobject,
 	repairobject,
 	filterobject,

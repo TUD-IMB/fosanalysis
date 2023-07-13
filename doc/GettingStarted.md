@@ -77,14 +77,16 @@ However, it consists of thre groups of tasks:
 
 For each of the steps, a task object is created.
 
-\todo Complete:
 Strain reading anomalies (SRA), are readings of implausible high or low values.
 As they distort the signal, they need to be converted into dropouts.
 This should be done as early, as possible.
 Thus, on the 2D array before aggregation of several reading into a single one.
+For example with the GTM, as proposed in \cite Bado_2021_Postprocessingalgorithmsfor.
 
 ```.py
-
+maskingobject = fa.preprocessing.masking.GTM(delta_max=400,
+								forward_comparison_range=1,
+								activate_reverse_sweep=False,)
 ```
 
 In this example, we will continue by reducing the 2D array to a 1D array.
@@ -112,7 +114,7 @@ The leftover noise is reducec by filtering.
 Careful filtering might improve the data quality, but don't overdo it!
 
 ```.py
-repairobject = fa.preprocessing.filtering.SlidingMean(radius=2)
+filterobject = fa.preprocessing.filtering.SlidingMean(radius=2)
 ```
 
 After defining the task objects for the pre-processing, the order is to established.
@@ -120,6 +122,7 @@ A pre-processing workflow object is created and the order list is handed to it.
 
 ```.py
 tasklist=[
+	maskingobject,
 	aggregateobject,
 	repairobject,
 	filterobject,
@@ -128,6 +131,7 @@ preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 ```
 
 Now the raw data will be pre-processed with the previously defined ruleset.
+The output of each task is passed as the input to the next task.
 
 ```.py
 x_processed, times, strain_processed = preprocessingobject.run(x=x, y=times, z=strain_table)
