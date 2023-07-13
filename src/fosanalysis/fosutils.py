@@ -29,7 +29,7 @@ def find_closest_value(array: np.array, x: float) -> tuple:
 			closest_index = i
 	return closest_index, array[closest_index]
 
-def find_next_finite_neighbor(
+def next_finite_neighbor(
 		array: np.array,
 		index: int,
 		to_left: bool,
@@ -62,7 +62,7 @@ def find_next_finite_neighbor(
 		else:
 			break
 	if result_index is not None and recurse > 0:
-		result_index, result = find_next_finite_neighbor(array=array, index=result_index, to_left=to_left, recurse=recurse-1)
+		result_index, result = next_finite_neighbor(array=array, index=result_index, to_left=to_left, recurse=recurse-1)
 	return result_index, result
 
 class Base(ABC):
