@@ -19,26 +19,36 @@ from fosanalysis import fosutils
 class Filter(fosutils.Base):
 	"""
 	Abstract base class for filter classes.
+	These filters will modify the values,but not the shape of the arrays.
+	Hence, the \ref run() method will return the filtered strain array only.
+	
+	In general, if both smoothing and cropping are to be applied: smooth first, crop second.
 	"""
 	def __init__(self,
 			*args, **kwargs):
 		"""
 		Constructs a Filter object.
+		As this is an abstract class, it may not be instantiated directly itself.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 	@abstractmethod
-	def run(self, data, *args, **kwargs):
+	def run(self,
+			x_data: np.array,
+			y_data: np.array,
+			*args, **kwargs) -> np.array:
 		"""
-		Each Filter object has a `run()` method, which takes an iterable `data` as the first parameter and possibly additional positional and keyword arguments.
-		\param data Data, the will be filtered.
-		\param *args Additional positional arguments, to customize the behaviour.
+		Each Filter object has a `run()` method, which takes two required parameter, the location data `x` and the `strain` data
+		The behaviour positional and keyword arguments may be used to change the behaviour.
+		\param x_data Array of measuring point positions in accordance to `strain`.
+		\param y_data Array of strain data in accordance to `x`.
+		\param *args Additional positional arguments to customize the behaviour.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		raise NotImplementedError()
 
-class MultiFilter(fosutils.Base):
+class MultiFilter(Filter):
 	"""
 	Container for several filters, that are carried out in sequential order.
 	"""
@@ -55,18 +65,24 @@ class MultiFilter(fosutils.Base):
 		## List of \ref Filter objects.
 		## The filters are executed sequentially, the output of a previous filter is used as the input to the next one.
 		self.filters = filters
-	def run(self, data, *args, **kwargs):
+	def run(self,
+			x_data: np.array,
+			y_data: np.array,
+			*args, **kwargs) -> np.array:
 		"""
-		The `data` is passed sequentially through all \ref Filter objects in \ref filters, in that specific order.
+		The data is passed sequentially through all \ref Filter objects in \ref filters, in that specific order.
 		The output of a previous filter is used as the input to the next one.
-		\param data Data, the will be filtered.
-		\param *args Additional positional arguments, to customize the behaviour, will be passed to the `run()` method of all filter objects in \ref filters.
-		\param **kwargs Additional keyword arguments to customize the behaviour, will be passed to the `run()` method of all filter objects in \ref filters.
+		\param x_data Array of measuring point positions in accordance to `strain`.
+		\param y_data Array of strain data in accordance to `x`.
+		\param *args Additional positional arguments, to customize the behaviour.
+			Will be passed to the `run()` method of all filter objects in \ref filters.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+			Will be passed to the `run()` method of all filter objects in \ref filters.
 		"""
-		data = copy.deepcopy(data)
+		y_data = copy.deepcopy(y_data)
 		for filter_object in self.filters:
-			data = filter_object.run(data, *args, **kwargs)
-		return data
+			y_data = filter_object.run(x_data, y_data, *args, **kwargs)
+		return y_data
 
 class Limit(Filter):
 	"""
@@ -94,21 +110,26 @@ class Limit(Filter):
 		## All entries with values less than that will be excluded.
 		self.maximum = maximum
 	def run(self,
-			data: np.array,
+			x_data: np.array,
+			y_data: np.array,
 			minimum: float = None,
 			maximum: float = None,
-			) -> np.array:
+			*args, **kwargs) -> np.array:
 		"""
 		Limit the the entries in the given list to the specified range.
 		Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
 		Entries, which exceed the given range are cropped to it.
-		\param data List of floats, which are to be cropped.
+		\param x_data Array of measuring point positions in accordance to `strain`.
+		\param y_data Array of strain data in accordance to `x`.
+			These will be limited to `minimum` and `maximum`.
 		\param minimum Minimum value, for the entries. Defaults to `None`, no limit is applied.
 		\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
+		\param *args Additional positional arguments to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		minimum = minimum if minimum is not None else self.minimum
 		maximum = maximum if maximum is not None else self.maximum
-		limited = copy.deepcopy(data)
+		limited = copy.deepcopy(y_data)
 		if minimum is not None:
 			limited = [max(entry, minimum) for entry in limited]
 		if maximum is not None:
@@ -127,7 +148,8 @@ class SlidingFilter(Filter):
 			margins: str = "reduced",
 			*args, **kwargs):
 		"""
-		Constructs a SlidingFilter object.
+		Constructs a \ref SlidingFilter object.
+		As this is an abstract class, it may not be instantiated directly itself.
 		\param radius \copybrief radius For more, see \ref radius.
 		\param margins \copybrief margins For more, see \ref margins.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -142,34 +164,38 @@ class SlidingFilter(Filter):
 		## Smoothing radius for the data, number of entries of data to each side to be taken into account.
 		self.radius = radius
 	def run(self,
-			data: np.array,
+			x_data: np.array,
+			y_data: np.array,
 			radius: int = None,
 			margins: str = None,
-			) -> np.array:
+			*args, **kwargs) -> np.array:
 		"""
 		\copydetails SlidingFilter
-		\param data One-dimensional array (or list) of data to be smoothed.
+		\param x_data Array of measuring point positions in accordance to `strain`.
+		\param y_data Array of strain data in accordance to `x`.
 		\param radius \copybrief radius Defaults to \ref radius. For more, see \ref radius.
 		\param margins \copybrief margins Defaults to \ref margins. For more, see \ref margins.
+		\param *args Additional positional arguments, to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		margins = margins if margins is not None else self.margins
 		r = radius if radius is not None else self.radius
 		if radius == 0:
 			return data
-		assert len(data) > 2*r, "The window of the sliding filter is larger ({}) than the given data ({})! Reduce its radius and/or check the data.".format(2*r+1, len(data))
+		assert len(y_data) > 2*r, "The window of the sliding filter is larger ({}) than the given data ({})! Reduce its radius and/or check the data.".format(2*r+1, len(data))
 		start = r
-		end = len(data) - r
-		smooth_data = copy.deepcopy(data)
+		end = len(y_data) - r
+		smooth_data = copy.deepcopy(y_data)
 		# Smooth the middle
 		for i in range(start, end):
-			sliding_window = data[i-r:i+r+1]
+			sliding_window = y_data[i-r:i+r+1]
 			smooth_data[i] = self.operation(sliding_window)
 		# Fill up the margins
 		if margins == "reduced":
 			for i in range(r):
-				sliding_window = data[:2*i+1]
+				sliding_window = y_data[:2*i+1]
 				smooth_data[i] = self.operation(sliding_window)
-				sliding_window = data[-1-2*i:]
+				sliding_window = y_data[-1-2*i:]
 				smooth_data[-i-1] = self.operation(sliding_window)
 		elif margins == "flat":
 			first_smooth = smooth_data[start]
@@ -197,7 +223,7 @@ class SlidingMean(SlidingFilter):
 	"""
 	def operation(self, sliding_window: np.array) -> float:
 		"""
-		Each element in the in array to be filtered is assigned the arithmetical average of the sliding window:
+		Each element in the array to be filtered is assigned the arithmetical average of the sliding window:
 		\f[
 			x_{i} \gets \frac{\sum{x_{j,\:\ldots,\:k}}}{2r + 1}
 		\f]
@@ -211,7 +237,7 @@ class SlidingMedian(SlidingFilter):
 	"""
 	def operation(self, sliding_window: np.array) -> float:
 		"""
-		Each element in the in array to be filtered is assigned the median of the sliding window:
+		Each element in the array to be filtered is assigned the median of the sliding window:
 		\f[
 			x_{i} \gets
 			\begin{cases}
