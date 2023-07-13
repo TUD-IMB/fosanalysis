@@ -426,26 +426,6 @@ class ODiSI6100TSVFile(Protocol):
 			index, x_value = fosutils.find_closest_value(x_values, x)
 			time_series = np.array([data[index] for data in y_data])
 		return time_stamps, time_series, x_value
-	def mean_over_y_records(self,
-			start = None,
-			end = None,
-			name: str = None,
-			is_gage: bool = False) -> np.array:
-		"""
-		Get the mean strain state of the sensor in the given period.
-		For each position, the arithmetic mean is calculated over the time series.
-		During the operation, `NaN` entries are stripped.
-		If a column consists entirely of `NaN`, the entry is `NaN` as well.
-		For more, see documentation on `numpy.nanmean()`.
-		\copydetails get_record_slice()
-		\return Returns the mean strain state of sensor in the chosen interval.
-		"""
-		slice = self.get_record_slice(start=start,
-									end=end,
-									name=name,
-									is_gage=is_gage)
-		y_table = self.get_y_table(record_list=slice)
-		return np.nanmean(y_table, axis=0)
 	def get_metadata(self,
 			name: str = None,
 			is_gage: bool = False) -> dict:
