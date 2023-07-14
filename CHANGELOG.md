@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Introduced new workflow for preprocessing:
+    - New worflow class for preprocessing
+    - New module `preprocessing.ensemble` for data consolidation
+
+### Changed
+
+- `cropping.croping()` is now a standalone function, `cropping.Crop` works as a preset store
+- Filter and Repair objects now require both x-data and y-data
+- Renamed `fosutils.find_next_neighbor()` &rarr; `fosutils.next_finite_neighbor()`
+
+### Removed
+
+- `preprocessing.strip_smooth_crop()`
+- `protcols.Strainprofile.get_mean_over_y_record()`
+- Preprocessing functionalities from `strainprofile.StrainProfile`
 
 ## [v0.3] – 2023-??-??
 
