@@ -8,17 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
-## [v0.3] – 2022-08-16
+## [v0.3] – 2023-??-??
 
 ### Added
 
 - New sub-packages for compensation and preprocessing and moved functionality there
-- Added gage file support ODiSI6100TSVFile can import both full .tsv files, gage .tsv files or both into the same object now
+- ODiSI6100TSVFile can import both full .tsv files, gage .tsv files or both into the same object now
 - Sliding filters and possibility to chain filters
 - Changelog introduced
-- `fosutils.find_next_neighbor()`
+- `fosutils.find_next_finite_neighbor()`
 - The project is now packaged on PyPI.
-- Added a logo
+- Cute logo
 
 ### Changed
 
@@ -30,15 +30,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `crop.Crop` now treats 2D arrays as well.
 - Refactored `integration.Integrator`
 - Transfer length default limits are now the strain minimum or 0.2 m (whatever is closer to the crack).
+- Renamed `protocols.ODiSI6100TSVFile.header` &rarr; `protocols.ODiSI6100TSVFile.metadata`
+- Updated tutorial
 
 ### Fixed
 
-- Fixed several issues
+- Several issues
+- `generatedemofile.py` now should produce correct content
 
 ### Deprecated
 
 - `preprocessing.strip_smooth_crop()` function will be replaced by a new preprocessing workflow in the next version.
 - `protcols.Strainprofile.get_mean_over_y_record()` function will be replaced by a new preprocessing workflow in the next version.
+
+### Removed
+
+- Unused NetworkStream class
+- Obsolete `x_data` and `y_record_list` of `protocol.Protocol`
 
 ## [v0.2] – 2022-08-16
 
