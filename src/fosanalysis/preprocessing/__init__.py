@@ -11,15 +11,15 @@ Contains modules for data preprocessing, like:
 
 import numpy as np
 
+from fosanalysis import utils
+
 from . import filtering
 from . import masking
 from . import repair
 from . import ensemble
 
-from fosanalysis import cropping
-from fosanalysis import fosutils
 
-class Preprocessing(fosutils.Base):
+class Preprocessing(utils.base.Workflow):
 	"""
 	Execute workflow of the preprocessing step for data sanitation.
 	Firstly, if a masking object is initialized, strip all strain reading anomalies, else skip this step.

@@ -12,9 +12,9 @@ from abc import abstractmethod
 
 import numpy as np
 
-from fosanalysis import fosutils
+from fosanalysis.utils import base
 
-class Ensemble(fosutils.Base):
+class Ensemble(base.Task):
 	"""
 	Abstract class for the ensembly of 2D strain data.
 	Data of multiple readings are combined into 1 array.

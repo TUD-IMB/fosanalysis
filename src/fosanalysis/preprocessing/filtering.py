@@ -14,9 +14,9 @@ import copy
 
 import numpy as np
 
-from fosanalysis import fosutils
+from fosanalysis.utils import base
 
-class Filter(fosutils.Base):
+class Filter(base.Task):
 	"""
 	Abstract base class for filter classes.
 	These filters will modify the values,but not the shape of the arrays.

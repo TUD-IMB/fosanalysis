@@ -14,9 +14,9 @@ import copy
 
 import numpy as np
 
-from fosanalysis import fosutils
+from fosanalysis import utils
 
-class AnomalyMasker(fosutils.Base):
+class AnomalyMasker(utils.base.Task):
 	"""
 	Abstract class for anomaly identification.
 	In a signal, implausible data points (strain reading anomalies (SRAs)) are replaced by `NaN` values, effectively marking them as dropouts.

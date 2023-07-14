@@ -13,9 +13,9 @@ from abc import abstractmethod
 
 import numpy as np
 
-from fosanalysis import fosutils
+from fosanalysis import utils
 
-class Repair(fosutils.Base):
+class Repair(utils.base.Task):
 	"""
 	Base class for algorithms to replace/remove missing data with plausible values.
 	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.

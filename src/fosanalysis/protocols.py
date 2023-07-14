@@ -13,7 +13,7 @@ import copy
 import datetime
 import numpy as np
 
-from . import fosutils
+from . import utils
 
 class SensorRecord(dict):
 	"""
@@ -39,7 +39,7 @@ class SensorRecord(dict):
 		data_str = [str(data) for data in self["data"]]
 		return itemsep.join([self["record_name"], self["message_type"], self["sensor_type"], *data_str])
 
-class Protocol(fosutils.Base):
+class Protocol(utils.base.Base):
 	"""
 	Abstract class, which specifies the basic interfaces, a protocol must implement.
 	"""
@@ -369,7 +369,7 @@ class ODiSI6100TSVFile(Protocol):
 		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
 		\retval index the corresponding index in of the \ref SensorRecord.
 		"""
-		index, accurate_time_stamp = fosutils.find_closest_value(self.get_time_stamps(name, is_gage), time_stamp)
+		index, accurate_time_stamp = utils.misc.find_closest_value(self.get_time_stamps(name, is_gage), time_stamp)
 		target = self._get_dict(name, is_gage)
 		return target.get("y_data", None)[index], index
 	def get_record_slice(self,
@@ -427,7 +427,7 @@ class ODiSI6100TSVFile(Protocol):
 			x_value = x_values
 			time_series = y_data
 		else:
-			index, x_value = fosutils.find_closest_value(x_values, x)
+			index, x_value = utils.misc.find_closest_value(x_values, x)
 			time_series = np.array([data[index] for data in y_data])
 		return time_stamps, time_series, x_value
 	def get_metadata(self,
