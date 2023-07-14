@@ -3,17 +3,16 @@
 \file
 Contains functionality for integrating discretized funtions.
 \author Bertram Richter
-\date 2022
-\package fosanalysis.integration \copydoc integration.py
+\date 2023
+\package fosanalysis.utils.integration \copydoc integration.py
 """
 
 import numpy as np
 import scipy.integrate
 
-from . import fosutils
-from . import preprocessing
+from . import base
 
-class Integrator(fosutils.Base):
+class Integrator(base.Base):
 	"""
 	Object to integrate a function \f$y = f(x)\f$ given by discrete argument data \f$x\f$ and associated values \f$y\f$.
 	"""
@@ -40,7 +39,7 @@ class Integrator(fosutils.Base):
 			*args, **kwargs) -> np.array:
 		"""
 		Calculates the antiderivative \f$F(x) = \int f(x) dx + C\f$ to the given function over the given segment (indicated by `start_index` and `end_index`).
-		The given values are assumed to be sanitized (`NaN`s are stripped already).
+		The given values are assumed to be preprocessed (`NaN`s are stripped already).
 		\param x_values List of x-positions \f$x\f$.
 		\param y_values List of y-values \f$y\f$ matching \f$x\f$.
 		\param initial The interpolation constant \f$C\f$.
@@ -49,8 +48,6 @@ class Integrator(fosutils.Base):
 		\param **kwargs Additional keyword arguments, will be passed to the called integration function.
 		"""
 		interpolation = interpolation if interpolation is not None else self.interpolation
-		nan_filter = preprocessing.repair.NaNFilter()
-		x_values, y_values = nan_filter.run(x_values, y_values)
 		# Prepare the segments
 		if interpolation == "trapezoidal":
 			return scipy.integrate.cumulative_trapezoid(y=y_values, x=x_values, initial=initial, *args, **kwargs)
@@ -66,7 +63,7 @@ class Integrator(fosutils.Base):
 			*args, **kwargs) -> float:
 		"""
 		Calculates integral over the given segment (indicated by `start_index` and `end_index`) \f$F(x)|_{a}^{b} = \int_{a}^{b} f(x) dx + C\f$.
-		This is a convenience wrapper around \ref antiderivative().
+		The given values are assumed to be preprocessed (`NaN`s are stripped already).
 		\param x_values List of x-positions \f$x\f$.
 		\param y_values List of y-values \f$y\f$ matching \f$x\f$.
 		\param start_index Index, where the integration should start (index of \f$a\f$). Defaults to the first item of `x_values` (`0`).
@@ -81,8 +78,6 @@ class Integrator(fosutils.Base):
 		end_index = end_index if end_index is not None else len(x_values) - 1
 		x_segment = x_values[start_index:end_index+1]
 		y_segment = y_values[start_index:end_index+1]
-		nan_filter = preprocessing.repair.NaNFilter()
-		x_values, y_values = nan_filter.run(x_values, y_values)
 		# Prepare the segments
 		if interpolation == "trapezoidal":
 			return scipy.integrate.trapezoid(y=y_segment, x=x_segment, *args, **kwargs) + initial
