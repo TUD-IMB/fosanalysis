@@ -15,6 +15,9 @@ import numpy as np
 from fosanalysis.utils import base
 
 class Compensator(base.Task):
+	"""
+	Base for compensation classes.
+	"""
 	def __init__(self, *args, **kwargs):
 		"""
 		Base class for any compensatory class.

@@ -13,6 +13,9 @@ import scipy.signal
 from . import compensator
 
 class ShrinkCompensator(compensator.Compensator):
+	"""
+	Implements compensation for shrink and creeping of concrete.
+	"""
 	def __init__(self,
 			method: str = "mean_min",
 			*args, **kwargs):

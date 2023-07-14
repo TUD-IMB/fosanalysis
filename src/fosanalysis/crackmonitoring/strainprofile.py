@@ -97,8 +97,8 @@ class StrainProfile(utils.base.Workflow):
 		## \ref compensation.tensionstiffening.TensionStiffeningCompensator object used to substract out the influence of tension stiffening on the crack width.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.ts_compensator = ts_compensator
-		## \ref integration.Integrator object used to integrate the strain data to estimate the crack widths.
-		## Defaults to the default configuration of \ref integration.Integrator.
+		## \ref utils.integration.Integrator object used to integrate the strain data to estimate the crack widths.
+		## Defaults to the default configuration of \ref utils.integration.Integrator.
 		self.integrator = integrator if integrator is not None else utils.integration.Integrator()
 		## Name of the strain profile, defaults to `""`.
 		self.name = name

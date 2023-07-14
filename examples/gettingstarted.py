@@ -40,10 +40,10 @@ ensembleobject = fa.preprocessing.ensemble.Median()
 repairobject = fa.preprocessing.repair.NaNFilter()
 
 # Object which defines how the data is modified.
-filterobject = fa.preprocessing.filtering.SlidingMean(radius=1)
+filterobject = fa.preprocessing.filtering.SlidingMedian(radius=1)
 
 # Object which defines the range of the cropped data set.
-crop = fa.cropping.Crop(start_pos=3, end_pos=5)
+crop = fa.utils.cropping.Crop(start_pos=3, end_pos=5)
 
 ## Assemble the preprocessing object.
 
@@ -64,7 +64,7 @@ plt.plot(x_processed, strain_processed, c="k")
 plt.show()
 
 # Instantiate the strain profile object
-sp = fa.strainprofile.Concrete(x=x_processed, strain=strain_processed)
+sp = fa.crackmonitoring.strainprofile.Concrete(x=x_processed, strain=strain_processed)
 
 # Calculate crack width
 sp.calculate_crack_widths()

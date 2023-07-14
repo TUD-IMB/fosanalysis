@@ -26,7 +26,7 @@ class Preprocessing(utils.base.Workflow):
 	Secondly, if a repair object is initialized, repair the data to these rules, else skip this step.
 	Thirdly, if a filter object is initialized, filter and/or alter the data to these rules, else skip this step.
 	If an ensemble object is initialized, reduce the array from 2D to 1D, afterwards steps 1 to 3 can be repeated for the 1D array.
-	Finally, if a cropping object is initialized, `x` and all records in `y_tuple` are cropped using \ref cropping.Crop.run(), else skip this step.
+	Finally, if a cropping object is initialized, `x` and all records in `y_tuple` are cropped using \ref utils.cropping.Crop.run(), else skip this step.
 	"""
 	def __init__(self,
 				 masking_object_2d = None,

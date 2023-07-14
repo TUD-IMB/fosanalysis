@@ -104,15 +104,15 @@ Now, we can apply a filter to reduce the leftover noise, e.g., a \ref fosanalysi
 A tasteful amount of filtering might improve the workability of data, but don't overdo it!
 
 ```.py
-repairobject = fa.preprocessing.filtering.SlidingMean(radius=1)
+repairobject = fa.preprocessing.filtering.SlidingMedian(radius=1)
 ```
 
 After that, we might restrict data to segment of interest.
-This is done with a \ref fosanalysis.cropping.Crop object.
+This is done with a \ref fosanalysis.utils.cropping.Crop object.
 In this example the segment of interest ranges from 3 m – 5 m.
 
 ```.py
-crop = fa.cropping.Crop(start_pos=3, end_pos=5)
+crop = fa.utils.cropping.Crop(start_pos=3, end_pos=5)
 ```
 
 After defining the task objects for the pre-processing, a \ref fosanalysis.preprocessing.Preprocessing workflow object must be created.
@@ -141,21 +141,22 @@ plt.plot(x_processed, strain_processed, c="k")
 plt.show()
 ```
 
-The crack width calculation is again done by a \ref fosanalysis.strainprofile.StrainProfile workflow object and implements the following workflow:
+The crack width calculation consists of the following steps.
+This workflow is implemented by a \ref fosanalysis.crackmonitoring.strainprofile.StrainProfile object.
 
-1. Crack identification (see \ref fosanalysis.finding.CrackFinder)
-2. Definition of transfer lengths (separating the cracks)
-3. Compensation of tension stiffening (see \ref fosanalysis.tensionstiffening)
+1. Crack identification (see \ref fosanalysis.crackmonitoring.finding.CrackFinder)
+2. Definition of transfer lengths (separating the cracks) (see \ref fosanalysis.crackmonitoring.separation.CrackLengths)
+3. Compensation of tension stiffening (see \ref fosanalysis.compensation.tensionstiffening)
 4. Crack width calculation by means of strain integration
 
 The data is expected to be already clean data, so we pass the results of the pre-processing.
 
-Since we know, the sensor was embedded in concrete or attached to the surface, we use \ref fosanalysis.strainprofile.Concrete.
+Since we know, the sensor was embedded in concrete or attached to the surface, we use \ref fosanalysis.crackmonitoring.strainprofile.Concrete.
 It selects some task objects for those steps by default
 We will skip over it here, but those objects could be configured in a similar way.
 
 ```.py
-sp = fa.strainprofile.Concrete(x=x_processed, strain=strain_processed)
+sp = fa.crackmonitoring.strainprofile.Concrete(x=x_processed, strain=strain_processed)
 ```
 
 Now, identifying crack locations and calculating their respective widths is as simple as:
@@ -169,7 +170,7 @@ To demonstrate how to correct those, we take a look at the position 3.9 m.
 We observe, that the twin peaks are recognized as two separate cracks.
 From manual inspection of the specimen, however, we might know, that those could correspond to a single crack only.
 So we first delete the wrong cracks by their index (the foruth and fifth crack) and add a single crack at the "correct" position 3.9 m afterwards.
-If the peak recognition is faulty in general, readjusting the parameters of `fosanalysis.finding.CrackFinder` and/or `fosanalysis.preprocessing.filtering.Filter` is suggested.
+If the peak recognition is faulty in general, readjusting the parameters of `fosanalysis.crackmonitoring.finding.CrackFinder` and/or `fosanalysis.preprocessing.filtering.Filter` is suggested.
 The cracks are recalulated by default after modifying the list of cracks.
 
 ```.py

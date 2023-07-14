@@ -34,7 +34,7 @@ class TensionStiffeningCompensator(compensator.Compensator):
 		Every \ref TensionStiffeningCompensator has a \ref run() method, which takes the following parameters:
 		\param x Positional x values.
 		\param strain List of strain values.
-		\param crack_list \ref cracks.CrackList with \ref cracks.Crack objects, that already have assigned locations.
+		\param crack_list \ref fosanalysis.crackmonitoring.cracks.CrackList with \ref fosanalysis.crackmonitoring.cracks.Crack objects, that already have assigned locations.
 		\param *args Additional positional arguments to customize the behavior.
 		\param **kwargs Additional keyword arguments to customize the behavior.
 		"""
