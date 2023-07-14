@@ -102,6 +102,10 @@ class ODiSI6100TSVFile(Protocol):
 		## - `y_data`: List of \ref SensorRecord for the measurement data.
 		## - `file`: File path, from where the data was imported.
 		self.gages = OrderedDict()
+		## Dictionary, which stores metadata for each file imported.
+		## The path of the imported file is used as key.
+		## The according metadata is stored as sub-dictionary to each key.
+		self.metadata = {}
 		if file is not None:
 			self.read_file(file=file, itemsep=itemsep)
 	def read_file(self,
