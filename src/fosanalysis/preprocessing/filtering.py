@@ -181,7 +181,7 @@ class SlidingFilter(Filter):
 		margins = margins if margins is not None else self.margins
 		r = radius if radius is not None else self.radius
 		if radius == 0:
-			return data
+			return y_data
 		assert len(y_data) > 2*r, "The window of the sliding filter is larger ({}) than the given data ({})! Reduce its radius and/or check the data.".format(2*r+1, len(data))
 		start = r
 		end = len(y_data) - r
