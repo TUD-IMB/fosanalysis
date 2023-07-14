@@ -3,14 +3,14 @@
 \file
 Contains functionality to compensate crop a set of data.
 \author Bertram Richter
-\date 2022
+\date 2023
 \package fosanalysis.cropping \copydoc cropping.py
 """
 import copy
 
 import numpy as np
 
-from . import fosutils
+from . import base
 
 def cropping(x_values: np.array,
 			y_values: np.array,
@@ -69,7 +69,7 @@ def cropping(x_values: np.array,
 			"Dimensions of y_values ({}) not conformant. y_values must be a 1D or 2D array".format(len(np.shape())))
 	return x_cropped, y_cropped
 
-class Crop(fosutils.Base):
+class Crop(base.Base):
 	"""
 	Object, for cropping data sets and saving the preset.
 	"""
