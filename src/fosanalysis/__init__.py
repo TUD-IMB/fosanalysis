@@ -1,10 +1,15 @@
+
+"""
+Central package of fosanalysis.
+
+\author Bertram Richter
+\date 2023
+"""
+
+# Sub-packages
+from . import utils
 from . import compensation
-from . import cracks
-from . import cropping
-from . import finding
-from . import fosutils
-from . import integration
-from . import protocols
-from . import separation
 from . import preprocessing
-from . import strainprofile
+from . import crackmonitoring
+# Modules
+from . import protocols

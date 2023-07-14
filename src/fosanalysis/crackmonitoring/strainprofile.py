@@ -7,21 +7,19 @@ Contains class definitions for strain profiles and cracks.
 \package fosanalysis.strainprofile \copydoc strainprofile.py
 """
 
-from abc import abstractmethod
 import copy
 
 import numpy as np
 
-from . import compensation
+from fosanalysis import utils
+from fosanalysis import preprocessing
+from fosanalysis import compensation
+
 from . import cracks
-from . import cropping
 from . import finding
-from . import fosutils
-from . import integration
-from . import preprocessing
 from . import separation
 
-class StrainProfile(fosutils.Base):
+class StrainProfile(utils.base.Workflow):
 	"""
 	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	The crack widths are calculated with the general equation:
@@ -101,7 +99,7 @@ class StrainProfile(fosutils.Base):
 		self.ts_compensator = ts_compensator
 		## \ref integration.Integrator object used to integrate the strain data to estimate the crack widths.
 		## Defaults to the default configuration of \ref integration.Integrator.
-		self.integrator = integrator if integrator is not None else integration.Integrator()
+		self.integrator = integrator if integrator is not None else utils.integration.Integrator()
 		## Name of the strain profile, defaults to `""`.
 		self.name = name
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
@@ -157,7 +155,7 @@ class StrainProfile(fosutils.Base):
 			strain = f.run(self.x, strain)
 		# Crack width calculation
 		for crack in self.crack_list:
-			x_seg, y_seg = cropping.cropping(self.x, strain, start_pos=crack.x_l, end_pos=crack.x_r, offset=0)
+			x_seg, y_seg = utils.cropping.cropping(self.x, strain, start_pos=crack.x_l, end_pos=crack.x_r, offset=0)
 			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None)
 		return self.crack_list
 	def find_cracks(self):
@@ -222,14 +220,14 @@ class StrainProfile(fosutils.Base):
 		for crack in cracks_tuple:
 			if isinstance(crack, cracks.Crack):
 				crack = copy.deepcopy(crack)
-				index, x_pos = fosutils.find_closest_value(self.x, crack.location)
+				index, x_pos = utils.misc.find_closest_value(self.x, crack.location)
 				crack.index = index
 				crack.location = x_pos
 				crack.max_strain=self.strain[index]
 				crack.x_l = crack.x_l if crack.x_l is not None and crack.x_l < crack.location else None
 				crack.x_r = crack.x_r if crack.x_r is not None and crack.x_r > crack.location else None
 			else: 
-				index, x_pos = fosutils.find_closest_value(self.x, crack)
+				index, x_pos = utils.misc.find_closest_value(self.x, crack)
 				crack = cracks.Crack(location=x_pos,
 								index = index,
 								max_strain=self.strain[index],

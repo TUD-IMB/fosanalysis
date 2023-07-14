@@ -9,9 +9,11 @@ Contains funtionality to find potential crack locations.
 
 import scipy.signal
 
+from fosanalysis.utils import base
+
 from . import cracks
 
-class CrackFinder():
+class CrackFinder(base.Task):
 	"""
 	Obejct to identify potential crack positions.
 	Core functionality is based on [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
