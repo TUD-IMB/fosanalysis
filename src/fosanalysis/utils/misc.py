@@ -1,14 +1,11 @@
 
 """
 \file
-Contains standalone functions for dealing with measurement data sets.
+Contains miscellaneous standalone functions.
 \author Bertram Richter
-\date 2022
-\package fosanalysis.fosutils \copydoc fosutils.py
+\date 2023
+\package fosanalysis.utils.misc \copydoc misc.py
 """
-
-from abc import ABC
-import warnings
 
 import numpy as np
 
@@ -64,15 +61,3 @@ def next_finite_neighbor(
 	if result_index is not None and recurse > 0:
 		result_index, result = next_finite_neighbor(array=array, index=result_index, to_left=to_left, recurse=recurse-1)
 	return result_index, result
-
-class Base(ABC):
-	def __init__(self, *args, **kwargs):
-		"""
-		Does nothing, but warn about unused/unknown arguments
-		\param *args Additional positional arguments, will be discarded and warned about.
-		\param **kwargs Additional keyword arguments, will be discarded and warned about.
-		"""
-		if len(args) > 0:
-			warnings.warn("Unused positional arguments for {c}: {a}".format(c=type(self), a=args))
-		if len(kwargs) > 0:
-			warnings.warn("Unknown keyword arguments for {c}: {k}".format(c=type(self), k=kwargs))
