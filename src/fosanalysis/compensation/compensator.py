@@ -12,9 +12,9 @@ from abc import abstractmethod
 
 import numpy as np
 
-from fosanalysis.utils import base
+from fosanalysis import utils
 
-class Compensator(base.Task):
+class Compensator(utils.base.Task):
 	"""
 	Base for compensation classes.
 	"""

@@ -12,7 +12,7 @@ import scipy.integrate
 
 from . import base
 
-class Integrator(base.Base):
+class Integrator(base.Task):
 	"""
 	Object to integrate a function \f$y = f(x)\f$ given by discrete argument data \f$x\f$ and associated values \f$y\f$.
 	"""

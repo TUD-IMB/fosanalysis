@@ -69,7 +69,7 @@ def cropping(x_values: np.array,
 			"Dimensions of y_values ({}) not conformant. y_values must be a 1D or 2D array".format(len(np.shape())))
 	return x_cropped, y_cropped
 
-class Crop(base.Base):
+class Crop(base.Task):
 	"""
 	Object, for cropping data sets and saving the preset.
 	"""

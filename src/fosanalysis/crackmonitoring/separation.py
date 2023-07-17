@@ -10,11 +10,11 @@ Contains functionality to separate cracks and set transfer lengths.
 import copy
 import numpy as np
 
-from fosanalysis.utils import base
+from fosanalysis import utils
 
 from . import cracks
 
-class CrackLengths(base.Task):
+class CrackLengths(utils.base.Task):
 	"""
 	Assigns the transfer length to a all \ref cracks.Crack objects in a \ref cracks.CrackList.
 	"""
