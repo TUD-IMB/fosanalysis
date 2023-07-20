@@ -219,3 +219,94 @@ class SlidingFilter(Filter):
 			smooth_data[pixel] = method_function(window, **method_kwargs)
 		return smooth_data
 
+class Cluster(Filter):
+	"""
+	\todo Implement and document
+	Filter according to \cite Lou_2020_ApplicationofClustering.
+	"""
+	def __init__(self,
+			alpha: float,
+			tolerance: float,
+			fill: bool,
+			*args, **kwargs):
+		"""
+		\todo Implement and document
+		As this is an abstract class, it may not be instantiated directly itself.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
+		"""
+		super().__init__(*args, **kwargs)
+		## \todo Document
+		self.alpha = alpha
+		## \todo Document
+		self.tolerance = tolerance
+		self.fill = fill
+	def run(self,
+			x_data: np.array,
+			y_data: np.array,
+			*args, **kwargs) -> np.array:
+		"""
+		\todo Implement and document
+		\param x_data Array of measuring point positions in accordance to `strain`.
+		\param y_data Array of strain data in accordance to `x`.
+		\param *args Additional positional arguments to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+		"""
+		z_array = np.array(y_data)
+		z_filtered = copy.deepcopy(z_array)
+		z_masked = copy.deepcopy(z_array)
+		nan_array = np.logical_not(np.isfinite(z_filtered))
+		z_masked[nan_array] = 0
+		iterator = np.nditer(y_data, flags=["multi_index"])
+		for z_orig in iterator:
+			pixel = iterator.multi_index
+			if self.fill or not nan_array[pixel]: 
+				weights_array = self._get_weights(x_data, pixel)
+				weights_array[nan_array] = 0
+				z_init = self._initial_z(z_masked, weights_array)
+				z_filtered[pixel] = self._iterate(z_masked, weights_array, z_init)
+		return z_filtered
+	def _get_weights(self, x_array, pixel):
+		"""
+		\todo Implement and document
+		\param pixel Position (index) of the current datapoint to estimate.
+			Index according to numpy indexing.
+		"""
+		position = x_array[pixel]
+		# distance array, trivial for 1D
+		dist = np.square(x_array - position)
+		return np.exp(-self.alpha * dist)
+	def _get_beta(self, z_dist_array, weights_array):
+		"""
+		\todo Implement and document
+		"""
+		return 0.5 * np.sum(weights_array)/np.sum(weights_array * z_dist_array)
+	def _initial_z(self, z_array, weights_array):
+		"""
+		\todo Implement and document
+		"""
+		return np.sum(weights_array * z_array)/np.sum(weights_array)
+	def _new_z(self, z_array, weights_array, z_center):
+		"""
+		\todo Implement and document
+		"""
+		z_dist_array = np.square(z_array - z_center)
+		beta = self._get_beta(z_dist_array, weights_array)
+		weighted = weights_array * np.exp(-beta * z_dist_array)
+		numerator = np.sum(z_array * weighted)
+		denominator = np.sum(weighted)
+		return numerator/denominator
+	def _iterate(self, z_array, weights_array, z_center):
+		"""
+		\todo Implement and document
+		"""
+		improvement = np.inf
+		iteration = 0
+		while abs(improvement) > self.tolerance:
+			print(iteration)
+			z_center_new = self._new_z(z_array, weights_array, z_center)
+			improvement = z_center_new - z_center
+			z_center = z_center_new
+			iteration += 1
+		return z_center
+	
