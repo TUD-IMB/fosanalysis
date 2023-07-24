@@ -48,42 +48,6 @@ class Filter(utils.base.Task):
 		"""
 		raise NotImplementedError()
 
-class MultiFilter(Filter):
-	"""
-	Container for several filters, that are carried out in sequential order.
-	"""
-	def __init__(self,
-			filters: list,
-			*args, **kwargs):
-		"""
-		Constructs a MultiFilter object.
-		\param filters \copybrief filters For more, see \ref filters.
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(*args, **kwargs)
-		## List of \ref Filter objects.
-		## The filters are executed sequentially, the output of a previous filter is used as the input to the next one.
-		self.filters = filters
-	def run(self,
-			x_data: np.array,
-			y_data: np.array,
-			*args, **kwargs) -> np.array:
-		"""
-		The data is passed sequentially through all \ref Filter objects in \ref filters, in that specific order.
-		The output of a previous filter is used as the input to the next one.
-		\param x_data Array of measuring point positions in accordance to `strain`.
-		\param y_data Array of strain data in accordance to `x`.
-		\param *args Additional positional arguments, to customize the behaviour.
-			Will be passed to the `run()` method of all filter objects in \ref filters.
-		\param **kwargs Additional keyword arguments to customize the behaviour.
-			Will be passed to the `run()` method of all filter objects in \ref filters.
-		"""
-		y_data = copy.deepcopy(y_data)
-		for filter_object in self.filters:
-			y_data = filter_object.run(x_data, y_data, *args, **kwargs)
-		return y_data
-
 class Limit(Filter):
 	"""
 	A filter to limit the entries.
