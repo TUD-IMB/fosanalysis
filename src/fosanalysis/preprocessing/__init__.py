@@ -22,7 +22,7 @@ from . import masking
 from . import repair
 from . import ensemble
 
-class Preprocessing(utils.base.Workflow, preprocessingbase.PreprocessingBase):
+class Preprocessing(utils.base.Workflow):
 	"""
 	Container for several preprocessing task, that are carried out in sequential order.
 	"""
@@ -41,24 +41,24 @@ class Preprocessing(utils.base.Workflow, preprocessingbase.PreprocessingBase):
 		## preprocessing is used as the input to the next one.
 		self.tasklist = tasklist
 	def run(self,
-			z_data: np.array,
-			x_data: np.array,
-			y_data: np.array,
+			x: np.array,
+			y: np.array,
+			z: np.array,
 			*args, **kwargs) -> np.array:
 		"""
 		The data is passed sequentially through all preprocessing task objects in \ref tasklist, in that specific order.
 		The output of a previous preprocessing task is used as the input to the next one.
-		\param z_data Array of strain data in accordance to `x_data` and `y_data`.
-		\param x_data Array of measuring point positions.
-		\param y_data Array of time stamps.
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
 		\param *args Additional positional arguments, to customize the behaviour.
 			Will be passed to the `run()` method of all taks objects in \ref tasklist.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 			Will be passed to the `run()` method of all task objects in \ref tasklist.
 		"""
-		x_data = copy.deepcopy(x_data)
-		y_data = copy.deepcopy(y_data)
-		z_data = copy.deepcopy(z_data)
+		x = copy.deepcopy(x)
+		y = copy.deepcopy(y)
+		z = copy.deepcopy(z)
 		for task in self.tasklist:
-			x_data, y_data, z_data = task.run(x_data, y_data, z_data *args, **kwargs)
-		return x_data, y_data, z_data
+			x, y, z = task.run(x, y, z, copy=False, *args, **kwargs)
+		return x, y, z

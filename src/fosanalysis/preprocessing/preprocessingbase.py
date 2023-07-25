@@ -19,6 +19,7 @@ class PreprocessingBase(utils.base.Task):
 	"""
 	@abstractmethod
 	def __init__(self,
+			axis: str = "1D_space",
 			*args, **kwargs):
 		"""
 		Constructs a PreprocessingBase object.
@@ -27,75 +28,164 @@ class PreprocessingBase(utils.base.Task):
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
+		## Indicator, which axis is the main axis for the operation,
+		## defaults to `"1D_space"`.
+		## Available options:
+		## - `"2D"`: Use the native 2D implementation.
+		## - `"1D_space"`: Use the native 1D implementation, in the space domain.
+		##	This is repeated for each time stamp in the measurement campaign. 
+		##	An iteration step processes a complete reading of sensor length.
+		## - `"1D_time"`:  Use the native 1D implementation, in the time domain.
+		##	This is repeated for each gage location along the sensor. 
+		##	An iteration step processes a time series for a sensor position.
+		self.axis = axis
 	def run(self,
-			z_data: np.array = None,
-			x_data: np.array = None,
-			y_data: np.array = None,
+			x: np.array = None,
+			y: np.array = None,
+			z: np.array = None,
+			axis: str = None,
+			copy: bool = True,
 			*args, **kwargs) -> tuple:
 		"""
 		Each preprocessing object has a `run()` method.
-		This method decides, how, the operation is carried out based on the arguments.
-		The behaviour positional and keyword arguments may be used to change the behaviour.
-		The actual operations are implemented in \ref _run_1d() and \ref _run_2d().
-		\param z_data Array of strain data in accordance to `x_data` and `y_data`.
-		\param x_data Array of measuring point positions.
-		\param y_data Array of time stamps.
+		The actual operations are to be reimplemented in \ref _run_1d() and \ref _run_2d().
+		This method decides based on the argument, how is operated over the data.
+		If `z` is a 1D array, the array to pass to \ref _run_1D() is determined:
+		1. Use `x` as the coordinate data, if it matches the shape of `z`.
+		2. Use `y` as the coordinate data, if it matches the shape of `z`.
+		3. Generate an array with indices of the  shape of `z`.
+		
+		If `z` is a 2D array, three option are available, based on `axis`:
+		\copydetails axis
+		
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param axis \copybrief axis For more, see \ref axis.
+			Defaults to \ref axis.
+		\param copy Switch, whether a deepcopy of the passed data should be done.
+			Defaults to `True`.
 		\param *args Additional positional arguments to customize the behaviour.
+			Will be passed to the chosen method to call.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
-		\return Returns a tuple like `(x_data, y_data, z_data)`.
+			Will be passed to the chosen method to call.
+		\return Returns a tuple like `(x, y, z)`.
 			They correspond to the input variables of the same name.
 			Each of those might be changed.
 		"""
-		x_data = copy.deepcopy(np.array(x_data))
-		y_data = copy.deepcopy(np.array(y_data))
-		z_data = copy.deepcopy(np.array(z_data))
+		axis = axis if axis is not None else self.axis
+		x, y, z = [np.array(data) for data in [x, y, z]]
+		if copy:
+			x, y, z = [copy.deepcopy(data) for data in [x, y, z]]
 		# Inherent 1D operation
-		if z_data.ndim == 1:
-			# use x_data or y_data or fall back on indices
-			if x_data.ndim == 1:
-				x_data, z_data = self._run_1d(x_data, z_data, *args, **kwargs)
-			elif y_data.ndim == 1:
-				y_data, z_data = self._run_1d(y_data, z_data, *args, **kwargs)
+		if z.ndim == 1:
+			x_dim = x.shape == z.shape
+			y_dim = y.shape == z.shape
+			if x_dim:
+				x_tmp = x
+				x = np.indices(z.shape[0])
+			if y_dim:
+				y_tmp = y
+				y = np.indices(z.shape[1])
+			# use x or y or fall back on indices
+			if x_dim:
+				x, z = self._run_1d(x, z, *args, **kwargs)
+			elif y_dim:
+				y, z = self._run_1d(y, z, *args, **kwargs)
 			else:
-				x_tmp = np.indices(z_data.shape)
-				x_tmp, z_data = self._run_1d(x_tmp, z_data, *args, **kwargs)
+				x_tmp = np.indices(z.shape)
+				x_tmp, z = self._run_1d(x_tmp, z, *args, **kwargs)
 		# Decide, whether to use real 2D operation or fake 2D operation
-		elif z_data.ndim == 2:
-			if x_data.ndim == 1 and y_data.ndim == 1:
-				# 2D operation
-				return self._run2d(x_data, y_data, z_data)
-			elif x_data.ndim == 1:
-				#line wise operation
-				for row_id, row in enumerate(z_data):
-					x_data, z_data[row_id] = self._run1d(x_data, row)
-			elif y_data.ndim == 1:
-				# row wise operation
-				for col_id, column in enumerate(z_data.T):
-					y_data, z_data.T[col_id] = self._run1d(y_data, column)
+		elif z.ndim == 2:
+			x_dim = x.shape == z.shape[0]
+			y_dim = y.shape == z.shape[1]
+			if x_dim:
+				x_tmp = x
+				x = np.indices(z.shape[0])
+			if y_dim:
+				y_tmp = y
+				y = np.indices(z.shape[1])
+			if axis == "2D":
+				x, y, z = self._run2d(x, y, z, *args, **kwargs)
 			else:
-				x_tmp = np.indices(z_data.shape[0])
-				y_tmp = np.indices(z_data.shape[1])
-				return self._run2d(x_tmp, y_tmp, z_data)
+				x, y, z = self._map_2D(x, y, z, axis=axis)
 		else:
-			# shape of z_data non-conformant
-			raise ValueError("Dimension of the z_data ({}) is not 1 or two!".format(z_data.ndim))
-		return x_data, y_data, z_data
+			raise ValueError("Dimension of z ({}) non-conformant!".format(z.ndim))
+		# Play back the original data, if it was temporalily fixed
+		x = x if x_dim else x_tmp
+		y = y if y_dim else y_tmp
+		return x, y, z
+	@abstractmethod
 	def _run_1d(self,
-			x_data: np.array,
-			z_data: np.array,
+			x: np.array,
+			z: np.array,
 			*args, **kwargs) -> tuple:
 		"""
-		A uni-dimensional implementation of the operation.
+		Reimplementations describe a one-dimensional operation.
+		This operation might be applied to on a 2D array by \ref _map_2D().
+		This function is called, if:
+		- the `z` is 1D or
+		- \ref axis is set to `"1D_space"` or `"1D_time"`.
+		\param x Array of coordinate positions.
+			Dependent on \ref _decide_operation() it may hold:
+			- `x`: sensor coordinates, (`axis = "1D_space"`)
+			- `y`: time data (`axis = "1D_time"`)
+			- indices, if none of bot previous options match the `z`'s shape.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param *args Additional positional arguments to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+		\return Returns a tuple like `(x, z)`.
+			They correspond to the input variables of the same name.
+			Each of those might be changed.
 		"""
-		raise NotImplementedError()
-		return x_data, z_data
+		return x, z
+	@abstractmethod
 	def _run_2d(self,
-			x_data: np.array,
-			y_data: np.array,
-			z_data: np.array,
+			x: np.array,
+			y: np.array,
+			z: np.array,
 			*args, **kwargs) -> tuple:
 		"""
-		A two-dimensional implementation of the operation.
+		Native two-dimensional operation implementation.
+		Needs to be reimplemented by sub-classes.
+		This function is only called, if `z` is 2D and \ref axis is `"2D"`.
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param *args Additional positional arguments to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+		\return Returns a tuple like `(x, y, z)`.
+			They correspond to the input variables of the same name.
+			Each of those might be changed.
 		"""
-		raise NotImplementedError()
-		return x_data, y_data, z_data
+		return  x, y, z
+	def _map_2D(self,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			axis: str = None,
+			*args, **kwargs) -> tuple:
+		"""
+		Apply the 1D operation along either the space or time axis.
+		Used for carrying out 1D-only algorithms on a 2D array row- or column-wise. 
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param axis \copybrief axis For more, see \ref axis.
+			Defaults to \ref axis.
+		\param *args Additional positional arguments to customize the behaviour.
+			Will be passed to the chosen method to call.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+			Will be passed to the chosen method to call.
+		\return Returns a tuple like `(x, y, z)`.
+			They correspond to the input variables of the same name.
+			Each of those might be changed.
+		"""
+		axis = axis if axis is not None else self.axis
+		if self.axis == "1D_space":
+			for row_id, row in enumerate(z):
+				x, z[row_id] = self._run1d(row, x, *args, **kwargs)
+		elif self.axis == "1D_time":
+			for col_id, column in enumerate(z.T):
+				y, z.T[col_id] = self._run1d(column, y, *args, **kwargs)
+		return x, y, z
