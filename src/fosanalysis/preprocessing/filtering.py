@@ -15,14 +15,14 @@ import copy
 import numpy as np
 
 from fosanalysis import utils
+from . import preprocessingbase
 
-class Filter(utils.base.Task):
+class Filter(preprocessingbase.PreprocessingBase):
 	"""
 	Abstract base class for filter classes.
-	These filters will modify the values,but not the shape of the arrays.
-	Hence, the \ref run() method will return the filtered strain array only.
+	These filters will modify the values, but not the shape of the arrays.
 	
-	In general, if both smoothing and cropping are to be applied: smooth first, crop second.
+	If both smoothing and cropping are to be applied: smooth first, crop second.
 	"""
 	def __init__(self,
 			*args, **kwargs):
@@ -35,18 +35,17 @@ class Filter(utils.base.Task):
 		super().__init__(*args, **kwargs)
 	@abstractmethod
 	def run(self,
-			x_data: np.array,
-			y_data: np.array,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			axis: str = None,
+			copy: bool = True,
 			*args, **kwargs) -> np.array:
 		"""
-		Each Filter object has a `run()` method, which takes two required parameter, the location data `x` and the `strain` data
-		The behaviour positional and keyword arguments may be used to change the behaviour.
-		\param x_data Array of measuring point positions in accordance to `strain`.
-		\param y_data Array of strain data in accordance to `x`.
-		\param *args Additional positional arguments to customize the behaviour.
-		\param **kwargs Additional keyword arguments to customize the behaviour.
+		Each Filter object has a `run()` method, which takes three required parameters.
+		\copydetails preprocessingbase.PreprocessingBase.run()
 		"""
-		raise NotImplementedError()
+		return super().run(x, y, z, axis, copy, *args, **kwargs)
 
 class Limit(Filter):
 	"""
@@ -74,13 +73,15 @@ class Limit(Filter):
 		## All entries with values less than that will be excluded.
 		self.maximum = maximum
 	def run(self,
-			x_data: np.array,
-			y_data: np.array,
+			x: np.array,
+			y: np.array,
+			z: np.array,
 			minimum: float = None,
 			maximum: float = None,
+			copy: bool = True,
 			*args, **kwargs) -> np.array:
 		"""
-		Limit the the entries in the given list to the specified range.
+		Limit the entries in the given list to the specified range.
 		Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
 		Entries, which exceed the given range are cropped to it.
 		\param x_data Array of measuring point positions in accordance to `strain`.
@@ -91,14 +92,41 @@ class Limit(Filter):
 		\param *args Additional positional arguments to customize the behaviour.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
+		super().run(x, y, z,
+				axis="2D",
+				copy=copy,
+				minimum=minimum,
+				maximum=maximum,
+				*args, **kwargs)
+	def _run_1d(self, 
+			x: np.array, 
+			z: np.array,
+			*args, **kwargs) -> tuple:
+		return x, self._limit(z, *args, **kwargs)
+	def _run_2d(self, 
+			x: np.array, 
+			y: np.array,
+			z: np.array,
+			*args, **kwargs) -> tuple:
+		return x, y, self._limit(z, *args, **kwargs)
+	def _limit(self,
+			z: np.array,
+			minimum: float = None,
+			maximum: float = None,
+			*args, **kwargs) -> np.array:
+		"""
+		Limit the values of the array.
+		\param z Array with data to be limited.
+		\param minimum Minimum value, for the entries. Defaults to `None`, no limit is applied.
+		\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
+		"""
 		minimum = minimum if minimum is not None else self.minimum
 		maximum = maximum if maximum is not None else self.maximum
-		limited = copy.deepcopy(y_data)
 		if minimum is not None:
-			limited = [max(entry, minimum) for entry in limited]
+			z = np.minimum(z, minimum)
 		if maximum is not None:
-			limited = [min(entry, maximum) for entry in limited]
-		return np.array(limited)
+			z = np.maximum(z, maximum)
+		return z
 
 class SlidingFilter(Filter):
 	"""
