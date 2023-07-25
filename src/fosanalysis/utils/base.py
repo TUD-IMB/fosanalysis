@@ -41,7 +41,7 @@ class Workflow(Base):
 	"""
 	This intermediate class indicates, that a sub-class is implementing a workflow.
 	Workflow objects implement the order of working steps to solve complex problems.
-	The the individual working steps are dealt with by Task objects.
+	The individual working steps are dealt with by Task objects.
 	(A Workflow object can serve as a Task object itself in a larger Workflow.)
 	
 	"""

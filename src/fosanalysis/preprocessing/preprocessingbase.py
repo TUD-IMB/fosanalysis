@@ -48,7 +48,7 @@ class PreprocessingBase(utils.base.Task):
 			*args, **kwargs) -> tuple:
 		"""
 		Each preprocessing object has a `run()` method.
-		The actual operations are to be reimplemented in \ref _run_1d() and \ref _run_2d().
+		The actual operations are reimplemented in \ref _run_1d() and \ref _run_2d().
 		This method decides based on the argument, how is operated over the data.
 		If `z` is a 1D array, the array to pass to \ref _run_1D() is determined:
 		1. Use `x` as the coordinate data, if it matches the shape of `z`.
