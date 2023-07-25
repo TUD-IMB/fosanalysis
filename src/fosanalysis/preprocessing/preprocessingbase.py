@@ -44,7 +44,7 @@ class PreprocessingBase(utils.base.Task):
 			y: np.array = None,
 			z: np.array = None,
 			axis: str = None,
-			copy: bool = True,
+			make_copy: bool = True,
 			*args, **kwargs) -> tuple:
 		"""
 		Each preprocessing object has a `run()` method.
@@ -63,7 +63,7 @@ class PreprocessingBase(utils.base.Task):
 		\param z Array of strain data in accordance to `x` and `y`.
 		\param axis \copybrief axis For more, see \ref axis.
 			Defaults to \ref axis.
-		\param copy Switch, whether a deepcopy of the passed data should be done.
+		\param make_copy Switch, whether a deepcopy of the passed data should be done.
 			Defaults to `True`.
 		\param *args Additional positional arguments to customize the behaviour.
 			Will be passed to the chosen method to call.
@@ -75,18 +75,18 @@ class PreprocessingBase(utils.base.Task):
 		"""
 		axis = axis if axis is not None else self.axis
 		x, y, z = [np.array(data) for data in [x, y, z]]
-		if copy:
+		if make_copy:
 			x, y, z = [copy.deepcopy(data) for data in [x, y, z]]
 		# Inherent 1D operation
 		if z.ndim == 1:
 			x_dim = x.shape == z.shape
 			y_dim = y.shape == z.shape
-			if x_dim:
+			if not x_dim:
 				x_tmp = x
-				x = np.indices(z.shape[0])
-			if y_dim:
+				x = np.indices(z.shape)
+			if not y_dim:
 				y_tmp = y
-				y = np.indices(z.shape[1])
+				y = np.indices(z.shape)
 			# use x or y or fall back on indices
 			if x_dim:
 				x, z = self._run_1d(x, z, *args, **kwargs)
@@ -99,21 +99,23 @@ class PreprocessingBase(utils.base.Task):
 		elif z.ndim == 2:
 			x_dim = x.shape == z.shape[0]
 			y_dim = y.shape == z.shape[1]
-			if x_dim:
+			if not x_dim:
 				x_tmp = x
-				x = np.indices(z.shape[0])
-			if y_dim:
+				x = np.indices((z.shape[0],))
+			if not y_dim:
 				y_tmp = y
-				y = np.indices(z.shape[1])
+				y = np.indices((z.shape[1],))
 			if axis == "2D":
-				x, y, z = self._run2d(x, y, z, *args, **kwargs)
+				x, y, z = self._run_2d(x, y, z, *args, **kwargs)
 			else:
 				x, y, z = self._map_2D(x, y, z, axis=axis)
 		else:
 			raise ValueError("Dimension of z ({}) non-conformant!".format(z.ndim))
 		# Play back the original data, if it was temporalily fixed
-		x = x if x_dim else x_tmp
-		y = y if y_dim else y_tmp
+		if not x_dim:
+			x = x_tmp
+		if not y_dim:
+			y = y_tmp
 		return x, y, z
 	@abstractmethod
 	def _run_1d(self,
@@ -184,8 +186,8 @@ class PreprocessingBase(utils.base.Task):
 		axis = axis if axis is not None else self.axis
 		if self.axis == "1D_space":
 			for row_id, row in enumerate(z):
-				x, z[row_id] = self._run1d(row, x, *args, **kwargs)
+				x, z[row_id] = self._run_1d(x, row, *args, **kwargs)
 		elif self.axis == "1D_time":
 			for col_id, column in enumerate(z.T):
-				y, z.T[col_id] = self._run1d(column, y, *args, **kwargs)
+				y, z.T[col_id] = self._run_1d(y, column, *args, **kwargs)
 		return x, y, z
