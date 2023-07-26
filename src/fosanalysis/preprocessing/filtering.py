@@ -22,15 +22,6 @@ class Filter(base.DataCleaner):
 	
 	If both smoothing and cropping are to be applied: smooth first, crop second.
 	"""
-	def __init__(self,
-			*args, **kwargs):
-		"""
-		Constructs a Filter object.
-		As this is an abstract class, it may not be instantiated directly itself.
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(*args, **kwargs)
 
 class Limit(Filter):
 	"""
