@@ -1,10 +1,8 @@
 
 """
-\file
 Contains funtionality to find potential crack locations.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.finding \copydoc finding.py
 """
 
 import scipy.signal

@@ -1,10 +1,8 @@
 
 """
-\file
 Contains abstract base classes.
 \author Bertram Richter
 \date 2023
-\package fosanalysis.utils.base \copydoc base.py
 """
 
 from abc import ABC

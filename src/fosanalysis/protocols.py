@@ -1,10 +1,8 @@
 
 """
-\file
 Contains functionality for interfacing files and network ports.
 \author Bertram Richter
 \date 2023
-\package fosanalysis.protocols \copydoc protocols.py
 """
 
 from abc import abstractmethod

@@ -1,10 +1,8 @@
 
 """
-\file
 Contains class definitions for Crack and CrackList.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.cracks \copydoc cracks.py
 """
 
 import numpy as np

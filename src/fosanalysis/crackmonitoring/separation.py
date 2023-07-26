@@ -1,10 +1,8 @@
 
 """
-\file
 Contains functionality to separate cracks and set transfer lengths.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.separation \copydoc separation.py
 """
 
 import copy

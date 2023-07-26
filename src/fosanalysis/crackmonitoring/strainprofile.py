@@ -1,10 +1,8 @@
 
 """
-\file
 Contains class definitions for strain profiles and cracks.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.strainprofile \copydoc strainprofile.py
 """
 
 import copy

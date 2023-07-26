@@ -1,11 +1,9 @@
 
 """
-\file
 Implements the base class for all compensator classes.
 
 \author Bertram Richter
 \date 2023
-\package fosanalysis.compensation.compensator \copydoc compensator.py
 """
 
 from abc import abstractmethod

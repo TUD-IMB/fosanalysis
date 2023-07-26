@@ -1,12 +1,10 @@
 
 """
-\file
 Contains class implementations, for strain function repair algorithms.
 Those can be used to attempt the reconstruction of more or less heavily destroyed strain profiles.
 
 \author Bertram Richter
 \date 2022
-\package fosanalysis.preprocessing.repair \copydoc repair.py
 """
 
 from abc import abstractmethod

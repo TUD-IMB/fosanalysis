@@ -1,10 +1,8 @@
 
 """
-\file
 Contains functionality to compensate crop a set of data.
 \author Bertram Richter
 \date 2023
-\package fosanalysis.cropping \copydoc cropping.py
 """
 import copy
 

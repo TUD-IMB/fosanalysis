@@ -1,10 +1,8 @@
 
 """
-\file
 Contains functionality to compensate shrinking and creep.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.compensation.shrinking \copydoc shrinking.py
 """
 
 import numpy as np

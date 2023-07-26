@@ -1,11 +1,9 @@
 
 """
-\file
 This script generates the `demofile` for [Getting Started](doc/GettingStarted.md).
 The demofile simulates a real file exported by the ODiSI Software by Luna Inc.
 \author Bertram Richter
 \date 2022
-\package examples.generatedemofile \copydoc generatedemofile.py
 """
 
 import datetime

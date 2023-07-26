@@ -1,10 +1,8 @@
 
 """
-\file
 Contains miscellaneous standalone functions.
 \author Bertram Richter
 \date 2023
-\package fosanalysis.utils.misc \copydoc misc.py
 """
 
 import numpy as np

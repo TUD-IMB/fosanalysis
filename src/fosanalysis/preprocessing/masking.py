@@ -1,12 +1,10 @@
 
 """
-\file
 Contains class implementations, to remove implausible values from strain data.
 This can be used to remove strain reading anomalies (SRAs) from the data.
 
 \author Bertram Richter
 \date 2022
-\package fosanalysis.preprocessing.masking \copydoc masking.py
 """
 
 from abc import abstractmethod

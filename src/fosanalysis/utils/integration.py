@@ -1,10 +1,8 @@
 
 """
-\file
 Contains functionality for integrating discretized funtions.
 \author Bertram Richter
 \date 2023
-\package fosanalysis.utils.integration \copydoc integration.py
 """
 
 import numpy as np

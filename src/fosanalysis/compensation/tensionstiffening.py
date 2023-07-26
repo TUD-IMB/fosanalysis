@@ -1,10 +1,8 @@
 
 """
-\file
 Contains class definitions for tension stiffening influences for concrete embedded and reinforcement attached sensors.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.compensation.tensionstiffening \copydoc tensionstiffening.py
 """
 
 from abc import abstractmethod

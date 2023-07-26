@@ -1,10 +1,8 @@
 
 """
-\file
 This script shows how to interact with `fosanalysis` and is the resulting script of [Getting Started](doc/GettingStarted.md).
 \author Bertram Richter
 \date 2022
-\package examples.gettingstarted \copydoc gettingstarted.py
 """
 
 # Importing necessary modules
