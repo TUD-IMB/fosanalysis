@@ -1,12 +1,10 @@
 
 """
-\file
 Contains class definitions for filtering algorithms.
 Those can be leveraged to deal with noise, e.g.\ by smoothing neighboring data points.
 
 \author Bertram Richter
 \date 2022
-\package fosanalysis.preprocessing.filtering \copydoc filtering.py
 """
 
 from abc import abstractmethod
@@ -15,9 +13,9 @@ import copy
 import numpy as np
 
 from fosanalysis import utils
-from . import preprocessingbase
+from . import base
 
-class Filter(preprocessingbase.PreprocessingBase):
+class Filter(base.DataCleaner):
 	"""
 	Abstract base class for filter classes.
 	These filters will modify the values, but not the shape of the arrays.
@@ -80,7 +78,7 @@ class Limit(Filter):
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		return super().run(x, y, z,
-				axis="2D",
+				timespace="2D",
 				make_copy=make_copy,
 				minimum=minimum,
 				maximum=maximum,
@@ -148,7 +146,7 @@ class SlidingFilter(Filter):
 			x: np.array,
 			y: np.array,
 			z: np.array,
-			axis: str = None,
+			timespace: str = None,
 			make_copy: bool = True,
 			radius: int = None,
 			*args, **kwargs) -> np.array:
@@ -162,7 +160,7 @@ class SlidingFilter(Filter):
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		return super().run(x, y, z,
-				axis=axis,
+				timespace=timespace,
 				make_copy=make_copy,
 				radius=radius,
 				*args, **kwargs)
