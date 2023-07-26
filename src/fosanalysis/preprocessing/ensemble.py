@@ -10,7 +10,6 @@ from abc import abstractmethod
 
 import numpy as np
 
-from fosanalysis import utils
 from . import base
 
 class Ensemble(base.Base):
@@ -19,7 +18,7 @@ class Ensemble(base.Base):
 	Data of multiple readings are combined into 1 array.
 	"""
 	def __init__(self,
-			axis: int,
+			axis: int = 0,
 			*args, **kwargs):
 		"""
 		Construct an instance of the class.

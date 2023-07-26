@@ -11,75 +11,68 @@ from abc import abstractmethod
 
 import numpy as np
 
-from fosanalysis import utils
+from . import base
 
-class Repair(utils.base.Task):
+class Repair(base.DataCleaner):
 	"""
 	Base class for algorithms to replace/remove missing data with plausible values.
 	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
-	This is done by replacing the dropouts by plausible values and/or removing dropouts.
-	Because the shape of the arrays might be altered, \ref run() will return both `x` and `strain` data.
+	This is done by replacing the dropouts with plausible values and/or removing dropouts.
 	"""
-	def __init__(self, *args, **kwargs):
-		"""
-		Constructs a \ref Repair object.
-		As this is an abstract class, it may not be instantiated directly itself.
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
-		"""
-		super().__init__(*args, **kwargs)
-	@abstractmethod
-	def run(self,
-			x_data: np.array,
-			y_data: np.array,
-			*args, **kwargs) -> tuple:
-		"""
-		Make the given data valid.
-		This can change the shape of the data.
-		\param x_data Array of measuring point positions in accordance to `y_data`.
-		\param y_data Array of strain data in accordance to `x_data`.
-		\param *args Additional positional arguments, to customize the behaviour.
-		\param **kwargs Additional keyword arguments to customize the behaviour.
-		\return Returns a tuple of two arrays: `(x_data, y_data)` with the altered position and strain data.
-			Those are will be free of dropouts (`NaN`s).
-		"""
-		raise NotImplementedError()
-		return x_data, y_data
 
-class NaNFilter(Repair):
+class NaNFilter(base.Base):
 	"""
 	A filter, that removes any columns from a given number of data sets (matrix), that contain `not a number` entries.
 	"""
 	def __init__(self,
+			axis: int = 0,
 			*args, **kwargs):
 		"""
-		Constructs a NaNFilter object.
+		Construct an instance of the class.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
+		## Axis of slices to be removed, if they contain any `NaN`s.
+		## This has only an effect, if the passed `z` array is 2D.
+		## Available options:
+		## - `0` (default): Remove a time series (column), if it contains any `NaN`s.
+		## - `1`: Remove a complete reading (row), if it contains any `NaN`s.
+		self.axis = axis
 	def run(self,
-			*data_list,
-			exclude: list = None,
-			**kwargs) -> tuple:
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			axis: int = None,
+			make_copy: bool = True,
+			*args, **kwargs) -> tuple:
 		"""
-		In all given arrays of `data_list`, all entries are stripped, that contain `None`, `nan` or `""` in any of the given list.
-		\param data_list Tuple of arrays (matrix), which should be cleaned.
-		\param exclude Additional values that should be excluded. Defaults to nothing.
-		\param **kwargs Additional keyword arguments, will be ignored.
-		\return Returns a tuple with copies of the arrays, without columns containing any of the specified values. If only a single array is given, only the stripped copy returned.
+		From the given `z` array, all columns or rows (depending on `axis`),
+		which contain contain `NaN`.
+		Corresponding entries of the coordinate vector (`x` or `y`) are removed aswell. 
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param axis \copydoc axis
+		\param make_copy Switch, whether a deepcopy of the passed data should be done.
+			Defaults to `True`.
+		\param *args Additional positional arguments to customize the behaviour.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+		\return Returns a tuple like `(x, y, z)`.
+			They correspond to the input variables of the same name
+			without columns or rows (depending on `axis`) containing `NaN`s.
 		"""
-		exclude = exclude if exclude is not None else []
-		exclude_set = set([None, ""])
-		exclude_set.update(set(exclude))
-		stripped_lists = []
-		delete_list = []
-		# find all NaNs
-		for candidate_list in data_list:
-			for i, entry in enumerate(candidate_list):
-				if entry in exclude_set or np.isnan(entry):
-					delete_list.append(i)
-		# strip the NaNs
-		for candidate_list in data_list:
-			stripped_lists.append(np.array([entry for i, entry in enumerate(candidate_list) if i not in delete_list]))
-		return stripped_lists[0] if len(stripped_lists) == 1 else tuple(stripped_lists)
+		axis = axis if axis is not None else self.axis
+		x, y, z = super().run(x, y, z, make_copy=make_copy, *args, **kwargs)
+		if z.ndim == 1:
+			keep_array = np.isfinite(z)
+			z = z[keep_array]
+		elif z.ndim == 2:
+			keep_array = np.all(np.isfinite(z), axis=axis)
+			keep_indices = np.arange(keep_array.shape[0])[keep_array]
+			z = np.take(z.T, keep_indices, axis=axis).T
+		if axis == 0 and x.ndim == 1:
+				x = x[keep_array]
+		if axis == 1 and y.ndim == 1:
+				y = y[keep_array]
+		return x, y, z
