@@ -118,7 +118,7 @@ class StrainProfile(utils.base.Workflow):
 		- \ref shrink_calibration_values
 		- \ref tension_stiffening_values
 		"""
-		self.cracklist = cracks.CrackList()
+		self.crack_list = cracks.CrackList()
 		self.shrink_calibration_values = None
 		self.tension_stiffening_values = None
 	def calculate_crack_widths(self, clean: bool = True) -> cracks.CrackList:
@@ -150,7 +150,7 @@ class StrainProfile(utils.base.Workflow):
 		# Compression cancelling
 		if self.suppress_compression:
 			f = preprocessing.filtering.Limit(minimum=0.0, maximum=None)
-			strain = f.run(self.x, strain)
+			x, y_tmp, strain = f.run(self.x, None, strain)
 		# Crack width calculation
 		for crack in self.crack_list:
 			x_seg, y_seg = utils.cropping.cropping(self.x, strain, start_pos=crack.x_l, end_pos=crack.x_r, offset=0)

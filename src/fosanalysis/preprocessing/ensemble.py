@@ -64,7 +64,7 @@ class Ensemble(base.Base):
 				y = np.array(None)
 			else:
 				x = np.array(None)
-			reduced_array = np.flatten(self._reduce(z, axis, *args, **kwargs))
+			reduced_array = self._reduce(z, axis, *args, **kwargs).flatten()
 			return x, y, reduced_array
 		else:
 			raise ValueError('Array is neither 1D nor 2D.')
