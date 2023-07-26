@@ -1,6 +1,6 @@
 
 """
-Contains functionality to compensate crop a set of data.
+Contains functionality to restrict data to a given area of interest.
 \author Bertram Richter
 \date 2023
 """
@@ -23,9 +23,9 @@ def cropping(x_values: np.array,
 	1. The \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$.
 	2. Cropping (restricting entries):  \f$x_i:\: x_i \in [s,\: e]\f$ and  \f$y_i:\: x_i \in [s,\: e]\f$
 	
-	In general, if both smoothing and cropping are to be applied, smooth first, crop second.
 	\param x_values One-dimensional array of x-positions \f$x\f$.
-	\param y_values Array of y-values \f$y\f$ matching \f$x\f$. Can be one- or two-dimensional
+	\param y_values Array of y-values \f$y\f$ matching \f$x\f$.
+		Can be a 1D or 2D array.
 	\param start_pos The starting position \f$s\f$ specifies the length of the sensor, before entering the measurement area.
 		Defaults to `None` (no data is removed at the beginning).
 	\param end_pos The end position \f$s\f$ specifies the length of the sensor, when leaving the measurement area. 
@@ -37,34 +37,25 @@ def cropping(x_values: np.array,
 	\return Returns the cropped lists \f$(x_i,\: y_i)\f$:
 	\retval x_cropped Array, such that \f$x_i:\: x_i \in [s,\: e]\f$.
 	\retval y_cropped Array, such that, \f$y_i:\: x_i \in [s,\: e]\f$.
+	
+	To reduce/avoid boundary effects, genrally crop the data after smoothing.
 	"""
 	x_shift = np.array(copy.deepcopy(x_values))
 	y_cropped = np.array(copy.deepcopy(y_values))
-	assert y_cropped.ndim == 1 or y_cropped.ndim == 2, "Dimensions of y_values ({}) not conformant. y_values must be a 1D or 2D array".format(y_cropped.ndim)
+	assert y_cropped.ndim in [1, 2], "Dimensions of y_values ({}) not conformant. y_values must be a 1D or 2D array".format(y_cropped.ndim)
 	assert x_shift.shape[-1] == y_cropped.shape[-1], "Number of entries do not match! (x_values: {}, y_values: {}.)".format(x_shift.shape[-1], y_cropped.shape[-1])
 	if offset is not None:
 		x_shift = x_values + offset
 	start_pos = start_pos if start_pos is not None else x_shift[0]
 	end_pos = end_pos if end_pos is not None else start_pos + length if length is not None else x_shift[-1]
-	start_index = None
-	end_index = None
 	# find start index
-	for index, value in enumerate(x_shift):
-		if start_index is None and value >= start_pos:
-			start_index = index
-		if end_index is None:
-			if value == end_pos:
-				end_index = index + 1
-			elif value > end_pos:
-				end_index = index
+	start_index = np.searchsorted(x_shift, start_pos, side="left")
+	end_index = np.searchsorted(x_shift, end_pos, side="right")
 	x_cropped = x_shift[start_index:end_index]
-	if len(y_cropped.shape) == 1:
+	if y_cropped.ndim == 1:
 		y_cropped = y_cropped[start_index:end_index]
-	elif len(y_cropped.shape) == 2:
+	elif y_cropped.ndim == 2:
 		y_cropped = y_cropped[:, start_index:end_index]
-	else:
-		raise ValueError(
-			"Dimensions of y_values ({}) not conformant. y_values must be a 1D or 2D array".format(len(np.shape())))
 	return x_cropped, y_cropped
 
 class Crop(base.Task):
@@ -78,11 +69,11 @@ class Crop(base.Task):
 			offset: float = None,
 			*args, **kwargs):
 		"""
-		Constructs a Crop object.
-		\param start_pos \copybrief start_pos For more, see \ref start_pos.
-		\param end_pos \copybrief end_pos For more, see \ref end_pos.
-		\param length \copybrief length For more, see \ref length.
-		\param offset \copybrief offset For more, see \ref offset.
+		Construct an instance of the class.
+		\param start_pos \copydoc start_pos
+		\param end_pos \copydoc end_pos
+		\param length \copydoc length
+		\param offset \copydoc offset
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
@@ -107,18 +98,9 @@ class Crop(base.Task):
 			offset: float = None,
 			) -> tuple:
 		"""
-		This is a wrapper around \ref cropping.cropping().
-		Crops both \f$x\f$ and \f$y\f$ .
-		In general, if both smoothing and cropping are to be applied, smooth first, crop second.
-		\param x_values One-dimensional array of x-positions \f$x\f$.
-		\param y_values Array of y-values \f$y\f$ matching \f$x\f$. Can be one- or two-dimensional
-		\param start_pos \copybrief start_pos Defaults to \ref start_pos. For more, see \ref start_pos.
-		\param end_pos \copybrief end_pos Defaults to \ref end_pos. For more, see \ref end_pos.
-		\param length \copybrief length Defaults to \ref length. For more, see \ref length.
-		\param offset \copybrief offset Defaults to \ref offset. For more, see \ref offset.
-		\return Returns the cropped data sets \f$(x_i,\: y_i)\f$:
-		\retval x_cropped Array, such that \f$x_i:\: x_i \in [s,\: e]\f$.
-		\retval y_cropped Array, such that, \f$y_i:\: x_i \in [s,\: e]\f$.
+		This is a wrapper around \ref cropping.cropping(), where each
+		parameter defaults to the attribute of the same name.
+		\copydoc cropping()
 		"""
 		start_pos = start_pos if start_pos is not None else self.start_pos
 		end_pos = end_pos if end_pos is not None else self.end_pos
