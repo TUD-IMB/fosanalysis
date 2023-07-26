@@ -1,11 +1,9 @@
 
 """
-\file
 Contains classes to reduce the dimension of given data.
 
 \author Bertram Richter
 \date 2023
-\package fosanalysis.preprocessing.ensemble \copydoc ensemble.py
 """
 
 from abc import abstractmethod
@@ -13,100 +11,95 @@ from abc import abstractmethod
 import numpy as np
 
 from fosanalysis import utils
+from . import base
 
-class Ensemble(utils.base.Task):
+class Ensemble(base.Base):
 	"""
-	Abstract class for the ensembly of 2D strain data.
+	Abstract class for the ensemble of 2D strain data.
 	Data of multiple readings are combined into 1 array.
 	"""
-	def __init__(self, *args, **kwargs):
+	def __init__(self,
+			axis: int,
+			*args, **kwargs):
 		"""
-		Constructor of an Ensemble object.
+		Construct an instance of the class.
+		\param axis \copybrief axis For more, see \ref axis.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
+		## Axis in which the data should be consolidated.
+		## Available options:
+		## - `0` (default): Compact data into a single reading of the sensor length.
+		## - `1`: Compact data into a time series for a single gage.
+		self.axis = axis
 	def run(self,
-			x_data: np.array,
-			y_data: np.array,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			axis: int = None,
+			make_copy: bool = True,
 			*args, **kwargs) -> np.array:
 		"""
-		Reduce multiple arrays of the different readings to one array of combined data.
-		\param x_data Array of positional data.
-		\param y_data Array of data with functional data according to `x_data`.
-		\param *args Additional positional arguments, to customize the behaviour.
+		Reduce a 2D array to a 1D array using aggregate functions.
+		The aggregate function is implemented in \ref _reduce().
+		The array of the crushed axis is set to `np.array(None)`.
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param axis \copybrief axis For more, see \ref axis.
+		\param make_copy Switch, whether a deepcopy of the passed data should be done.
+			Defaults to `True`.
+		\param *args Additional positional arguments to customize the behaviour.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
-		\return Returns the `y_data` array, that has been reduced to one dimesion, by different methods.
+		\return Returns a tuple like `(x, y, z)`.
+			They correspond to the input variables of the same name.
+			Each of those might be changed.
 		"""
-		if y_data.ndim == 1:
-			return y_data
-		elif y_data.ndim ==2:
-			reduced_array = self._reduce(x_data=x_data, y_data=y_data, *args, **kwargs)
-			return reduced_array
+		x, y, z = super().run(x, y, z, make_copy=make_copy, *args, **kwargs)
+		axis = axis if axis is not None else self.axis
+		if z.ndim == 1:
+			return x, y, z
+		elif z.ndim ==2:
+			if axis == 0:
+				y = np.array(None)
+			else:
+				x = np.array(None)
+			reduced_array = np.flatten(self._reduce(z, axis, *args, **kwargs))
+			return x, y, reduced_array
 		else:
 			raise ValueError('Array is neither 1D nor 2D.')
 	@abstractmethod
 	def _reduce(self,
-					x_data: np.array,
-					y_data: np.array,
-					*args, **kwargs) -> np.array:
+			data: np.array,
+			axis: int,
+			*args, **kwargs) -> np.array:
 		"""
 		Reduce current 2D array of data to a 1D array.
-		\param x_data Array of positional data.
-		\param y_data Array of data with functional data according to `x_data`.
+		\param data Array of data with functional data according to `data`.
+		\param axis \copybrief axis For more, see \ref axis.
 		\param *args Additional positional arguments, further specified in sub-classes.
 		\param **kwargs Additional keyword arguments, further specified in sub-classes.
 		\return Returns an array, where multiple readings are combined to one single array.
 		"""
-		array_1D = y_data[0]
-		return array_1D
+		raise NotImplementedError()
 
 class Mean(Ensemble):
 	"""
 	Form the arithmetic mean over the 2D data array, while ignoring `NaN` Values.
 	"""
-	def __init__(self, *args, **kwargs):
-		"""
-		Constructs a mean-ensemble object.
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(*args, **kwargs)
 	def _reduce(self,
-			x_data: np.array,
-			y_data: np.array,
+			data: np.array,
+			axis: int,
 			*args, **kwargs) -> np.array:
-		"""
-		In the given array of the y_data, all entries that represent 1 x value are combined by the rule of the arithmetic mean.
-		\param x_data Array of positional data.
-		\param y_data Array of data with functional data according to `x_data`.
-		\param *args Additional positional arguments, will be ignored.
-		\param **kwargs Additional keyword arguments, will be ignored.
-		"""
-		y_data_1d = np.nanmean(y_data, axis=0)
-		return y_data_1d
+		return np.nanmean(data, axis=axis)
 
 class Median(Ensemble):
 	"""
 	Form the median over the 2D data array, while ignoring `NaN` Values.
 	"""
-	def __init__(self, *args, **kwargs):
-		"""
-		Constructs a median-ensemble object.
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(*args, **kwargs)
 	def _reduce(self,
-			x_data: np.array,
-			y_data: np.array,
+			data: np.array,
+			axis: int,
 			*args, **kwargs) -> np.array:
-		"""
-		In the given array of the y_data, all entries that represent 1 x value are combined by the rule of the median.
-		\param x_data Array of positional data.
-		\param y_data Array of data with functional data according to `x_data`.
-		\param *args Additional positional arguments, will be ignored.
-		\param **kwargs Additional keyword arguments, will be ignored.
-		"""
-		y_data_1d = np.nanmedian(y_data, axis=0)
-		return y_data_1d
+		return np.nanmedian(data, axis=axis)
