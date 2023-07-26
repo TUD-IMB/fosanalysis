@@ -61,24 +61,21 @@ class Limit(Filter):
 			x: np.array,
 			y: np.array,
 			z: np.array,
+			make_copy: bool = True,
+			timespace: str = "2d",
 			minimum: float = None,
 			maximum: float = None,
-			make_copy: bool = True,
 			*args, **kwargs) -> np.array:
 		"""
 		Limit the entries in the given list to the specified range.
 		Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
 		Entries, which exceed the given range are cropped to it.
-		\param x Array of measuring point positions in accordance to `strain`.
-		\param y Array of strain data in accordance to `x`.
-			These will be limited to `minimum` and `maximum`.
+		\copydetails preprocessing.base.DataCleaner.run()
 		\param minimum Minimum value, for the entries. Defaults to `None`, no limit is applied.
 		\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
-		\param *args Additional positional arguments to customize the behaviour.
-		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		return super().run(x, y, z,
-				timespace="2D",
+				timespace=timespace,
 				make_copy=make_copy,
 				minimum=minimum,
 				maximum=maximum,
@@ -104,6 +101,8 @@ class Limit(Filter):
 		\param z Array with data to be limited.
 		\param minimum Minimum value, for the entries. Defaults to `None`, no limit is applied.
 		\param maximum Maximum value, for the entries. Defaults to `None`, no limit is applied.
+		\param *args Additional positional arguments, ignored.
+		\param **kwargs Additional keyword arguments, ignored.
 		"""
 		minimum = minimum if minimum is not None else self.minimum
 		maximum = maximum if maximum is not None else self.maximum
@@ -151,13 +150,10 @@ class SlidingFilter(Filter):
 			radius: int = None,
 			*args, **kwargs) -> np.array:
 		"""
+		The given data is filtered with a sliding window.
 		\copydetails SlidingFilter
-		\param x Array of measuring point positions in accordance to `strain`.
-		\param y Array of strain data in accordance to `x`.
+		\copydetails preprocessing.base.DataCleaner.run()
 		\param radius \copybrief radius Defaults to \ref radius. For more, see \ref radius.
-		\param margins \copybrief margins Defaults to \ref margins. For more, see \ref margins.
-		\param *args Additional positional arguments, to customize the behaviour.
-		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
 		return super().run(x, y, z,
 				timespace=timespace,

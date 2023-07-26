@@ -62,12 +62,12 @@ class DataCleaner(Base):
 		"""
 		Construct an instance of the class.
 		As this is an abstract class, it may not be instantiated directly itself.
+		\param timespace \copybrief timespace For more, see \ref timespace.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		## Indicator, which approach is used for operations on a 2d array.
-		## Defaults to `"1D_space"`.
 		## Available options:
 		## - `"2D"`: Use the native 2D implementation.
 		## - `"1D_space"`: Use the native 1D implementation, in the space domain.
@@ -88,7 +88,7 @@ class DataCleaner(Base):
 		Each preprocessing object has a `run()` method.
 		The actual operations are reimplemented in \ref _run_1d() and \ref _run_2d().
 		This method decides based on the argument, how is operated over the data.
-		If `z` is a 1D array, the array to pass to \ref _run_1D() is determined:
+		If `z` is a 1D array, the array to pass to \ref _run_1d() is determined:
 		1. Use `x` as the coordinate data, if it matches the shape of `z`.
 		2. Use `y` as the coordinate data, if it matches the shape of `z`.
 		3. Generate an array with indices of the  shape of `z`.
@@ -165,7 +165,7 @@ class DataCleaner(Base):
 		- the `z` is 1D or
 		- \ref timespace is set to `"1D_space"` or `"1D_time"`.
 		\param x Array of coordinate positions.
-			Dependent on \ref _decide_operation() it may hold:
+			Dependent on \ref timespace it may hold:
 			- `x`: sensor coordinates, (`timespace = "1D_space"`)
 			- `y`: time data (`timespace = "1D_time"`)
 			- indices, if none of bot previous options match the `z`'s shape.
