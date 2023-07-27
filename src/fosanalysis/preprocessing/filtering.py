@@ -240,41 +240,70 @@ class Cluster(Filter):
 		self.alpha = alpha
 		## \todo Document
 		self.tolerance = tolerance
+		## \todo Document
 		self.fill = fill
-	def run(self,
-			x_data: np.array,
-			y_data: np.array,
+	def _run_1d(self,
+			x: np.array,
+			z: np.array,
 			*args, **kwargs) -> np.array:
 		"""
 		\todo Implement and document
-		\param x_data Array of measuring point positions in accordance to `strain`.
-		\param y_data Array of strain data in accordance to `x`.
+		\param x Array of measuring point positions in accordance to `strain`.
+		\param z Array of strain data in accordance to `x`.
 		\param *args Additional positional arguments to customize the behaviour.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 		"""
-		z_array = np.array(y_data)
-		z_filtered = copy.deepcopy(z_array)
-		z_masked = copy.deepcopy(z_array)
-		nan_array = np.logical_not(np.isfinite(z_filtered))
-		z_masked[nan_array] = 0
-		iterator = np.nditer(y_data, flags=["multi_index"])
+		x, y, z = self._filter(x, None, z, *args, **kwargs)
+		return x, z
+	def _run_2d(self, 
+			x: np.array, 
+			y: np.array, 
+			z: np.array,
+			*args, **kwargs)->tuple:
+		"""
+		Cluster has no true 2D operation mode.
+		Set \ref timespace to `"1D_space"`!
+		"""
+		return self._filter(x, y, z, *args, **kwargs)
+		raise NotImplementedError("Cluster does not support true 2D operation. Please use `timepace='1D-space'` instead.")
+	def _filter(self,
+			x: np.array, 
+			y: np.array, 
+			z: np.array,
+			*args, **kwargs) -> np.array:
+		"""
+		"""
+		z_filtered = copy.deepcopy(z)
+		nan_array = np.logical_not(np.isfinite(z))
+		z[nan_array] = 0
+		iterator = np.nditer(z, flags=["multi_index"])
 		for z_orig in iterator:
 			pixel = iterator.multi_index
 			if self.fill or not nan_array[pixel]: 
-				weights_array = self._get_weights(x_data, pixel)
+				weights_array = self._get_weights(pixel, x, y)
 				weights_array[nan_array] = 0
-				z_init = self._initial_z(z_masked, weights_array)
-				z_filtered[pixel] = self._iterate(z_masked, weights_array, z_init)
-		return z_filtered
-	def _get_weights(self, x_array, pixel):
+				z_i = self._initial_z(z, weights_array)
+				improvement = np.inf
+				while abs(improvement) > self.tolerance:
+					z_i_new = self._new_z_i(z, weights_array, z_i)
+					improvement = z_i_new - z_i
+					z_i = z_i_new
+				z_filtered[pixel] = z_i
+		return x, y, z_filtered
+	def _get_weights(self, pixel, x_array, y_array):
 		"""
 		\todo Implement and document
 		\param pixel Position (index) of the current datapoint to estimate.
 			Index according to numpy indexing.
 		"""
-		position = x_array[pixel]
-		# distance array, trivial for 1D
-		dist = np.square(x_array - position)
+		if isinstance(pixel, int) or len(pixel) == 1:
+			position = x_array[pixel]
+			# distance array, trivial for 1D
+			dist = np.square(x_array - position)
+		else:
+			x_dist = np.square(x_array - x_array[pixel[1]])
+			y_dist = np.square(y_array - y_array[pixel[0]])
+			dist = np.atleast_2d(y_dist).T + x_dist
 		return np.exp(-self.alpha * dist)
 	def _get_beta(self, z_dist_array, weights_array):
 		"""
@@ -286,11 +315,11 @@ class Cluster(Filter):
 		\todo Implement and document
 		"""
 		return np.sum(weights_array * z_array)/np.sum(weights_array)
-	def _new_z(self, z_array, weights_array, z_center):
+	def _new_z_i(self, z_array, weights_array, z_i):
 		"""
 		\todo Implement and document
 		"""
-		z_dist_array = np.square(z_array - z_center)
+		z_dist_array = np.square(z_array - z_i)
 		beta = self._get_beta(z_dist_array, weights_array)
 		weighted = weights_array * np.exp(-beta * z_dist_array)
 		numerator = np.sum(z_array * weighted)
@@ -301,12 +330,31 @@ class Cluster(Filter):
 		\todo Implement and document
 		"""
 		improvement = np.inf
-		iteration = 0
 		while abs(improvement) > self.tolerance:
-			print(iteration)
 			z_center_new = self._new_z(z_array, weights_array, z_center)
 			improvement = z_center_new - z_center
 			z_center = z_center_new
-			iteration += 1
 		return z_center
-	
+	def estimate_alpha(self,
+			weight: float,
+			length: float,
+			):
+		"""
+		Calculate the weight falloff parameter \f$\alpha\f$.
+		\f[
+			\alpha = \frac{\ln w}{x^2}
+		\f]
+		\param weight Target weight at the target distance.
+		\param length Distance, after which all pixel have weight 
+		"""
+		assert weight > 0, "weight and length must be greater than 0!"
+		assert length > 0, "weight and length must be greater than 0!"
+		return -np.log(weight)/(np.square(length))
+	def set_alpha(self,
+			weight: float,
+			length: float,
+			):
+		"""
+		Set the 
+		"""
+		self.alpha = self.estimate_alpha(weight, length)
