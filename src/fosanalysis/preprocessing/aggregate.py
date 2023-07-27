@@ -12,10 +12,9 @@ import numpy as np
 
 from . import base
 
-class Ensemble(base.Base):
+class Aggregate(base.Base):
 	"""
-	Abstract class for the ensemble of 2D strain data.
-	Data of multiple readings are combined into 1 array.
+	Abstract class for the aggregation of 2D to 1D strain data.
 	"""
 	def __init__(self,
 			axis: int = 0,
@@ -83,7 +82,7 @@ class Ensemble(base.Base):
 		"""
 		raise NotImplementedError()
 
-class Mean(Ensemble):
+class Mean(Aggregate):
 	"""
 	Form the arithmetic mean over the 2D data array, while ignoring `NaN` Values.
 	"""
@@ -93,7 +92,7 @@ class Mean(Ensemble):
 			*args, **kwargs) -> np.array:
 		return np.nanmean(data, axis=axis)
 
-class Median(Ensemble):
+class Median(Aggregate):
 	"""
 	Form the median over the 2D data array, while ignoring `NaN` Values.
 	"""
