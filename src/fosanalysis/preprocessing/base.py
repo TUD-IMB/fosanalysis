@@ -119,28 +119,28 @@ class DataCleaner(Base):
 			y_dim = y.shape == z.shape
 			if not x_dim:
 				x_tmp = x
-				x = np.indices(z.shape)
+				x = np.arange(z.shape[0])
 			if not y_dim:
 				y_tmp = y
-				y = np.indices(z.shape)
+				y = np.arange(z.shape[0])
 			# use x or y or fall back on indices
 			if x_dim:
 				x, z = self._run_1d(x, z, *args, **kwargs)
 			elif y_dim:
 				y, z = self._run_1d(y, z, *args, **kwargs)
 			else:
-				x_tmp = np.indices(z.shape)
+				x_tmp = np.arange(z.shape[0])
 				x_tmp, z = self._run_1d(x_tmp, z, *args, **kwargs)
 		# Decide, whether to use real 2D operation or fake 2D operation
 		elif z.ndim == 2:
-			x_dim = x.shape[0] == z.shape[1]
-			y_dim = y.shape[0] == z.shape[0]
+			x_dim = x.ndim == 1 and x.shape[0] == z.shape[1]
+			y_dim = y.ndim == 1 and y.shape[0] == z.shape[0]
 			if not x_dim:
 				x_tmp = x
-				x = np.indices((z.shape[0],))
+				x = np.arange(z.shape[1])
 			if not y_dim:
 				y_tmp = y
-				y = np.indices((z.shape[1],))
+				y = np.arange(z.shape[0])
 			if timespace == "2D":
 				x, y, z = self._run_2d(x, y, z, *args, **kwargs)
 			else:
