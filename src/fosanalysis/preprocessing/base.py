@@ -81,8 +81,8 @@ class DataCleaner(Base):
 			x: np.array = None,
 			y: np.array = None,
 			z: np.array = None,
-			timespace: str = None,
 			make_copy: bool = True,
+			timespace: str = None,
 			*args, **kwargs) -> tuple:
 		"""
 		Each preprocessing object has a `run()` method.
@@ -133,8 +133,8 @@ class DataCleaner(Base):
 				x_tmp, z = self._run_1d(x_tmp, z, *args, **kwargs)
 		# Decide, whether to use real 2D operation or fake 2D operation
 		elif z.ndim == 2:
-			x_dim = x.shape == z.shape[0]
-			y_dim = y.shape == z.shape[1]
+			x_dim = x.shape[0] == z.shape[1]
+			y_dim = y.shape[0] == z.shape[0]
 			if not x_dim:
 				x_tmp = x
 				x = np.indices((z.shape[0],))
@@ -144,7 +144,7 @@ class DataCleaner(Base):
 			if timespace == "2D":
 				x, y, z = self._run_2d(x, y, z, *args, **kwargs)
 			else:
-				x, y, z = self._map_2D(x, y, z, timespace=timespace)
+				x, y, z = self._map_2D(x, y, z, timespace=timespace, *args, **kwargs)
 		else:
 			raise ValueError("Dimension of z ({}) non-conformant!".format(z.ndim))
 		# Play back the original data, if it was temporalily fixed
