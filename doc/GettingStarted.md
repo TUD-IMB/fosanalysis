@@ -1,14 +1,15 @@
 # Getting Started
 
 ## Installation
-`fosanalysis` is developed under Python 3.9 and is available in the [Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
+`fosanalysis` is developed under Python 3.9 and is available in the
+[Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
 To install the latest stable version, please run
 - Linux and Mac: `python3 -m pip install -U fosanalysis`
 - Windows: `py -m pip install -U fosanalysis`
 
-It is generally recommendend, to install it in a virtual environment, which is not scope of this tutorial.
+It is generally recommendend, to install it in a virtual environment.
 
-In order to obtain the one of the development versions:
+In order to obtain the development versions:
 - clone or download the project from [GitHub](https://github.com/TUD-IMB/fosanalysis).
 - install the required dependencies:
     - `scipy`, see [scipy.org](https://scipy.org) for the documentation.
@@ -16,12 +17,13 @@ In order to obtain the one of the development versions:
 - make the modules available by adding the directory where `fosanalysis` is stored to the `$PYTHONPATH` system variable.
 
 ## Software Architecture
-As a design principle, `fosanalysis` consists of several modules, each dedicated to a single specific functionality.
+Modularity is the a design principle of `fosanalysis`.
+Each module dedicated to a single specific functionality.
 Two major types of components exist: workflows and task components.
 Task components implement algorithmic approaches for a specific task, e.g., integration or data loading.
 Alternative approaches for the same task are interchangeable, as they implement the same interface.
 Workflow components combine several such task components in a plug and play manner to construct complex workflows.
-This enables fine-grained access to algorithm settings in a flexible, yet easily comprehensive way.
+This enables fine-grained, easy to understand algorithm configuration.
 
 ## Getting Started
 Assuming a successful installation, you can follow the steps the this short tutorial.
@@ -44,100 +46,106 @@ import fosanalysis as fa
 ```
 
 After that, data can be imported from a demonstration file.
-This file contains artificial data in the format of a file, as it would be exported by the Luna Inc. ODiSI Software.
+This file contains artificial data in the format as exported by the Luna Inc. ODiSI Software.
 To (re-)generate this file, the script \ref examples.generatedemofile needs to be run once.
+This script is available with the development version.
 
 ```.py
 sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 ```
 
-Now we want to get the position and strain data as well as the mean strain data.
+Now we want to get the virtual strain gauge positions, the time stamps of the readings and the and strain data.
 
 ```.py
 x = sd.get_x_values()
 strain_table = sd.get_y_table()
+times = sd.get_time_stamps()
 ```
 
 In case, the strain values of only a single record are of interest, other options are available.
 Either by direct access using the record's index (as shown) or via a timestamp.
 Note, this data is still raw and can be preprocessed by the workflow, which is described later.
-The `x` and `strain_table` objects are arrays of floating point numbers, ready to be exported (printed or saved to disk), further processing, or plotting.
+The `x`, `times` and `strain_table` objects are arrays of floating point numbers
 We want to process it further and calculate the crack widths.
 To enable the subsequent crack width calculation, the data has to be pre-processed.
-The pre-processing follows the order and is implemented (hence, it is a workflow class \ref fosanalysis.preprocessing.Preprocessing):
+The order of the preprocesing is flexible and can be adapted to the current data.
+However, it consists of thre groups of tasks:
+- SRA detection and masking of strain reading anomalies (local, isolated spikes),
+- aggregation: dimension reduction of 2D to 1D strain data,
+- dropout repair: interpolation of entry removal of missing data,
+- filtering: reduce base noise and smooth the signal.
 
-1. masking_2D,
-2. repair_2D,
-3. filtering_2D,
-4. ensemble,
-5. masking_1D,
-6. repair_1D,
-7. filtering_1D,
-8. crop.
+For each of the steps, a task object is created.
 
-So, we need to generate task objects for the steps to be used.
-In this example, we will not use pre-processing operations in 2D.
-The data cloud also be pre-processed in 2D beforehand by using the 2D objects.
-Hence, the workflow will start with reducing the 2D array to a 1D array, followed by preprocessing steps.
-This reduction (called ensemble averaging, when using the arithmetic mean) is done by a \ref fosanalysis.preprocessing.ensemble.Ensemble object.
-We use a median, since it is more robust than the mean.
-Note, that this operation smooths the data and reduces the number of `NaN` entries (using `np.nanmedian()`).
+\todo Complete:
+Strain reading anomalies (SRA), are readings of implausible high or low values.
+As they distort the signal, they need to be converted into dropouts.
+This should be done as early, as possible.
+Thus, on the 2D array before aggregation of several reading into a single one.
+
+```.py
+
+```
+
+In this example, we will continue by reducing the 2D array to a 1D array.
+Several readings are consolidated into a single reading using aggregate functions.
+We use a median, since it is more robust against outliers, than the arithmetic average.
+This operation already reduces noise and the number of `NaN` entries.
 However, the resulting array might still contain `NaN` entries.
 
 ```.py
-ensembleobject = fa.preprocessing.ensemble.Median()
+aggregateobject = fa.preprocessing.aggregate.Median()
 ```
 
-Secondly, strain reading anomalies (SRA), which are readings of implausible high or low values are masked, turning them into dropouts.
-Further documentation of the alterable parameters can be found in \ref fosanalysis.preprocessing.masking.AnomalyMasker.
-
-Dropouts are readings without a finite value (NaN) and need to be removed or replaced.
-This is done with a \ref fosanalysis.preprocessing.repair.Repair object.
-The simplest one is \ref fosanalysis.preprocessing.repair.NaNFilter, which will just exclude dropouts.
-The strain curse will be interpolated by the implicit interpolation approach of the integration object later on.
+Dropouts are readings without a finite value (not a number (NaN)).
+To intergrate the strain signal, it needs to be free of dropouts.
+The simplest approach is to just remove dropouts from the measurements.
+Another is replacing the doopouts with plausible data.
+Removing dropouts without replacement is equivalent to interpolating
+with theimplicit interpolation by the integation algorithm.
 
 ```.py
 repairobject = fa.preprocessing.repair.NaNFilter()
 ```
 
-Now, we can apply a filter to reduce the leftover noise, e.g., a \ref fosanalysis.preprocessing.filtering.SlidingMean.
-A tasteful amount of filtering might improve the workability of data, but don't overdo it!
+The leftover noise is reducec by filtering.
+Careful filtering might improve the data quality, but don't overdo it!
 
 ```.py
-repairobject = fa.preprocessing.filtering.SlidingMedian(radius=1)
+repairobject = fa.preprocessing.filtering.SlidingMean(radius=2)
 ```
 
-After that, we might restrict data to segment of interest.
-This is done with a \ref fosanalysis.utils.cropping.Crop object.
-In this example the segment of interest ranges from 3 m – 5 m.
+After defining the task objects for the pre-processing, the order is to established.
+A pre-processing workflow object is created and the order list is handed to it.
 
 ```.py
-crop = fa.utils.cropping.Crop(start_pos=3, end_pos=5)
-```
-
-After defining the task objects for the pre-processing, a \ref fosanalysis.preprocessing.Preprocessing workflow object must be created.
-Workflow steps not specified with a task objects are skipped.
-
-```.py
-preprocessingobject = fa.preprocessing.Preprocessing(
-											ensemble=ensembleobject,
-											repair_object_1d=repairobject,
-											filter_object_1d=filterobject,
-											crop=crop)
+tasklist=[
+	aggregateobject,
+	repairobject,
+	filterobject,
+	]
+preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 ```
 
 Now the raw data will be pre-processed with the previously defined ruleset.
 
 ```.py
-x_processed, strain_processed = preprocessingobject.run(x_data=x, y_data=strain_table)
+x_processed, times, strain_processed = preprocessingobject.run(x=x, y=times, z=strain_table)
 ```
 
-View the raw data and the pre-processed data:
+After the data is preprocessed, we can restrict the data to the area of our interest.
+In this example the segment of interest ranges from 3 m – 5 m.
 
 ```.py
-plt.plot(x, strain_table[0], c="k")
-plt.show()
-plt.plot(x_processed, strain_processed, c="k")
+crop = fa.utils.cropping.Crop(start_pos=3, end_pos=5)
+x_cropped, strain_cropped = crop.run(x_processed, strain_processed)
+```
+
+Plot the raw data and the pre-processed data for visual comparison.
+
+```.py
+plt.plot(x, strain_table[0], label="raw")
+plt.plot(x_cropped, strain_cropped, label="preprocessed")
 plt.show()
 ```
 
@@ -149,14 +157,14 @@ This workflow is implemented by a \ref fosanalysis.crackmonitoring.strainprofile
 3. Compensation of tension stiffening (see \ref fosanalysis.compensation.tensionstiffening)
 4. Crack width calculation by means of strain integration
 
-The data is expected to be already clean data, so we pass the results of the pre-processing.
+The data is expected to be already cleaned, so we pass the results of the pre-processing.
 
 Since we know, the sensor was embedded in concrete or attached to the surface, we use \ref fosanalysis.crackmonitoring.strainprofile.Concrete.
-It selects some task objects for those steps by default
+It selects some task objects for those steps by default.
 We will skip over it here, but those objects could be configured in a similar way.
 
 ```.py
-sp = fa.crackmonitoring.strainprofile.Concrete(x=x_processed, strain=strain_processed)
+sp = fa.crackmonitoring.strainprofile.Concrete(x=x_cropped, strain=strain_cropped)
 ```
 
 Now, identifying crack locations and calculating their respective widths is as simple as:
@@ -169,9 +177,13 @@ As the peak identification could be missing valid cracks or identify peaks which
 To demonstrate how to correct those, we take a look at the position 3.9 m.
 We observe, that the twin peaks are recognized as two separate cracks.
 From manual inspection of the specimen, however, we might know, that those could correspond to a single crack only.
-So we first delete the wrong cracks by their index (the foruth and fifth crack) and add a single crack at the "correct" position 3.9 m afterwards.
-If the peak recognition is faulty in general, readjusting the parameters of `fosanalysis.crackmonitoring.finding.CrackFinder` and/or `fosanalysis.preprocessing.filtering.Filter` is suggested.
-The cracks are recalulated by default after modifying the list of cracks.
+So we first delete the wrong cracks by their index (the foruth and fifth crack).
+After that, we add a single crack at the "correct" position 3.9 m afterwards.
+If the peak recognition is faulty in general, you can try to:
+- tune parameters of a `fosanalysis.crackmonitoring.finding.CrackFinder` object
+- adjust the parameters of the pre-processing.
+
+After modifying the list of cracks, the cracks are recalulated by default.
 
 ```.py
 sp.delete_cracks(3,4)
