@@ -37,7 +37,7 @@ class AnomalyMasker(base.DataCleaner):
 		
 		\copydetails preprocessing.base.DataCleaner.run()
 		"""
-		SRA_array = np.full_like(z, False, dtype=bool)
+		SRA_array = np.logical_not(np.isfinite(z))
 		z = copy.deepcopy(z)
 		x, y, SRA_array = super().run(x, y, z,
 									SRA_array=SRA_array,
