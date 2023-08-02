@@ -144,7 +144,7 @@ class DataCleaner(Base):
 			if timespace == "2D":
 				x, y, z = self._run_2d(x, y, z, *args, **kwargs)
 			else:
-				x, y, z = self._map_2D(x, y, z, timespace=timespace, *args, **kwargs)
+				x, y, z = self._map_2d(x, y, z, timespace=timespace, *args, **kwargs)
 		else:
 			raise ValueError("Dimension of z ({}) non-conformant!".format(z.ndim))
 		# Play back the original data, if it was temporalily fixed
@@ -160,7 +160,7 @@ class DataCleaner(Base):
 			*args, **kwargs) -> tuple:
 		"""
 		Reimplementations describe a one-dimensional operation.
-		This operation might be applied to on a 2D array by \ref _map_2D().
+		This operation might be applied to on a 2D array by \ref _map_2d().
 		This function is called, if:
 		- the `z` is 1D or
 		- \ref timespace is set to `"1D_space"` or `"1D_time"`.
@@ -197,7 +197,7 @@ class DataCleaner(Base):
 			Each of those might be changed.
 		"""
 		return  x, y, z
-	def _map_2D(self,
+	def _map_2d(self,
 			x: np.array,
 			y: np.array,
 			z: np.array,
