@@ -174,11 +174,11 @@ sp.calculate_crack_widths()
 ```
 
 As the peak identification could be missing valid cracks or identify peaks which are no cracks, this automatic approach is not always successful.
-To demonstrate how to correct those, we take a look at the position 3.9 m.
+To demonstrate how to correct those, we take a look at the position 3.7 m.
 We observe, that the twin peaks are recognized as two separate cracks.
 From manual inspection of the specimen, however, we might know, that those could correspond to a single crack only.
-So we first delete the wrong cracks by their index (the foruth and fifth crack).
-After that, we add a single crack at the "correct" position 3.9 m afterwards.
+So we first delete the wrong cracks by their index (the fourth and fifth crack).
+After that, we add a single crack at the "correct" position 3.7 m afterwards.
 If the peak recognition is faulty in general, you can try to:
 - tune parameters of a `fosanalysis.crackmonitoring.finding.CrackFinder` object
 - adjust the parameters of the pre-processing.
@@ -187,7 +187,7 @@ After modifying the list of cracks, the cracks are recalulated by default.
 
 ```.py
 sp.delete_cracks(3,4)
-sp.add_cracks(3.9)
+sp.add_cracks(3.7)
 ```
 
 The property lists of the cracks can be obtained by

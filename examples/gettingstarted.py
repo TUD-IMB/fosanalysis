@@ -68,11 +68,11 @@ sp.calculate_crack_widths()
 
 # Manually correct cracks:
 # - Remove the 4th and 5th crack (index 3 and 4)
-# - Add a crack at the position 3.9 m
+# - Add a crack at the position 3.7 m
 #
 # The width of the cracks are recalculated automatically.
 sp.delete_cracks(3,4)
-sp.add_cracks(3.9)
+sp.add_cracks(3.7)
 
 # Get the attributes of the calculated cracks.
 c_w = sp.crack_list.widths
