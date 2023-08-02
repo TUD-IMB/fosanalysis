@@ -114,7 +114,7 @@ class StrainProfile(utils.base.Workflow):
 		"""
 		Resetting several attributes to it's original state before any calculations.
 		Clears:
-		- \ref cracklist,
+		- \ref crack_list,
 		- \ref shrink_calibration_values
 		- \ref tension_stiffening_values
 		"""

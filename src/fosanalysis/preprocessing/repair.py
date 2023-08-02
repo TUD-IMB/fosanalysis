@@ -29,6 +29,7 @@ class NaNFilter(base.Base):
 			*args, **kwargs):
 		"""
 		Construct an instance of the class.
+		\param axis \copydoc axis
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
