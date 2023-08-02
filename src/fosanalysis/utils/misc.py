@@ -7,22 +7,28 @@ Contains miscellaneous standalone functions.
 
 import numpy as np
 
-def find_closest_value(array: np.array, x: float) -> tuple:
+def find_closest_value(arr: np.array, v: float) -> tuple:
 	"""
-	Returns the index and value of the entry in `array`, that is closest to the given `x`.
-	\param array List or array, in which the closest value should be found.
-	\param x The target value, to which the distance should be minimized.
+	Returns index and value in `arr`, that is closest to the given `v`.
+	In case of equal distance of `v` to both neighbors, the smaller one is chosen.
+	\param arr Array like (1D) of values in ascending order.
+	\param v The target value, to which the distance should be minimized.
 	\return `(<index>, <entry>)`
 	"""
-	assert len(array) > 0
-	d_min = abs(x - array[0])
-	closest_index = 0
-	for i, entry in enumerate(array):
-		d = abs(x - entry)
-		if d < d_min:
-			d_min = d
-			closest_index = i
-	return closest_index, array[closest_index]
+	arr = np.array(arr)
+	i = np.searchsorted(arr, v)
+	if i == 0:
+		# v is smaller than any entry of the array
+		pass
+	elif i == arr.shape[0]:
+		# v is larger than any entry of the array
+		i = i-1
+	else:
+		# v between some array entries
+		dist_l = np.abs(v - arr[i-1])
+		dist_r = np.abs(v - arr[i])
+		i = i if dist_r < dist_l else i-1
+	return i, arr[i]
 
 def last_finite_index_1d(arr: np.array) -> np.array:
 	"""
