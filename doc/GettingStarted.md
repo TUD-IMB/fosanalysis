@@ -8,7 +8,7 @@ To install the latest stable version, please run
 
 It is generally recommendend, to install it in a virtual environment, which is not scope of this tutorial.
 
-In order to obtain the one of the development versions:
+In order to obtain one of the development versions:
 - clone or download the project from [GitHub](https://github.com/TUD-IMB/fosanalysis).
 - install the required dependencies:
     - `scipy`, see [scipy.org](https://scipy.org) for the documentation.
@@ -16,13 +16,13 @@ In order to obtain the one of the development versions:
 - make the modules available by adding the directory where `fosanalysis` is stored to the `$PYTHONPATH` system variable.
 
 ## Software Architecture
-As a design principle, `fosanalysis` consists of several modules, each dedicated to a single specific functionality.
+With modularity as its design principle, `fosanalysis` consists of several modules, each dedicated to a single specific functionality.
 The core modules are `protocols` to import the data, that is exported by the Luna Inc ODiSI Software and `strainprofile`, which contains the class definitions, that enable the user to calculate the crack width and manipulate the calculated cracks.
 An object to calculate cracks is put together by several exchangeable components in a plug and play manner.
-This workflow enables a fine grained access to algorithm settings in a flexible, yet easily comprehensive  algorithm construction.
+This workflow enables a fine grained access to algorithm settings in a flexible, yet easy to comprehend algorithm construction.
 
 ## Getting Started
-Assuming a successful installation, you can followin the this short tutorial.
+Assuming a successful installation, you can follow this short tutorial.
 For this, we need two scripts:
 - `generatedemofile.py` writes some artificial data, to `./data/demofile.tsv` relative to the working directory, when executed.
 - `gettingstarted.py` contains the code, resulting from following along with this tutorial.
@@ -75,7 +75,7 @@ Since we know, the sensor was embedded in concrete or attached to the surface, w
 Beforehand, some of those exchangeable objects need to be generated, a `fosanalysis.preprocessing.filtering.Filter` object for smoothing/treating strain reading anomalies and a `fosanalysis.cropping.Crop` object for restricting the data to the interesting area.
 It is known and visible in the data, that the area of interest ranges from 3 m -- 5 m.
 Both are passed to the `fosanalysis.strainprofile.Concrete` object.
-Other objects, such like objects, which indentifies the cracks (`fosanalysis.finding.CrackFinder`) or the one which compensates the tension stiffening (`fosanalysis.compensation.tensionstiffening`) are picked by default, but could be configured in a similar way.
+Other objects, such like objects, which identifies the cracks (`fosanalysis.finding.CrackFinder`) or the one which compensates the tension stiffening (`fosanalysis.compensation.tensionstiffening`) are picked by default, but could be configured in a similar way.
 
 ```.py
 crop = fa.cropping.Crop(start_pos=3, end_pos=5)
@@ -86,7 +86,7 @@ sp = fa.strainprofile.Concrete(x=x,
 		filter_object=fo)
 ```
 
-During the instantiation of the object, the data is sanitized: `NaN` entries are stripped completely, the strain is treated by the `fosanalysis.preprocessing.filtering.Filter` object and finally cropped to the start and end values by the `fosanalysis.cropping.Crop` object.
+During the instantiation of the object, the data is sanitized: `NaN` entries are removed, the strain is treated by the `fosanalysis.preprocessing.filtering.Filter` object and finally cropped to the start and end values by the `fosanalysis.cropping.Crop` object.
 
 Now, identifying crack locations, crack segments and calculating their respective widths is as simple as:
 
@@ -98,9 +98,9 @@ As the peak identification could be missing valid cracks or identify peaks which
 To demonstrate how to correct those, we take a look at the position 3.9 m.
 We observe, that the twin peaks are recognized as two separate cracks.
 From manual inspection of the specimen, however, we might know, that those could correspond to a single crack only.
-So we first delete the wrong cracks by their index (the foruth and fifth crack) and add a single crack at the "correct" position 3.9 m afterwards.
+So we first delete the wrong cracks by their index (the fourth and fifth crack) and add a single crack at the "correct" position 3.9 m afterwards.
 If the peak recognition is faulty in general, readjusting the parameters of `fosanalysis.finding.CrackFinder` and/or `fosanalysis.preprocessing.filtering.Filter` is suggested.
-The cracks are recalulated by default after modifying the list of cracks.
+The cracks are recalculated by default after modifying the list of cracks.
 
 ```.py
 sp.delete_cracks(3,4)
@@ -125,7 +125,7 @@ ax1.set_xlabel("Position x [m]")
 ax1.set_ylabel("Strain [µm/m]")
 ax2 = ax1.twinx()
 ax2.set_ylabel("Crack width [µm]", c="red")
-ax2.tick_params(axis ="y", labelcolor = "red") 
+ax2.tick_params(axis ="y", labelcolor = "red")
 ax1.plot(sp.x, sp.strain, c="k", label="strain")
 ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
 ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
