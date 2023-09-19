@@ -9,4 +9,5 @@ Contains utility modules with general pupose.
 from . import base
 from . import cropping
 from . import integration
+from . import interpolation
 from . import misc
