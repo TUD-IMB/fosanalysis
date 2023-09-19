@@ -76,7 +76,7 @@ class AnomalyMasker(base.DataCleaner):
 		This function returns the `SRA_array` instead of the `z` array.
 		"""
 		return x, y, SRA_array
-	def _map_2D(self,
+	def _map_2d(self,
 			x: np.array,
 			y: np.array,
 			z: np.array,
