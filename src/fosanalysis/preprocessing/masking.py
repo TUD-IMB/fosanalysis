@@ -90,10 +90,10 @@ class AnomalyMasker(base.DataCleaner):
 		This function returns the `SRA_array` instead of the `z` array.
 		"""
 		timespace = timespace if timespace is not None else self.timespace
-		if self.timespace == "1D_space":
+		if self.timespace.lower() == "1d_space":
 			for row_id, (row, SRA_row) in enumerate(zip(z, SRA_array)):
 				x, SRA_array[row_id] = self._run_1d(x, row, SRA_array=SRA_row, *args, **kwargs)
-		elif self.timespace == "1D_time":
+		elif self.timespace.lower() == "1d_time":
 			for col_id, (column, SRA_column) in enumerate(zip(z.T, SRA_array.T)):
 				y, SRA_array.T[col_id] = self._run_1d(y, column, SRA_array=SRA_column, *args, **kwargs)
 		return x, y, SRA_array

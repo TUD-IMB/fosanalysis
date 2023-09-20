@@ -141,7 +141,7 @@ class DataCleaner(Base):
 			if not y_dim:
 				y_tmp = y
 				y = np.arange(z.shape[0])
-			if timespace == "2D":
+			if timespace.lower() == "2d":
 				x, y, z = self._run_2d(x, y, z, *args, **kwargs)
 			else:
 				x, y, z = self._map_2d(x, y, z, timespace=timespace, *args, **kwargs)
@@ -168,7 +168,7 @@ class DataCleaner(Base):
 			Dependent on \ref timespace it may hold:
 			- `x`: sensor coordinates, (`timespace = "1D_space"`)
 			- `y`: time data (`timespace = "1D_time"`)
-			- indices, if none of bot previous options match the `z`'s shape.
+			- indices, if none of both previous options match the `z`'s shape.
 		\param z Array of strain data in accordance to `x` and `y`.
 		\param *args Additional positional arguments to customize the behaviour.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
@@ -176,7 +176,7 @@ class DataCleaner(Base):
 			They correspond to the input variables of the same name.
 			Each of those might be changed.
 		"""
-		return x, z
+		raise NotImplementedError()
 	@abstractmethod
 	def _run_2d(self,
 			x: np.array,
@@ -196,7 +196,7 @@ class DataCleaner(Base):
 			They correspond to the input variables of the same name.
 			Each of those might be changed.
 		"""
-		return  x, y, z
+		raise NotImplementedError()
 	def _map_2d(self,
 			x: np.array,
 			y: np.array,
@@ -220,10 +220,10 @@ class DataCleaner(Base):
 			Each of those might be changed.
 		"""
 		timespace = timespace if timespace is not None else self.timespace
-		if self.timespace == "1D_space":
+		if timespace.lower() == "1d_space":
 			for row_id, row in enumerate(z):
 				x, z[row_id] = self._run_1d(x, row, *args, **kwargs)
-		elif self.timespace == "1D_time":
+		elif timespace.lower() == "1d_time":
 			for col_id, column in enumerate(z.T):
 				y, z.T[col_id] = self._run_1d(y, column, *args, **kwargs)
 		return x, y, z
