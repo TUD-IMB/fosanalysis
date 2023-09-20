@@ -221,101 +221,104 @@ class SlidingFilter(Filter):
 
 class Cluster(Filter):
 	"""
-	\todo Implement and document
+	\todo Document
 	Filter according to \cite Lou_2020_ApplicationofClustering.
+	
+	\todo Show equations
 	"""
 	def __init__(self,
 			alpha: float,
-			tolerance: float,
-			fill: bool,
+			tolerance: float = 0.1,
+			fill: bool = False,
 			*args, **kwargs):
 		"""
-		\todo Implement and document
-		As this is an abstract class, it may not be instantiated directly itself.
+		Construct a Cluster object.
+		\param alpha \copybrief alpha \copydetails alpha For more, see \ref alpha.
+		\param tolerance \copybrief tolerance \copydetails tolerance.
+		\param fill \copybrief fill \copydetails fill.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## \todo Document
+		## Falloff parameter for the weight function.
+		## This falloff value should be in the \f$[0, \inf[\f$.
+		## Both extremes render this algorithm useless.
+		## Setting \f$\alpha = 0\f$ assigns the same weight to all entries.
+		## This would result in a flat signal.
+		## Setting \f$\alpha = \inf\f$ leaves the signal unchanged.
+		## Use \ref estimate_alpha() to calculate \f$\alpha\f$ based on
+		## the target weight and distance.
 		self.alpha = alpha
-		## \todo Document
+		## Stopping criterion for the iterative process.
+		## In each iteration step the change to the previous step is validated.
+		## The iteration is stopped if this change is smaller than the tolerance threshold.
+		## Defaults to `0.1`.
 		self.tolerance = tolerance
-		## \todo Document
+		## Switch, whether missing data should be interpolated.
+		## Defaults to `False`.
 		self.fill = fill
 	def _run_1d(self,
 			x: np.array,
 			z: np.array,
 			*args, **kwargs) -> np.array:
 		"""
-		\todo Implement and document
-		\param x Array of measuring point positions in accordance to `strain`.
-		\param z Array of strain data in accordance to `x`.
-		\param *args Additional positional arguments to customize the behaviour.
-		\param **kwargs Additional keyword arguments to customize the behaviour.
+		Carry out the filtering on one-dimensional data.
+		
+		\copydetails fosanalysis.preprocessing.base.DataCleaner._run_1d()
+		
+		\todo refactor to use replace the Python loops with vectorized numpy functions?
 		"""
-		x, y, z = self._filter(x, None, z, *args, **kwargs)
-		return x, z
+		z_filtered = copy.deepcopy(z)
+		z_zero = copy.deepcopy(z)
+		nan_array = np.logical_not(np.isfinite(z_zero))
+		z_zero[nan_array] = 0
+		iterator = np.nditer(z_zero, flags=["multi_index"])
+		for z_orig in iterator:
+			pixel = iterator.multi_index
+			if self.fill or not nan_array[pixel]: 
+				weights_array = self._get_weights(pixel, x)
+				weights_array[nan_array] = 0
+				z_i = self._initial_z(z_zero, weights_array)
+				improvement = np.inf
+				while abs(improvement) > self.tolerance:
+					z_i_new = self._new_z_i(z_zero, weights_array, z_i)
+					improvement = z_i_new - z_i
+					z_i = z_i_new
+				z_filtered[pixel] = z_i
+		return x, z_filtered
 	def _run_2d(self, 
 			x: np.array, 
 			y: np.array, 
 			z: np.array,
-			*args, **kwargs)->tuple:
+			*args, **kwargs) -> tuple:
 		"""
 		Cluster has no true 2D operation mode.
 		Set \ref timespace to `"1D_space"`!
 		"""
-		return self._filter(x, y, z, *args, **kwargs)
-		raise NotImplementedError("Cluster does not support true 2D operation. Please use `timepace='1D-space'` instead.")
-	def _filter(self,
-			x: np.array, 
-			y: np.array, 
-			z: np.array,
-			*args, **kwargs) -> np.array:
+		raise NotImplementedError("Cluster does not support true 2D operation. Try `timepace='1D-space'` instead.")
+	def _get_weights(self,
+					pixel,
+					x_array,
+					) -> np.array:
 		"""
-		"""
-		z_filtered = copy.deepcopy(z)
-		nan_array = np.logical_not(np.isfinite(z))
-		z[nan_array] = 0
-		iterator = np.nditer(z, flags=["multi_index"])
-		for z_orig in iterator:
-			pixel = iterator.multi_index
-			if self.fill or not nan_array[pixel]: 
-				weights_array = self._get_weights(pixel, x, y)
-				weights_array[nan_array] = 0
-				z_i = self._initial_z(z, weights_array)
-				improvement = np.inf
-				while abs(improvement) > self.tolerance:
-					z_i_new = self._new_z_i(z, weights_array, z_i)
-					improvement = z_i_new - z_i
-					z_i = z_i_new
-				z_filtered[pixel] = z_i
-		return x, y, z_filtered
-	def _get_weights(self, pixel, x_array, y_array):
-		"""
-		\todo Implement and document
+		Calculate the array of weights for the current position.
 		\param pixel Position (index) of the current datapoint to estimate.
-			Index according to numpy indexing.
+		\param x_array Array of abscissa data.
 		"""
-		if isinstance(pixel, int) or len(pixel) == 1:
-			position = x_array[pixel]
-			# distance array, trivial for 1D
-			dist = np.square(x_array - position)
-		else:
-			x_dist = np.square(x_array - x_array[pixel[1]])
-			y_dist = np.square(y_array - y_array[pixel[0]])
-			dist = np.atleast_2d(y_dist).T + x_dist
+		position = x_array[pixel]
+		dist = np.square(x_array - position)
 		return np.exp(-self.alpha * dist)
-	def _get_beta(self, z_dist_array, weights_array):
+	def _get_beta(self, z_dist_array, weights_array) -> float:
 		"""
 		\todo Implement and document
 		"""
 		return 0.5 * np.sum(weights_array)/np.sum(weights_array * z_dist_array)
-	def _initial_z(self, z_array, weights_array):
+	def _initial_z(self, z_array, weights_array) -> float:
 		"""
 		\todo Implement and document
 		"""
 		return np.sum(weights_array * z_array)/np.sum(weights_array)
-	def _new_z_i(self, z_array, weights_array, z_i):
+	def _new_z_i(self, z_array, weights_array, z_i) -> float:
 		"""
 		\todo Implement and document
 		"""
@@ -325,36 +328,18 @@ class Cluster(Filter):
 		numerator = np.sum(z_array * weighted)
 		denominator = np.sum(weighted)
 		return numerator/denominator
-	def _iterate(self, z_array, weights_array, z_center):
-		"""
-		\todo Implement and document
-		"""
-		improvement = np.inf
-		while abs(improvement) > self.tolerance:
-			z_center_new = self._new_z(z_array, weights_array, z_center)
-			improvement = z_center_new - z_center
-			z_center = z_center_new
-		return z_center
 	def estimate_alpha(self,
 			weight: float,
 			length: float,
 			):
 		"""
-		Calculate the weight falloff parameter \f$\alpha\f$.
+		Calculate the weight falloff parameter \f$\alpha\f$, see \ref alpha.
 		\f[
-			\alpha = \frac{\ln w}{x^2}
+			\alpha = \frac{\ln w}{l^2}
 		\f]
-		\param weight Target weight at the target distance.
-		\param length Distance, after which all pixel have weight 
+		\param weight Target weight \f$w\f$.
+		\param length Target distance \f$l\f$.
 		"""
 		assert weight > 0, "weight and length must be greater than 0!"
 		assert length > 0, "weight and length must be greater than 0!"
-		return -np.log(weight)/(np.square(length))
-	def set_alpha(self,
-			weight: float,
-			length: float,
-			):
-		"""
-		Set the 
-		"""
-		self.alpha = self.estimate_alpha(weight, length)
+		return np.log(weight)/(np.square(length))
