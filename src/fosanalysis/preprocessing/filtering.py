@@ -221,10 +221,51 @@ class SlidingFilter(Filter):
 
 class Cluster(Filter):
 	"""
-	\todo Document
-	Filter according to \cite Lou_2020_ApplicationofClustering.
-	
-	\todo Show equations
+	The Cluster filter is an iterative smoothing algorithm guaranteed to converge \cite Lou_2020_ApplicationofClustering.
+	The one-dimensional signal to filter consists of abscissa data \f$\mathbf{x}\f$ and according ordinate data (measured values) \f$\mathbf{z}\f$.
+	For the \f$k\f$th entry (pixel), consisting of its location \f$x_{k}\f$ and its original value \f$z_{k}\f$, a value is estimated iteratively.
+	The pixel value estimate \f$z^{(t+1)}_{k}\f$ for the next iteration step \f$t+1\f$ is determined by (see \ref _new_z_t()):
+	\f[
+		z^{(t+1)}_{k} = \frac{
+			\sum_{i} z_{i} w_{i} \exp\left(- \beta^{(t)} \left(z_{i} - z^{(t)}_{k}\right)^{2}\right)
+		}{
+			\sum_{i} w_{i} \exp\left(- \beta^{(t)} \left(z_{i} - z^{(t)}_{k}\right)^{2}\right)
+		}.
+	\f]
+	Here, the \f$i\f$th pixels position is \f$x_{i}\f$, its value is \f$z_{i}\f$ and \f$w_{i}\f$ is its weight.
+	The weight indicates the influence on the currently optimized pixel at position \f$x_{k}\f$
+	and drops exponentially with the distance for the current pixel (see \ref _get_weights())
+	\f[
+		w_{i} = \exp\left(-\alpha ||x_{i} - x_{k}|| || ^{2}\right)
+	\f]
+	with \f$|| x_{i} - x_{k} ||^{2}\f$ being the squared Euclidian norm.
+	The main parameter for the filter is \f$\alpha\f$, which controls the weight falloff and hence, the filter's scale.
+	It can be calculated from ttarget weight and distance with \ref estimate_alpha().
+	The locality parameter \f$\beta\f$ based on the local variance is estimated to (see \ref _get_beta()):
+	\f[
+		\beta^{(t)} = \frac{
+			\sum_{i} w_{i}
+		}{
+			2 \sum_{i} \left(z_{i}-z^{(t)_{k}}\right)^{2} w_{i}
+		}.
+	\f]
+	The initial guess \f$z^{(0)}\f$ is estimated by (see \ref _initial_z):
+	\f[
+		z^{(0)} = \frac{
+			\sum_{i} z_{i} w_{i}
+		}{
+			\sum_{i} w_{i}
+		}.
+	\f]
+	After each iteration, the estimate change is 
+	\f[
+		\Delta z^{(t)}_{k} = |z^{(t-1)} - z^{(t)}_{k}|
+	\f]
+	calculated and the iteration is stopped if this change falls below the predefined threshold \f$\Delta z_{\mathrm{tol}}\f$:
+	\f[
+		\Delta z^{(t)}_{k} \leq \Delta z_{\mathrm{tol}}.
+	\f]
+	This process is repeated for all pixels.
 	"""
 	def __init__(self,
 			alpha: float,
@@ -265,8 +306,6 @@ class Cluster(Filter):
 		Carry out the filtering on one-dimensional data.
 		
 		\copydetails fosanalysis.preprocessing.base.DataCleaner._run_1d()
-		
-		\todo refactor to use replace the Python loops with vectorized numpy functions?
 		"""
 		z_filtered = copy.deepcopy(z)
 		z_zero = copy.deepcopy(z)
@@ -278,13 +317,13 @@ class Cluster(Filter):
 			if self.fill or not nan_array[pixel]: 
 				weights_array = self._get_weights(pixel, x)
 				weights_array[nan_array] = 0
-				z_i = self._initial_z(z_zero, weights_array)
+				z_t = self._initial_z(z_zero, weights_array)
 				improvement = np.inf
 				while abs(improvement) > self.tolerance:
-					z_i_new = self._new_z_i(z_zero, weights_array, z_i)
-					improvement = z_i_new - z_i
-					z_i = z_i_new
-				z_filtered[pixel] = z_i
+					z_t_new = self._new_z_t(z_zero, weights_array, z_t)
+					improvement = z_t_new - z_t
+					z_t = z_t_new
+				z_filtered[pixel] = z_t
 		return x, z_filtered
 	def _run_2d(self, 
 			x: np.array, 
@@ -297,32 +336,73 @@ class Cluster(Filter):
 		"""
 		raise NotImplementedError("Cluster does not support true 2D operation. Try `timepace='1D-space'` instead.")
 	def _get_weights(self,
-					pixel,
-					x_array,
-					) -> np.array:
+			pixel: int,
+			x_array: np.array,
+			) -> np.array:
 		"""
-		Calculate the array of weights for the current position.
+		Calculate the array of weights for the current position
+		\f[
+			w_{i} = \exp\left(-\alpha || x_{i} - x ||^{2}\right)
+		\f]
 		\param pixel Position (index) of the current datapoint to estimate.
 		\param x_array Array of abscissa data.
 		"""
 		position = x_array[pixel]
 		dist = np.square(x_array - position)
 		return np.exp(-self.alpha * dist)
-	def _get_beta(self, z_dist_array, weights_array) -> float:
+	def _get_beta(self,
+			z_dist_array: np.array,
+			weights_array: np.array,
+			) -> float:
 		"""
-		\todo Implement and document
+		Calculate the locality parameter \f$\beta\f$ based on the local variance is estimated to 
+		\f[
+			\beta^{(t)} = \frac{
+				\sum_{i} w_{i}
+			}{
+				2 \sum_{i} \left(z_{i}-z^{(t)_{k}}\right)^{2} w_{i}
+			}.
+		\f]
+		\param z_dist_array 1D-array distance matrix for the current pixel.
+		\param weights_array 1D-array containing the weights.
 		"""
 		return 0.5 * np.sum(weights_array)/np.sum(weights_array * z_dist_array)
-	def _initial_z(self, z_array, weights_array) -> float:
+	def _initial_z(self,
+			z_array: np.array,
+			weights_array:np.array,
+			) -> float:
 		"""
-		\todo Implement and document
+		Guess the the initial estimate.
+		The initial estimate \f$z^{(0)}\f$ is calculated by
+		\f[
+			z^{(0)} = \frac{\sum_{i} z_{i} w_{i}}{\sum_{i} w_{i}}.
+		\f]
+		\param z_array 1D-array of the original ordniate data.
+		\param weights_array 1D-array containing the weights.
 		"""
 		return np.sum(weights_array * z_array)/np.sum(weights_array)
-	def _new_z_i(self, z_array, weights_array, z_i) -> float:
+	def _new_z_t(self,
+			z_array: np.array,
+			weights_array: np.array,
+			z_t: float,
+			) -> float:
 		"""
-		\todo Implement and document
+		Calculate the next estimate \f$z^{(t+1)}_{k}\f$ for by
+		\f[
+			z^{(t+1)}_{k} = \frac{
+				\sum_{i} z_{i} w_{i} \exp\left(- \beta^{(t)} \left(z_{i} - z^{(t)}_{k}\right)^{2}\right)
+			}{
+				\sum_{i} w_{i} \exp\left(- \beta^{(t)} \left(z_{i} - z^{(t)}_{k}\right)^{2}\right)
+			}.
+		\f]
+		Here, the \f$i\f$th pixels position is \f$x_{i}\f$, its value is \f$z_{i}\f$ and \f$w_{i}\f$ is its weight.
+		The weight indicates the influence on the currently optimized pixel at position \f$x_{k}\f$
+		and drops exponentially with the distance for the current pixel.
+		\param z_array 1D-array of the original ordniate data.
+		\param weights_array 1D-array containing the weights.
+		\param z_t Estimate of the previous iteration step for the current pixel.
 		"""
-		z_dist_array = np.square(z_array - z_i)
+		z_dist_array = np.square(z_array - z_t)
 		beta = self._get_beta(z_dist_array, weights_array)
 		weighted = weights_array * np.exp(-beta * z_dist_array)
 		numerator = np.sum(z_array * weighted)
