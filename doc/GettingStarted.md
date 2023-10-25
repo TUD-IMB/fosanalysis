@@ -114,7 +114,7 @@ The leftover noise is reducec by filtering.
 Careful filtering might improve the data quality, but don't overdo it!
 
 ```.py
-filterobject = fa.preprocessing.filtering.SlidingMean(radius=2)
+filterobject = fa.preprocessing.filtering.SlidingFilter(radius=2, method="nanmean")
 ```
 
 After defining the task objects for the pre-processing, the order is to established.

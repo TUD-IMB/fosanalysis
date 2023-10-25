@@ -40,7 +40,7 @@ aggregateobject = fa.preprocessing.aggregate.Median()
 repairobject = fa.preprocessing.repair.NaNFilter()
 
 # Fix defines how to reduce ths base noise.
-filterobject = fa.preprocessing.filtering.SlidingMean(radius=2)
+filterobject = fa.preprocessing.filtering.SlidingFilter(radius=2, method="nanmean")
 
 ## Set the order of the preprocessing tasks.
 tasklist=[

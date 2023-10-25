@@ -114,7 +114,9 @@ class SlidingFilter(Filter):
 	To reduce/avoid boundary effects, genrally crop the data after smoothing.
 	"""
 	def __init__(self,
-			radius: int = 0,
+			radius: int,
+			method: str,
+			method_kwargs: dict = None,
 			*args, **kwargs):
 		"""
 		Construct an instance of the class.
@@ -133,6 +135,26 @@ class SlidingFilter(Filter):
 		## To set different widths for axes, use an `iterable`, such as a `tuple`.
 		## This `tuple`'s length has to match the dimension of `data_array`.
 		self.radius = radius
+		## Specify, how the data is smoothed.
+		## This method is used to reduce the content of the sliding window to a single value.
+		## This accepts either:
+		## 1. Name of a numpy function (type: `str`):
+		## 	The numpy function `np.<method>` is chosen and used like if a `callable` was provided (second option). 
+		## 	Some useful options are (see the numpy documentation for details):
+		## 		- `"nanmean"`: 
+		## 		- `"nanmedian"`
+		## 		- `"nanmin"`
+		##		- `"nanmax"`
+		## 2. A function object (type: `callable`):
+		## 	This function is used as provided and internally called like this:
+		## 	`result = method(<np.array>, **method_kwargs)`.
+		## 	Requirements for this function are:
+		## 		- input parameters: a numpy array and optionally keyword arguments (see \ref method_kwargs),
+		## 		- return value is a `float`.
+		self.method = method
+		## This dictionary contains optional keyword arguments for \ref method.
+		## It can be used to change the behaviour of that function.
+		self.method_kwargs = method_kwargs if method_kwargs is not None else {}
 	def run(self,
 			x: np.array,
 			y: np.array,
@@ -140,6 +162,8 @@ class SlidingFilter(Filter):
 			timespace: str = None,
 			make_copy: bool = True,
 			radius: int = None,
+			method: str = None,
+			method_kwargs: dict = None,
 			*args, **kwargs) -> np.array:
 		"""
 		The given data is filtered with a sliding window.
@@ -151,6 +175,8 @@ class SlidingFilter(Filter):
 				timespace=timespace,
 				make_copy=make_copy,
 				radius=radius,
+				method=method,
+				method_kwargs=method_kwargs,
 				*args, **kwargs)
 	def _run_1d(self,
 			x: np.array, 
@@ -166,9 +192,15 @@ class SlidingFilter(Filter):
 	def _slide(self,
 			z: np.array,
 			radius = None,
+			method: str = None,
+			method_kwargs: dict = None,
 			*args, **kwargs) -> np.array:
 		"""
-		Move the window over the input array and apply \ref _operation on it.
+		Move the window over the input array and apply \ref method on it.
+		The central pixel of the window \f$x_{i}\f$ is assigned the value 
+		\f[
+			x_{i} \gets \mathrm{op}(x_{j,\:\ldots,\:k}) \text{ with } j = i -r \text{ and } k = i + r.
+		\f]
 		\param z Array of strain data.
 		\param radius \copydoc radius Defaults to \ref radius.
 		\param *args Additional positional arguments, will be ignored.
@@ -176,52 +208,14 @@ class SlidingFilter(Filter):
 		\return Returns an array with the same shape as `z`.
 		"""
 		radius = radius if radius is not None else self.radius
+		method = method if method is not None else self.method
+		method_kwargs = method_kwargs if method_kwargs is not None else self.method_kwargs
+		method_kwargs = method_kwargs if method_kwargs is not None else {}
+		method_function = method if callable(method) else getattr(np, method)
 		if radius == 0:
 			return z
 		smooth_data = np.zeros_like(z)
-		# Smooth the middle
 		for pixel, window in utils.misc.sliding_window(z, radius):
-			smooth_data[pixel] = self._operation(window)
+			smooth_data[pixel] = method_function(window, **method_kwargs)
 		return smooth_data
-	@abstractmethod
-	def _operation(self, segment: np.array) -> float:
-		"""
-		The central pixel of the window \f$x_{i}\f$ is assigned the value 
-		\f[
-			x_{i} \gets \mathrm{op}(x_{j,\:\ldots,\:k}) \text{ with } j = i -r \text{ and } k = i + r.
-		\f]
-		"""
-		raise NotImplementedError()
 
-class SlidingMean(SlidingFilter):
-	"""
-	A filter, that smoothes the record using the mean over \f$2r + 1\f$ entries for each entry.
-	\copydetails SlidingFilter
-	"""
-	def _operation(self, sliding_window: np.array) -> float:
-		"""
-		The central pixel of the window \f$x_{i}\f$ is assigned the arithmetic average of the sliding window:
-		\f[
-			x_{i} \gets \frac{\sum{x_{j,\:\ldots,\:k}}}{2r + 1}
-		\f]
-		"""
-		return np.nanmean(sliding_window)
-
-class SlidingMedian(SlidingFilter):
-	"""
-	A filter, that smoothes the record using the median over \f$2r + 1\f$ entries for each entry.
-	\copydetails SlidingFilter
-	"""
-	def _operation(self, sliding_window: np.array) -> float:
-		"""
-		The central pixel of the window \f$x_{i}\f$ is assigned the median of the sliding window:
-		\f[
-			x_{i} \gets
-			\begin{cases}
-				x_{m+1} & \text{ for odd } n = 2 m +1 \\
-				\frac{x_{m} + x_{m+1}}{2} & \text{ for even } n = 2 m
-			\end{cases}
-			\text{ with } m = 2r + 1
-		\f]
-		"""
-		return np.nanmedian(sliding_window)

@@ -21,12 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cropping.croping()` is now a standalone function, `cropping.Crop` works as a preset store
 - Filter and Repair objects now require both x-data and y-data
 - Renamed `fosutils.find_next_neighbor()` &rarr; `fosutils.next_finite_neighbor()`
+- Generalized the functionality and versatility of `preprocessing.filtering.SlidingFilter`, making `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian` obsolete
 
 ### Removed
 
 - `preprocessing.strip_smooth_crop()`
 - `protcols.Strainprofile.get_mean_over_y_record()`
 - Preprocessing functionalities from `strainprofile.StrainProfile`
+- `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
 
 ## [v0.3] – 2023-??-??
 
