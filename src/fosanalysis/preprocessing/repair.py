@@ -93,11 +93,13 @@ class ScipyInterpolation1D(Repair):
 	This is a wrapper for \ref fosanalysis.utils.interpolation.scipy_interpolate1d().
 	"""
 	def __init__(self,
-				method: str = "Akima1DInterpolator",
-				*args, **kwargs):
+			method: str = "Akima1DInterpolator",
+			method_kwargs: dict = None,
+			*args, **kwargs):
 		"""
 		Construct an ScipyInterpolation1D object.
 		\param method \copydoc method
+		\param method_kwargs \copydoc method_kwargs
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
 		"""
@@ -121,38 +123,64 @@ class ScipyInterpolation1D(Repair):
 		## - `"UnivariateSpline"`
 		## - `"InterpolatedUnivariateSpline"`
 		self.method = method
-		## Dictionary of additional keyword arguments.
+		## This dictionary contains optional keyword arguments for \ref method.
 		## These are passed to the interpolation function at runtime.
-		self.kwargs = kwargs
+		## It can be used to change the behaviour of that function.
+		self.method_kwargs = method_kwargs if method_kwargs is not None else {}
+	def run(self,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			timespace: str = None,
+			make_copy: bool = True,
+			method: str = None,
+			method_kwargs: dict = None,
+			*args, **kwargs) -> tuple:
+		"""
+		\copydoc ScipyInterpolation1D
+		\copydetails preprocessing.base.DataCleaner.run()
+		\param method \copydoc method
+		\param method_kwargs \copydoc method_kwargs
+		"""
+		return super().run(x, y, z,
+				timespace=timespace,
+				make_copy=make_copy,
+				method=method,
+				method_kwargs=method_kwargs,
+				*args, **kwargs)
 	def _run_1d(self,
 			x: np.array,
 			z: np.array,
 			method: str = None,
+			method_kwargs: dict = None,
 			*args, **kwargs) -> tuple:
 		"""
 		Replace dropouts (`NaN`s) with values interpolated by the given method.
 		\param x Array of measuring point positions in accordance to `z`.
 		\param z Array of strain data in accordance to `x`.
 		\param method \copydoc method
-		\return Returns a `np.array` of the same shape as `x`.
+		\param method_kwargs \copydoc method_kwargs
+		\param *args Additional positional arguments, ignored.
+		\param **kwargs Additional keyword arguments, ignored.
+		\return Returns a tuple of like `(x, z)` of `np.array`s of the same shape.
 		"""
-		object_kwargs = copy.deepcopy(self.kwargs)
 		method = method if method is not None else self.method
-		object_kwargs.update(**kwargs)
+		method_kwargs = method_kwargs if method_kwargs is not None else self.method_kwargs
+		method_kwargs = method_kwargs if method_kwargs is not None else {}
 		x_clean, y_clean, z_clean = self.nanfilter.run(x, None, z)
 		z_new = scipy_interpolate1d(
 							x=x_clean,
 							y=z_clean,
 							x_new=x,
 							method=method,
-							*args, **object_kwargs)
+							**method_kwargs)
 		return x, z_new
 	def _run_2d(self, 
-		x: np.array, 
-		y: np.array, 
-		z: np.array,
-		SRA_array: np.array,
-		*args, **kwargs)->tuple:
+			x: np.array, 
+			y: np.array, 
+			z: np.array,
+			SRA_array: np.array,
+			*args, **kwargs) -> tuple:
 		"""
 		ScipyInterpolation1D has no true 2D operation mode.
 		Set \ref timespace to `"1D_space"`!
