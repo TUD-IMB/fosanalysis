@@ -61,5 +61,5 @@ class Preprocessing(base.Base, utils.base.Workflow):
 		"""
 		x, y, z = super().run(x, y, z, make_copy=make_copy, *args, **kwargs)
 		for task in self.tasklist:
-			x, y, z = task.run(x, y, z, copy=False, *args, **kwargs)
+			x, y, z = task.run(x, y, z, make_copy=False, *args, **kwargs)
 		return x, y, z
