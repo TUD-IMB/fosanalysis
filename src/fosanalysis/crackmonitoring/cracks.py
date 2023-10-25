@@ -85,23 +85,32 @@ class CrackList(list):
 	@property
 	def x_l(self) -> list:
 		""" Returns a list with the left-hand side border of transfer length of all cracks. """
-		return [crack.x_l for crack in self]
+		return self.get_attribute_list("x_l")
 	@property
 	def x_r(self) -> list:
 		""" Returns a list with the right-hand side border of transfer length of all cracks. """
-		return [crack.x_r for crack in self]
+		return self.get_attribute_list("x_r")
 	@property
 	def locations(self) -> list:
 		""" Returns a list with the locations of all cracks. """
-		return [crack.location for crack in self]
+		return self.get_attribute_list("location")
 	@property
 	def max_strains(self) -> list:
 		""" Returns a list with the peak strains of all cracks. """
-		return [crack.max_strain for crack in self]
+		return self.get_attribute_list("max_strain")
 	@property
 	def widths(self) -> list:
 		""" Returns a list with the widths of all cracks. """
-		return [crack.width for crack in self]
+		return self.get_attribute_list("width")
+	def get_attribute_list(self, attribute: str, fallback = None) -> list:
+		"""
+		Extract a list of values from the given attribute of all cracks.
+		\param attribute Name of the attribute to extract.
+			If a crack object has not such attribute, `fallback` is returned.
+		\param fallback Value to report, if a crack has no such attribute set.
+			Defaults to `None`.
+		"""
+		return [getattr(crack, attribute, fallback) for crack in self]
 	def get_crack(self, x, method: str = "nearest") -> Crack:
 		"""
 		Get the \ref Crack according to the given position `x` and the `method`.
