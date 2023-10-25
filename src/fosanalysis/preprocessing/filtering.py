@@ -298,6 +298,13 @@ class Cluster(Filter):
 		## Switch, whether missing data should be interpolated.
 		## Defaults to `False`.
 		self.fill = fill
+	@property
+	def alpha(self):
+		return self._alpha
+	@alpha.setter
+	def alpha(self, alpha):
+		assert alpha >= 0, "The scaling value alpha needs to be non-negative!"
+		self._alpha = alpha
 	def _run_1d(self,
 			x: np.array,
 			z: np.array,
