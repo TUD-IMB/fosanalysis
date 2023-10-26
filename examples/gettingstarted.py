@@ -22,9 +22,7 @@ plt.rcParams.update({
 sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 
 # Retrieving data
-x = sd.get_x_values()
-strain_table = sd.get_y_table()
-times = sd.get_time_stamps()
+x, times, strain_table = sd.get_data()
 
 # Generate objects for the preprocessing workflow.
 # Convert strain reading anomalies to dropouts

@@ -57,9 +57,7 @@ sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
 Now we want to get the virtual strain gauge positions, the time stamps of the readings and the and strain data.
 
 ```.py
-x = sd.get_x_values()
-strain_table = sd.get_y_table()
-times = sd.get_time_stamps()
+x, times, strain_table = sd.get_data()
 ```
 
 In case, the strain values of only a single record are of interest, other options are available.

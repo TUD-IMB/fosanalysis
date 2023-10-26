@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduced new workflow for preprocessing:
     - New workflow class for preprocessing
     - New module `preprocessing.ensemble` for data consolidation
+- `protocols.ODiSI6100TSVFile.get_data()` for data retrieval
 - `preprocessing.masking.GTM` for converting SRAs to dropouts
 - `utils.interpolation.scipy_interpolate1d`: interpolation wrapper function around scipy functionality
 - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
@@ -26,8 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `preprocessing.strip_smooth_crop()`
-- `protcols.Strainprofile.get_mean_over_y_record()`
-- Preprocessing functionalities from `strainprofile.StrainProfile`
+- `protocols.ODiSI6100TSVFile.get_mean_over_y_record()` was split into two functions:
+	Firstly, `protocols.ODiSI6100TSVFile.get_data()` for easy data selection.
+	The consolidation is now done by a `preprocessing.ensemble` object.
+- Preprocessing functionalities and clean up some unused attributes from `strainprofile.StrainProfile`
 - `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
 
 ## [v0.3] – 2023-??-??
