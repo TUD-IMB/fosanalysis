@@ -38,7 +38,6 @@ class StrainProfile(utils.base.Workflow):
 			x: np.array,
 			strain: np.array,
 			strain_inst: np.array = None,
-			tare: np.array = None,
 			crackfinder = None,
 			integrator = None,
 			lengthsplitter = None,
@@ -52,7 +51,6 @@ class StrainProfile(utils.base.Workflow):
 		\param x \copybrief x For more, see \ref x.
 		\param strain \copybrief strain For more, see \ref strain.
 		\param strain_inst \copybrief strain_inst For more, see \ref strain_inst.
-		\param tare \copybrief tare For more, see \ref tare.
 		\param crackfinder \copybrief crackfinder For more, see \ref crackfinder.
 		\param integrator \copybrief integrator For more, see \ref integrator.
 		\param lengthsplitter \copybrief lengthsplitter For more, see \ref lengthsplitter.
@@ -70,6 +68,10 @@ class StrainProfile(utils.base.Workflow):
 		## Strain data in the measurement area in accordance to \ref x.
 		## This data is assumed to be already preprocessed, see \ref preprocessing.Preprocessing.
 		self.strain = strain
+		## Strain, from which the crack widths are calculated.
+		## It is reset to \ref strain in \ref calculate_crack_widths().
+		## It is only for inspection/debugging purposes.
+		self._strain_compensated = None
 		## Strain data (y-axis) for the initial load experiment.
 		## This data is assumed to be already preprocessed, see \ref preprocessing.Preprocessing.
 		self.strain_inst = strain_inst
@@ -103,13 +105,6 @@ class StrainProfile(utils.base.Workflow):
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
-		## The tare strain values.
-		## Initially, the sensor might report a non-zero strains state.
-		## This is due to the sensor manifacturing process sensor application or environmental influences.
-		## Prior to the maesurement, the sensor can be calibrated in the ODiSI software.
-		## The tare strains have only informative character, as the ODiSI software reports net strain data (corrected by the tare already).
-		## This data is assumed to be already preprocessed, see \ref preprocessing.Preprocessing.
-		self.tare = None
 	def clean_data(self):
 		"""
 		Resetting several attributes to it's original state before any calculations.
@@ -142,19 +137,23 @@ class StrainProfile(utils.base.Workflow):
 			self.find_cracks()
 			self.set_lt()
 		# Compensation
-		strain = self.strain
+		self._strain_compensated = copy.deepcopy(self.strain)
 		if self.shrink_compensator is not None:
-			strain = strain - self.compensate_shrink()
+			self._strain_compensated = self._strain_compensated - self.compensate_shrink()
 		if self.ts_compensator is not None:
-			strain = strain - self.calculate_tension_stiffening()
+			self._strain_compensated = self._strain_compensated - self.calculate_tension_stiffening()
 		# Compression cancelling
 		if self.suppress_compression:
 			f = preprocessing.filtering.Limit(minimum=0.0, maximum=None)
-			x, y_tmp, strain = f.run(self.x, None, strain)
+			x, y_tmp, self._strain_compensated = f.run(self.x, None, self._strain_compensated)
 		# Crack width calculation
 		for crack in self.crack_list:
-			x_seg, y_seg = utils.cropping.cropping(self.x, strain, start_pos=crack.x_l, end_pos=crack.x_r, offset=0)
-			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None)
+			x_seg, y_seg = utils.cropping.cropping(self.x,
+												self._strain_compensated,
+												start_pos=crack.x_l,
+												end_pos=crack.x_r,
+												offset=0)
+			crack.width = self.integrator.integrate_segment(x_seg, y_seg)
 		return self.crack_list
 	def find_cracks(self):
 		"""
