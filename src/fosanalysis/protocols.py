@@ -294,7 +294,6 @@ class ODiSI6100TSVFile(Protocol):
 			is_gage: bool =False) -> dict:
 		"""
 		Return the dictionary matching the search criteria.
-		If no matching segment/gage is found, a `RuntimeError` is raised.
 		\param name Name of the gage or segment.
 			Defaults to the first gage or segment, depending on `is_gage`.
 			This name needs to exactly match the key in the dictionary.
@@ -302,6 +301,8 @@ class ODiSI6100TSVFile(Protocol):
 			Defaults to `False`.
 			If `True`, look in \ref gages for `name`.
 			If `False`, look in \ref segments for `name`.
+		
+		If no matching segment/gage is found, a `RuntimeError` is raised.
 		"""
 		target = self.gages if is_gage else self.segments
 		name = name if name is not None else next(iter(target))
@@ -379,50 +380,148 @@ class ODiSI6100TSVFile(Protocol):
 	def get_record_from_time_stamp(self,
 			time_stamp: datetime.datetime,
 			name: str = None,
-			is_gage: bool = False,) -> tuple:
+			is_gage: bool = False,
+			position: str = "closest",
+			) -> tuple:
 		"""
 		Get the \ref SensorRecord and its index, which is closest to the given time_stamp.
 		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
 		
 		\copydetails _get_dict()
+		\param position Position of the data. Available options:
+			- `"closest"` (default) get the entry, which is closest to the given value.
+			- `"searchsorted"` get the entry, as reported by `np.searchsorted`.
+				If the time_stamp is larger that any time stamp,the last
+				record is returned but the index is equal to the length
+				of the time stamp list (does not have a corresponding value).
 		
 		\return Returns a tuple like `(sensor_record, index)` with
 		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
 		\retval index the corresponding index in of the \ref SensorRecord.
 		"""
-		index, accurate_time_stamp = utils.misc.find_closest_value(self.get_time_stamps(name, is_gage), time_stamp)
 		target = self._get_dict(name, is_gage)
-		return target.get("y_data", None)[index], index
+		timestamps = self.get_time_stamps(name, is_gage)
+		if position == "closest":
+			index, accurate_time_stamp = utils.misc.find_closest_value(timestamps, time_stamp)
+		elif position == "searchsorted":
+			index = np.searchsorted(timestamps, time_stamp)
+		if index == len(timestamps):
+			record = target.get("y_data", None)[-1]
+		else:
+			record = target.get("y_data", None)[index]
+		return record, index
 	def get_record_slice(self,
 			start = None,
 			end = None,
 			name: str = None,
 			is_gage: bool = False,) -> list:
 		"""
-		Get a portion of the records in the table and return is as a list of \ref SensorRecord.
-		Both `start` and `end` can be of the following types and combined arbitrarily:
-		- `int`: Index of the record according to Python indexing logic.
-		- `datetime.datetime`: The record closest to the given `datetime.datetime` is chosen.
-		
+		Get a portion of the records in the table and return it as a list of \ref SensorRecord.
 		\param start The first record to be included.
-			Defaults to `None` (no restriction).
+			Defaults to `None` (no restriction), i.e., the first reading.
 		\param end The first record to not be included anymore.
-			Defaults to `None` (no restriction).
-		
+			Defaults to `None` (no restriction), i.e., the last reading.
 		\copydetails _get_dict()
+		
+		Both `start` and `end` can be of the following types and be combined arbitrarily.
+		- `int`: Index of the record according to Python indexing logic.
+		- `datetime.datetime`: The first record after the given`datetime.datetime`
+			is included for `start` and excluded for `end`.
+		- `datetime.timedelta`: Time duration, in relation to the other parameter.
+			If the parameter is `None`, it defaults to the first/last reading time.
+			This works both for the other parameter being `int` or `datetime.datetime`.
+			If both parameters are `datetime.timedelta`, the data section
+			runs from `start` after the first reading until `end` before the last reading.
+			
+			
+		In the following table, the possible combinations are shown.
+		There, 
+		\f$i\f$ is an index according to the Python indexing logic
+		(the first is \f$0\f$ and the last is \f$-1\f$), 
+		\f$t\f$ is a time stamp (`datetime.datetime`),
+		\f$\Delta t\f$ is a time delta (`datetime.timedelta`),
+		\f$t(i)\f$ is the time stamp of the \f$i\f$th reading, and 
+		\f$i(t)\f$ is index of the reading with the smallest time stamp bigger than \f$t\f$.
+		| `start` | `end` | Start index | End index |
+		|:---|:---|:---|:---|
+		| `None` | `None` | \f$0\f$ | \f$-1\f$ |
+		| `None` | \f$i_e\f$ | \f$0\f$ | \f$i_e\f$ |
+		| `None` | \f$t_e\f$ | \f$0\f$ | \f$i(t_e)\f$ |
+		| `None` | \f$\Delta t_e\f$ | \f$0\f$ | \f$i(t(0) + \Delta t_e)\f$ |
+		| \f$i_s\f$ | `None` | \f$i_s\f$ | \f$-1\f$ |
+		| \f$i_s\f$ | \f$i_e\f$ | \f$i_s\f$ | \f$i_e\f$ |
+		| \f$i_s\f$ | \f$t_e\f$ | \f$i_s\f$ | \f$i(t_e)\f$ |
+		| \f$i_s\f$ | \f$\Delta t_e\f$ | \f$i_s\f$ | \f$i(t(i_s) + \Delta t_e)\f$ |
+		| \f$t_s\f$ | `None` | \f$i(t_s)\f$ | \f$-1\f$ |
+		| \f$t_s\f$ | \f$i_e\f$ | \f$i(t_s)\f$ | \f$i_e\f$ |
+		| \f$t_s\f$ | \f$t_e\f$ | \f$i(t_s)\f$ | \f$i(t_e)\f$ |
+		| \f$t_s\f$ | \f$\Delta t_e\f$ | \f$i(t_s)\f$ | \f$i(t_s + \Delta t_e)\f$ |
+		| \f$\Delta t_s\f$ | `None` | \f$i(t(-1)-\Delta t_s)\f$ | -1 |
+		| \f$\Delta t_s\f$ | \f$i_e\f$ | \f$i(t(i_e)-\Delta t_s)\f$ | \f$i_e\f$ |
+		| \f$\Delta t_s\f$ | \f$t_e\f$ | \f$i(t_e - \Delta t_s)\f$ | \f$i(t_e)\f$ |
+		| \f$\Delta t_s\f$ | \f$\Delta t_e\f$ | \f$i(t(0) + \Delta t_s)\f$ | \f$i(t(-1) - \Delta t_e)\f$ |
 		"""
-		if isinstance(start, datetime.date):
-			tmp_record, start = self.get_record_from_time_stamp(start, name, is_gage)
-		if isinstance(end, datetime.date):
-			tmp_record, end = self.get_record_from_time_stamp(end, name, is_gage)
 		target = self._get_dict(name, is_gage)
 		record_list = target.get("y_data", None)
-		if record_list is not None:
-			return record_list[start:end]
-		else:
+		if record_list is None:
 			requesttype = "gage" if is_gage else "segment"
 			message = "No data found for {} with the name '{}'!"
 			raise RuntimeError(message.format(requesttype, name))
+		# Get the start index
+		if isinstance(start, int):
+			start_index = start
+		elif isinstance(start, datetime.datetime):
+			record_start, start_index = self.get_record_from_time_stamp(
+				start,
+				name,
+				is_gage,
+				position="searchsorted",
+				)
+		elif isinstance(start, datetime.timedelta):
+			if isinstance(end, datetime.datetime):
+				start_tmp = end - start
+			elif isinstance(end, int):
+				start_tmp = self.get_time_stamps(name, is_gage)[end] - start
+			elif isinstance(end, datetime.timedelta):
+				start_tmp = self.get_time_stamps(name, is_gage)[0] + start
+			else:
+				start_tmp = self.get_time_stamps(name, is_gage)[-1] - start
+			record_start, start_index = self.get_record_from_time_stamp(
+				start_tmp,
+				name,
+				is_gage,
+				position="searchsorted",
+				)
+		else:
+			start_index = 0
+		# Get the end index
+		if isinstance(end, int):
+			end_index = end
+		elif isinstance(end, datetime.datetime):
+			record_end, end_index = self.get_record_from_time_stamp(
+				end,
+				name,
+				is_gage,
+				position="searchsorted",
+				)
+		elif isinstance(end, datetime.timedelta):
+			if isinstance(start, datetime.datetime):
+				end_tmp = start + end
+			elif isinstance(start, int):
+				end_tmp = self.get_time_stamps(name, is_gage)[start] + end
+			elif isinstance(start, datetime.timedelta):
+				end_tmp = self.get_time_stamps(name, is_gage)[-1] - end
+			else:
+				end_tmp = self.get_time_stamps(name, is_gage)[0] + end
+			record_end, end_index = self.get_record_from_time_stamp(
+				end_tmp,
+				name,
+				is_gage,
+				position="searchsorted",
+				)
+		else:
+			end_index = len(record_list)
+		return record_list[start_index:end_index]
 	def get_time_series(self,
 			x: float = 0.0,
 			name: str = None,
