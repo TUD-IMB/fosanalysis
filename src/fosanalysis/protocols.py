@@ -342,6 +342,27 @@ class ODiSI6100TSVFile(Protocol):
 			target = self._get_dict(name, is_gage)
 			record_list = target.get("y_data", None)
 		return [record["data"] for record in record_list]
+	def get_data(self,
+			start = None,
+			end = None,
+			name: str = None,
+			is_gage: bool = False,) -> tuple:
+		"""
+		Get the positional data (x-axis), timestamps and strain data for
+		a gage/segment and a time interval.
+		
+		\copydetails get_record_slice()
+		
+		\return Returns a tuple like `(x, timestamps, strain)`.
+		\retval x Array of positional data for the chosen gage/segment.
+		\retval timestamps Array of time stamps for the chosen time interval.
+		\retval strain Array of strain data for the chosen gage/segment and time interval.
+		"""
+		record_slice = self.get_record_slice(start, end, name, is_gage)
+		x = self.get_x_values(name, is_gage)
+		timestamps = np.array(self.get_time_stamps(record_list=record_slice))
+		strain = np.array(self.get_y_table(record_list=record_slice))
+		return x, timestamps, strain
 	def get_time_stamps(self,
 			name: str = None,
 			is_gage: bool = False,
@@ -362,7 +383,9 @@ class ODiSI6100TSVFile(Protocol):
 		"""
 		Get the \ref SensorRecord and its index, which is closest to the given time_stamp.
 		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
+		
 		\copydetails _get_dict()
+		
 		\return Returns a tuple like `(sensor_record, index)` with
 		\retval sensor_record the \ref SensorRecord, which time stamp is closest to the given `time_stamp` and
 		\retval index the corresponding index in of the \ref SensorRecord.
@@ -385,6 +408,7 @@ class ODiSI6100TSVFile(Protocol):
 			Defaults to `None` (no restriction).
 		\param end The first record to not be included anymore.
 			Defaults to `None` (no restriction).
+		
 		\copydetails _get_dict()
 		"""
 		if isinstance(start, datetime.date):
