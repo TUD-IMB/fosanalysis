@@ -21,14 +21,15 @@ def generate_header():
 	return file_contents
 	raise NotImplementedError()
 
-def generate_data(start, end, gage_length):
+def generate_x(start, end, gage_length):
+	return np.round(np.arange(start, end, gage_length), 5)
+
+def generate_data(x_axis, rng, noise_gain):
 	"""
 	Generates the body data.
 	"""
-	x_data = np.arange(start, end, gage_length)
-	y_data = []
-	y_base = np.zeros(x_data.shape)
-	nan_array = np.full(x_data.shape, np.nan)
+	y_base = np.zeros(x_axis.shape)
+	nan_array = np.full(x_axis.shape, np.nan)
 	min_noise_ratio = 0.9
 	max_noise_ratio = 1.0
 	
@@ -48,22 +49,18 @@ def generate_data(start, end, gage_length):
 		(4.80,	500,	.01),
 		]
 	for loc, h, w in peaks:
-		peak = scipy.stats.norm.pdf(x_data, loc, w)
+		peak = scipy.stats.norm.pdf(x_axis, loc, w)
 		y_base =  y_base + peak * h /max(peak)
 	
-	for i in range(5):
-		# Add noise
-		signal_noise = np.random.random(x_data.shape) * (max_noise_ratio - min_noise_ratio) + max_noise_ratio
-		base_noise = np.random.random(x_data.shape) * 100
-		# Round an convert to integers
-		y_record = y_base * signal_noise + base_noise
-		y_record = y_record.astype(np.int32)
-		# Insert NaN at random positions
-		nans_decision = np.random.random(x_data.shape) > 0.1
-		y_record = np.where(nans_decision, y_record, nan_array)
-		y_data.append(y_record)
-	x_data = np.round(x_data, 5)
-	return x_data, y_data
+	# Add noise
+	noise = rng.normal(0, noise_gain, *(x_axis.shape))
+	# Round an convert to integers
+	y_data = y_base + noise
+	y_data = y_data.astype(np.int32)
+	# Insert NaN at random positions
+	nans_decision = np.random.random(x_axis.shape) > 0.1
+	y_data = np.where(nans_decision, y_data, nan_array)
+	return y_data
 
 def main():
 	"""
@@ -72,18 +69,29 @@ def main():
 	file = "data/demofile.tsv"
 	if not os.path.exists(os.path.dirname(file)):
 			os.makedirs(os.path.dirname(file))
-	now = datetime.datetime.now()
+	# Start position in m
 	start = 0.08
+	# End position in m
 	end = 5.07925
+	# Distance between consecutive gages in m
 	gage_length = 1.3 / 1000
+	# Timestamp of the first reading
+	start_time = datetime.datetime.now()
+	# Measurement refresh rate in Hz
 	frequency = 1.5625
+	# Time increment betwwen readings
 	dt = datetime.timedelta(seconds=1/frequency)
-	x_data, y_data = generate_data(start, end, gage_length)
+	# Duration of the measurement
+	duration = datetime.timedelta(seconds=10)
+	# Standard deviation of noise
+	noise_gain = 10
+	# Random number generator for reproducible data
+	rng = np.random.default_rng(seed=0)
 	with open(file, "w", encoding="utf-8") as f:
 		f.write("Test name:	Getting Started" + "\n")
 		f.write("Notes:	" + "\n")
 		f.write("Product:	ODiSI 6102" + "\n")
-		f.write("Date:	{}".format(now.isoformat(sep=" ")) + "\n")
+		f.write("Date:	{}".format(start_time.isoformat(sep=" ")) + "\n")
 		f.write("Timezone: 	UTC+0" + "\n")
 		f.write("File Type:	ODiSI 6xxx Data File" + "\n")
 		f.write("File Version:	7" + "\n")
@@ -109,10 +117,16 @@ def main():
 		f.write("Key name:	" + "\n")
 		f.write("Tare name:	" + "\n")
 		f.write("----------------------------------------" + "\n")
-		print("x-axis", "", "", *x_data, sep="\t", end="\n", file=f)
-		for record in y_data:
-			now = now + dt
-			print("{}".format(now.isoformat(sep=" ")), "measurement", "strain", *record, sep="\t", end="\n", file=f)
+		x_axis = generate_x(start, end, gage_length)
+		print("x-axis", "", "", *x_axis, sep="\t", end="\n", file=f)
+		# Strain data
+		step = 0
+		timestamp = start_time
+		while dt * step <= duration:
+			reading = generate_data(x_axis, rng, noise_gain)
+			timestamp = start_time + dt * step
+			print("{}".format(timestamp.isoformat(sep=" ")), "measurement", "strain", *reading, sep="\t", end="\n", file=f)
+			step += 1
 
 if __name__ == "__main__":
 	main()
