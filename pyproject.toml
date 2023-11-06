@@ -1,9 +1,9 @@
 [project]
 name = "fosanalysis"
 
-version = "0.0"
+version = "0.3"
 
-description = "Analysis framework for calculation of concrete crack width through strain measures by distributed fiber optical sensors"
+description = "A framework to evaluate distributed fiber optic sensor data"
 
 readme = "README.md"
 
@@ -11,7 +11,14 @@ requires-python = ">=3.7"
 
 license = {file = "LICENSE"}
 
-keywords = ["DFOS", "structural health monitoring", "distributed fiber optical sensing"]
+keywords = [
+	"crack monitoring",
+	"distributed fiber",
+	"optical sensing",
+	"DFOS",
+	"structural health monitoring",
+	"automated data assessment",
+	]
 
 authors = [
 	{name = "Bertram Richter", email = "bertram.richter@tu-dresden.de" }
@@ -41,10 +48,11 @@ dependencies = [
 	"scipy",
 ]
 
-[project.urls] # to be decided
+[project.urls]
 "Homepage" = "https://github.com/TUD-IMB/fosanalysis"
 "Bug Reports" = "https://github.com/TUD-IMB/fosanalysis/issues"
 "Source" = "https://github.com/TUD-IMB/fosanalysis"
+"Changelog" = "https://github.com/TUD-IMB/fosanalysis/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]
