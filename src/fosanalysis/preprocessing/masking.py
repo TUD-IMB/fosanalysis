@@ -129,7 +129,7 @@ class GTM(AnomalyMasker):
 		\param to_left \copybrief to_left For more, see \ref to_left.
 		\param activate_reverse_sweep \copybrief activate_reverse_sweep For more, see \ref activate_reverse_sweep.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
 		assert delta_max > 0, "Acceptable maximum strain increment (delta_max) must be greater than zero!"
@@ -319,6 +319,8 @@ class MedianOutlierDetection(AnomalyMasker):
 		\param threshold \copybrief threshold \copydetails threshold
 		\param min_quantile \copybrief min_quantile \copydetails min_quantile
 		\param timespace \copybrief timespace \copydetails timespace
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, *args, **kwargs)
 		assert delta_s is not None or threshold is not None, "Either delta_s or threshold must be set!"
@@ -358,6 +360,7 @@ class MedianOutlierDetection(AnomalyMasker):
 		## sliding window centered at the current pixel.
 		## The height is determined by the median of this sliding window.
 		self.local_height_calc = filtering.SlidingFilter(
+				radius=None,
 				method="nanmedian",
 				timespace="2D")
 	def _run_1d(self,
@@ -366,9 +369,8 @@ class MedianOutlierDetection(AnomalyMasker):
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
 		"""
-		Estimate, which entries are strain reading anomalies, in 1D.
-		\copydetails preprocessing.base.DataCleaner._run_1d()
-		This function returns the `SRA_array` instead of the `z` array.
+		Estimate which entries are strain reading anomalies in 1D.
+		\copydetails AnomalyMasker._run_1d()
 		"""
 		SRA_array = self._outlier_candidates(z, SRA_array)
 		SRA_array = self._verify_candidates_1d(z, SRA_array)
@@ -380,9 +382,8 @@ class MedianOutlierDetection(AnomalyMasker):
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
 		"""
-		Estimate, which entries are strain reading anomalies, in 2D.
-		\copydoc preprocessing.base.DataCleaner._run_2d()
-		This function returns the `SRA_array` instead of the `z` array.
+		Estimate which entries are strain reading anomalies in 2D.
+		\copydetails AnomalyMasker._run_2d()
 		"""
 		SRA_array = self._outlier_candidates(z, SRA_array)
 		SRA_array = self._verify_candidates_2d(z, SRA_array)
@@ -461,9 +462,9 @@ class MedianOutlierDetection(AnomalyMasker):
 	def _get_median_heights(self, z, radius) -> np.array:
 		"""
 		Get the height difference to the local vicinity of all the pixels.
-		The median height is retrieved by \ref filtering.SlidingMedian.
+		The median height is retrieved by \ref filtering.SlidingFilter.
 		The local vicinity is determined by the inradius \f$r\f$ or the
-		quadratic sliding window (see \ref filtering.SlidingMedian.radius).
+		quadratic sliding window (see \ref filtering.SlidingFilter.radius).
 		Then, the absolute difference between the array of the median and
 		and the pixels's values is returned.
 		\param z Array containing strain data.
