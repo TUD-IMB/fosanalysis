@@ -51,11 +51,11 @@ class AnomalyMasker(base.DataCleaner):
 			z[SRA_array] = float("nan")
 		return x, y, z
 	@abstractmethod
-	def _run_1d(self, 
-			x: np.array, 
+	def _run_1d(self,
+			x: np.array,
 			z: np.array,
 			SRA_array: np.array,
-			*args, **kwargs)->tuple:
+			*args, **kwargs) -> tuple:
 		"""
 		Estimate, which entries are strain reading anomalies, in 1D.
 		\copydetails preprocessing.base.DataCleaner._run_1d()
@@ -64,12 +64,12 @@ class AnomalyMasker(base.DataCleaner):
 		"""
 		return x, SRA_array
 	@abstractmethod
-	def _run_2d(self, 
-			x: np.array, 
-			y: np.array, 
+	def _run_2d(self,
+			x: np.array,
+			y: np.array,
 			z: np.array,
 			SRA_array: np.array,
-			*args, **kwargs)->tuple:
+			*args, **kwargs) -> tuple:
 		"""
 		\copydoc preprocessing.base.DataCleaner._run_2d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
@@ -84,7 +84,7 @@ class AnomalyMasker(base.DataCleaner):
 			timespace: str = None,
 			*args, **kwargs) -> tuple:
 		"""
-		Estimate, which entries are strain reading anomalies, in 2D.		
+		Estimate, which entries are strain reading anomalies, in 2D.
 		\copydoc preprocessing.base.DataCleaner._map_2d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
 		This function returns the `SRA_array` instead of the `z` array.
