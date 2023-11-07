@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - New workflow class for preprocessing
     - New module `preprocessing.ensemble` for data consolidation
 - `protocols.ODiSI6100TSVFile.get_data()` for data retrieval
-- `preprocessing.masking.GTM` for converting SRAs to dropouts
+- New SRA detection methods:
+    - `preprocessing.masking.GTM`
+    - `preprocessing.masking.MedianOutlierDetection`
 - `utils.interpolation.scipy_interpolate1d`: interpolation wrapper function around scipy functionality
 - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
 

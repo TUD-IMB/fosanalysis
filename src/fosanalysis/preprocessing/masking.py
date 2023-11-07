@@ -14,6 +14,7 @@ import numpy as np
 
 from fosanalysis.utils import misc
 from . import base
+from . import filtering
 
 class AnomalyMasker(base.DataCleaner):
 	"""
@@ -283,3 +284,233 @@ class GTM(AnomalyMasker):
 		Set \ref timespace to `"1D_space"`!
 		"""
 		raise NotImplementedError("GTM does not support true 2D operation. Please use `timepace='1D-space'` instead.")
+
+class MedianOutlierDetection(AnomalyMasker):
+	"""
+	Class for outlier detection, implementation based on \cite Ismail2010.
+	The outlier detection is a two stage algorithm.
+	The first stage, the detection of outlier candidates is based on the
+	height difference of a pixel to the median height of its surrounding.
+	If this height difference of a pixel exceeds a \ref threshold it is
+	marked as an outlier candidate.
+	The \ref threshold can be estimated from the data, based on the change
+	rate of the cumulated density function of all differences in the data.
+	In the second stage, groups are formed, limited by large differences
+	in-between two pixels, (like a simple edge detection).
+	The threshold for the difference is estimated like in the first stage.
+	The members of the groups are then assigned outlier or normal status.
+	Groups consisting of outlier candidates only are considered outlier.
+	All other groups are considered normal data.
+	Finally, all outliers are converted to `NaN`.
+	"""
+	def __init__(self,
+			max_radius: int,
+			threshold: float = None,
+			delta_s: float = None,
+			n_quantile: int = 50,
+			min_quantile: float = 0.5,
+			timespace: str = "1D-space",
+			*args, **kwargs):
+		"""
+		Construct an instance of the class.
+		\param max_radius \copybrief max_radius \copydetails max_radius
+		\param delta_s \copybrief delta_s \copydetails delta_s
+		\param n_quantile \copybrief n_quantile \copydetails n_quantile
+		\param threshold \copybrief threshold \copydetails threshold
+		\param min_quantile \copybrief min_quantile \copydetails min_quantile
+		\param timespace \copybrief timespace \copydetails timespace
+		"""
+		super().__init__(timespace=timespace, *args, **kwargs)
+		assert delta_s is not None or threshold is not None, "Either delta_s or threshold must be set!"
+		## Maximum reach of the vicintity for relative height comparison.
+		## This is the inradius of the quadratic sliding window, which
+		## will contain at most \f$(r+1)^2\f$ pixels.
+		## The size of the vicinity is determines also the size of the
+		## largest detectable oulier cluster. On the other hand,
+		##  it also determines the smallest preservable feature.
+		self.max_radius = max_radius
+		## Setting for the threshold estimation.
+		## This is minimal slope before the cumulated density function (CDF)
+		## of relative heights is considered to be leveled out enough to
+		## only leave SRAs with higher relative heights.
+		## The meaning is the required increase in value per quantile:
+		## \f[ \Delta S = \frac{\Delta H}{\Delta \mathrm{cdf}(H)} \f]
+		## where \f$\mathrm{cdf}(H)\f$ is given unitless, as the cdf is
+		## normalized to \f$\mathrm{cdf}(\infty) = 1\f$.
+		self.delta_s = delta_s
+		## Granularity for the threshold estimation resampling.
+		## The upper part (see \ref min_quantile) of the cumulated
+		## density function of relative heights is resampled using
+		## this many points.
+		## Defaults to `50`, which is equivalent to percentage accuracy.
+		## Resampling can increase the both performance and reliability.
+		## Deactivate it by setting it to `None`.
+		self.n_quantile = n_quantile
+		## Relative height threshold above which a pixel is flagged as SRA.
+		## If set to `None` (default), it is estimated from the data using \ref delta_s.
+		self.threshold = threshold
+		## The quantile, from which the cumulated density function
+		## of relative heights is kept for threshold estimation.
+		## Defaults to `0.5`, which is the upper half.
+		self.min_quantile = min_quantile
+		## Calculation object to retrieve the height of the local vicinity,
+		## The local vicinity (neighbors) is the content of a quadratic
+		## sliding window centered at the current pixel.
+		## The height is determined by the median of this sliding window.
+		self.local_height_calc = filtering.SlidingFilter(
+				method="nanmedian",
+				timespace="2D")
+	def _run_1d(self,
+			x: np.array,
+			z: np.array,
+			SRA_array: np.array,
+			*args, **kwargs) -> tuple:
+		"""
+		Estimate, which entries are strain reading anomalies, in 1D.
+		\copydetails preprocessing.base.DataCleaner._run_1d()
+		This function returns the `SRA_array` instead of the `z` array.
+		"""
+		SRA_array = self._outlier_candidates(z, SRA_array)
+		SRA_array = self._verify_candidates_1d(z, SRA_array)
+		return x, SRA_array
+	def _run_2d(self, 
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			SRA_array: np.array,
+			*args, **kwargs) -> tuple:
+		"""
+		Estimate, which entries are strain reading anomalies, in 2D.
+		\copydoc preprocessing.base.DataCleaner._run_2d()
+		This function returns the `SRA_array` instead of the `z` array.
+		"""
+		SRA_array = self._outlier_candidates(z, SRA_array)
+		SRA_array = self._verify_candidates_2d(z, SRA_array)
+		return x, y, SRA_array
+	def _outlier_candidates(self, z, SRA_array) -> np.array:
+		"""
+		Detect outlier candidates in the given strain data.
+		This is the first phase according to \cite Ismail2010.
+		For each radius \f$r \in [1, r_{\mathrm{max}}]\f$, the relative
+		height of all pixels is compared to the \ref threshold.
+		\param z Array containing strain data.
+		\param SRA_array Array indicating, outlier condidates.
+		\return Returns an updated `SRA_array`, with outlier candidates.
+		"""
+		for radius in range(1, self.max_radius):
+			height_array = self._get_median_heights(z, radius)
+			threshold = self._get_threshold(height_array)
+			candidate_array = height_array > threshold
+			SRA_array = np.logical_or(SRA_array, candidate_array)
+		return SRA_array
+	def _verify_candidates_1d(self, z, SRA_array) -> np.array:
+		"""
+		This is the second phase of the algorithm according to
+		\cite Ismail2010, adapted for 1D operation.
+		Verify outlier candidates, by building groups, which are bordered
+		by large local height differencences.
+		Three different types of groups types are possible, containting:
+		1. only normal pixels,
+		2. mixed normal pixels and outlier candidates,
+		3. outlier candidates only.
+		
+		Groups of the third type are considered outliers.
+		Outlier candidates in mixed groups are reaccepted as normal data.
+		
+		\param z Array containing strain data.
+		\param SRA_array Array indicating, outlier condidates. 
+		\return Returns an updated `SRA_array` with the identified SRAs.
+		"""
+		height_array = np.abs(misc.nan_diff(z, axis=0))
+		threshold = self._get_threshold(height_array)
+		group_boundaries = np.argwhere(np.greater(height_array, threshold))
+		i_prev = 0
+		for boundary in group_boundaries:
+			i = boundary[0] + 1
+			group = SRA_array[i_prev:i]
+			group[:] = np.all(group)
+			i_prev = i
+		group = SRA_array[i_prev:None]
+		group[:] = np.all(group)
+		return SRA_array
+	def _verify_candidates_2d(self, z, SRA_array) -> np.array:
+		"""
+		This is the second phase of the algorithm according to
+		\cite Ismail2010, adapted for 2D operation.
+		\copydetails _verify_candidates_1d()
+		"""
+		bounds_set_x = {z.shape[1]}
+		bounds_set_y = {z.shape[0]}
+		for axis, length in enumerate(z.shape):
+			height_array = np.abs(misc.nan_diff(z, axis=axis))
+			threshold = self._get_threshold(height_array)
+			group_boundaries = np.argwhere(np.greater(height_array, threshold))
+			bounds_set_x = bounds_set_x.union(set(group_boundaries.T[1]))
+			bounds_set_y = bounds_set_y.union(set(group_boundaries.T[0]))
+		x_prev = 0
+		for x in sorted(bounds_set_x):
+			y_prev = 0
+			x = x + 1
+			for y in sorted(bounds_set_y):
+				y = y + 1
+				group = SRA_array[y_prev:y,x_prev:x]
+				group[:,:] = np.all(group)
+				y_prev = y
+			x_prev = x
+		return SRA_array
+	def _get_median_heights(self, z, radius) -> np.array:
+		"""
+		Get the height difference to the local vicinity of all the pixels.
+		The median height is retrieved by \ref filtering.SlidingMedian.
+		The local vicinity is determined by the inradius \f$r\f$ or the
+		quadratic sliding window (see \ref filtering.SlidingMedian.radius).
+		Then, the absolute difference between the array of the median and
+		and the pixels's values is returned.
+		\param z Array containing strain data.
+		\param radius Inradius of the sliding window.
+		"""
+		x_tmp, y_tmp, median_array = self.local_height_calc.run(
+											x=None,
+											y=None,
+											z=z,
+											radius=radius)
+		return np.abs(z - median_array)
+	def _get_quantiles(self, values: np.array) -> tuple:
+		"""
+		Get quantiles of the the given data (including finite values only).
+		Only quantiles above \ref min_quantile are returned.
+		If \ref n_quantile is `None`, the upper part (> \ref min_quantile)
+		of the sorted values is returned.
+		Else, the upper part is resampled into \ref n_quantile + 1 points.
+		\param values Array, for which to calculate the quantiles.
+		"""
+		if self.n_quantile is not None:
+			cdf = np.linspace(self.min_quantile, 1.0, self.n_quantile + 1)
+			return cdf, np.nanquantile(values, cdf)
+		else:
+			clean = values[np.isfinite(values)]
+			sorted_heights = np.sort(clean, axis=None)
+			length = sorted_heights.shape[0]
+			first_index = np.floor(length*self.min_quantile).astype(int)
+			cdf = np.linspace(1/length, 1, length)
+			return cdf[first_index:None], sorted_heights[first_index:None]
+	def _get_threshold(self, values: np.array) -> float:
+		"""
+		Estimate the anomaly threshold from the data.
+		The threshold \f$t\f$ is set to the point, where the cumulated
+		density function is leveled out. That is, whre the required
+		increase in value per increase in quantile exceeds \ref delta_s.
+		If \ref threshold is set to `None` it is determined from the
+		data and \ref delta_s, else it is simply returned.
+		\param values Array, from which to estimate the threshold.
+		"""
+		if self.threshold is not None:
+			return self.threshold
+		cdf, quantiles = self._get_quantiles(values)
+		change_rate = np.diff(quantiles)/np.diff(cdf)
+		is_over_threshold = np.greater(change_rate, self.delta_s)
+		threshold_index = np.argmax(is_over_threshold)
+		if not np.any(is_over_threshold):
+			threshold_index = -1
+		threshold = quantiles[threshold_index]
+		return threshold
