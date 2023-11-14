@@ -16,7 +16,7 @@ def cropping(x_values: np.array,
 			end_pos: float = None,
 			length: float = None,
 			offset: float = None,
-			) -> tuple:
+			*args, **kwargs) -> tuple:
 	"""
 	Crop a data set \f$x_i,\: y_i\f$ based on locational data \f$x\f$.
 	The process consists of two steps:
@@ -34,6 +34,8 @@ def cropping(x_values: np.array,
 	\param length Length of the data excerpt. If set, it is used to determine the `end_pos`.
 		If both `length` and `end_pos` are provided, `end_pos` takes precedence.
 	\param offset Before cropping, \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$, defaults to `0`.
+	\param *args Additional positional arguments, ignored.
+	\param **kwargs Additional keyword arguments, ignored.
 	\return Returns the cropped lists \f$(x_i,\: y_i)\f$:
 	\retval x_cropped Array, such that \f$x_i:\: x_i \in [s,\: e]\f$.
 	\retval y_cropped Array, such that, \f$y_i:\: x_i \in [s,\: e]\f$.
@@ -96,7 +98,7 @@ class Crop(base.Task):
 			end_pos: float = None,
 			length: float = None,
 			offset: float = None,
-			) -> tuple:
+			*args, **kwargs) -> tuple:
 		"""
 		This is a wrapper around \ref cropping.cropping(), where each
 		parameter defaults to the attribute of the same name.
@@ -112,5 +114,5 @@ class Crop(base.Task):
 										end_pos=end_pos,
 										length=length,
 										offset=offset,
-										)
+										*args, **kwargs)
 		return x_cropped, y_cropped
