@@ -5,6 +5,7 @@ Contains functionality to restrict data to a given area of interest.
 \date 2023
 """
 import copy
+import warnings
 
 import numpy as np
 
@@ -58,6 +59,8 @@ def cropping(x_values: np.array,
 		y_cropped = y_cropped[start_index:end_index]
 	elif y_cropped.ndim == 2:
 		y_cropped = y_cropped[:, start_index:end_index]
+	if 0 in y_cropped.shape or 0 in x_cropped.shape:
+		warnings.warn("Cropping result contains an empty axis (no entries). Recheck cropping parameters.", RuntimeWarning)
 	return x_cropped, y_cropped
 
 class Crop(base.Task):
