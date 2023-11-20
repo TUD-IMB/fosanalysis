@@ -36,11 +36,7 @@ class CrackFinder(utils.base.Task):
 		## | prominence	| 100	|
 		## The main parameter is `prominence`, see also [Wikipedia: Prominence](https://en.wikipedia.org/wiki/Topographic_prominence).
 		## If too many cracks are identified, increase `prominence`, if obvious cracks are missing, reduce `prominence`.
-		self.kwargs = {
-			"height": 100,
-			"prominence": 100,
-			}
-		self.kwargs.update(kwargs)
+		self.kwargs = kwargs if kwargs else {"height": 100,"prominence": 100}
 	def run(self, x, strain) -> cracks.CrackList:
 		"""
 		Identifies the positions of cracks using [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) and returns \ref cracks.CrackList object.
