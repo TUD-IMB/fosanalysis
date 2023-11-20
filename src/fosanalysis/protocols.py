@@ -9,6 +9,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 import copy
 import datetime
+
 import numpy as np
 
 from . import utils
@@ -347,23 +348,41 @@ class ODiSI6100TSVFile(Protocol):
 			start = None,
 			end = None,
 			name: str = None,
-			is_gage: bool = False,) -> tuple:
+			is_gage: bool = False,
+			single: bool = False,
+			) -> tuple:
 		"""
 		Get the positional data (x-axis), timestamps and strain data for
 		a gage/segment and a time interval.
 		
 		\copydetails get_record_slice()
 		
+		\param single Switch, whether a single reading is requested.
+			Defaults to `False`, requesting a range of readings.
+			If set to `True`, only `start` is required, which is expected
+			either an `int` or a `datetime.datetime`.
+			For the datetime, the closest reading is returned.
+			The `strain` will then be a 1D array.
+		
 		\return Returns a tuple like `(x, timestamps, strain)`.
 		\retval x Array of positional data for the chosen gage/segment.
 		\retval timestamps Array of time stamps for the chosen time interval.
 		\retval strain Array of strain data for the chosen gage/segment and time interval.
 		"""
-		record_slice = self.get_record_slice(start, end, name, is_gage)
 		x = self.get_x_values(name, is_gage)
-		timestamps = np.array(self.get_time_stamps(record_list=record_slice))
-		strain = np.array(self.get_y_table(record_list=record_slice))
-		return x, timestamps, strain
+		if single:
+			if isinstance(start, datetime.datetime):
+				record, index = self.get_record_from_time_stamp(start, name, is_gage)
+			elif isinstance(start, int):
+				target = self._get_dict(name, is_gage)
+				record_list = target.get("y_data", None)
+				record = record_list[start]
+			return x, record["timestamp"], record["data"]
+		else:
+			record_slice = self.get_record_slice(start, end, name, is_gage)
+			timestamps = np.array(self.get_time_stamps(record_list=record_slice))
+			strain = np.array(self.get_y_table(record_list=record_slice))
+			return x, timestamps, strain
 	def get_time_stamps(self,
 			name: str = None,
 			is_gage: bool = False,
