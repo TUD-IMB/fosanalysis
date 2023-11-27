@@ -549,7 +549,7 @@ class ODiSI6100TSVFile(Protocol):
 		Get the strain time series for a fixed position.
 		Therefore, the closest x-value to the given position is found and the according strain values are collected.
 		\param x Position, for which the time series should be retrieved.
-			This is used to serach the nearest position in the segment.
+			This is used to search the nearest position in the segment.
 			For time series of gages (`is_gage=True`), this has no influence.
 		\copydetails _get_dict()
 		\return Returns a tuple of `(time_stamps, time_series, x_value)`.
