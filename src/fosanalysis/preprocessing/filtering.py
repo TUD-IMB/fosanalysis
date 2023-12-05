@@ -242,7 +242,7 @@ class Cluster(Filter):
 	The weight indicates the influence on the currently optimized pixel at position \f$x_{k}\f$
 	and drops exponentially with the distance for the current pixel (see \ref _get_weights())
 	\f[
-		w_{i} = \exp\left(-\alpha ||x_{i} - x_{k}|| || ^{2}\right)
+		w_{i} = \exp\left(-\alpha ||x_{i} - x_{k}||^{2}\right)
 	\f]
 	with \f$|| x_{i} - x_{k} ||^{2}\f$ being the squared Euclidian norm.
 	The main parameter for the filter is \f$\alpha\f$, which controls the weight falloff and hence, the filter's scale.
@@ -428,11 +428,11 @@ class Cluster(Filter):
 		"""
 		Calculate the weight falloff parameter \f$\alpha\f$, see \ref alpha.
 		\f[
-			\alpha = \frac{\ln w}{l^2}
+			\alpha = -\frac{\ln w}{l^2}
 		\f]
 		\param weight Target weight \f$w\f$.
 		\param length Target distance \f$l\f$.
 		"""
 		assert weight > 0, "weight and length must be greater than 0!"
 		assert length > 0, "weight and length must be greater than 0!"
-		return np.log(weight)/(np.square(length))
+		return -np.log(weight)/(np.square(length))
