@@ -442,13 +442,14 @@ class MedianOutlierDetection(AnomalyMasker):
 		"""
 		bounds_set_x = {z.shape[1]}
 		bounds_set_y = {z.shape[0]}
-		for axis, length in enumerate(z.shape):
+		boundary_set_list = [set()]*len(z.shape)
+		for axis, boundary_set in enumerate(boundary_set_list):
 			height_array = np.abs(misc.nan_diff(z, axis=axis))
 			threshold = self._get_threshold(height_array)
 			group_boundaries = np.argwhere(np.greater(height_array, threshold))
-			bounds_set_x = bounds_set_x.union(set(group_boundaries.T[1]))
-			bounds_set_y = bounds_set_y.union(set(group_boundaries.T[0]))
+			boundary_set.union(set(group_boundaries.T[axis]))
 		x_prev = 0
+		# \todo generate group boundaries from the given boundary sets
 		for x in sorted(bounds_set_x):
 			y_prev = 0
 			x = x + 1
