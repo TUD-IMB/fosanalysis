@@ -439,28 +439,41 @@ class OSCP(AnomalyMasker):
 	def _verify_candidates_2d(self, z, SRA_array) -> np.array:
 		"""
 		This is the second phase of the algorithm according to
-		\cite Ismail2010, adapted for 2D operation.
+		\cite Ismail_2010_Anoutliercorrection, adapted for 2D operation.
 		\copydetails _verify_candidates_1d()
+		\todo Document
 		"""
-		bounds_set_x = {z.shape[1]}
-		bounds_set_y = {z.shape[0]}
-		boundary_set_list = [set()]*len(z.shape)
-		for axis, boundary_set in enumerate(boundary_set_list):
-			height_array = np.abs(misc.nan_diff(z, axis=axis))
+		group_list = []
+		for fast_axis, length in enumerate(z.shape):
+			slow_axis = fast_axis -1
+			# Get the value increments along the axes
+			height_array = np.abs(misc.nan_diff(z, axis=fast_axis))
 			threshold = self._get_threshold(height_array)
+			# Generate the boundaries
 			group_boundaries = np.argwhere(np.greater(height_array, threshold))
-			boundary_set.union(set(group_boundaries.T[axis]))
-		x_prev = 0
-		# \todo generate group boundaries from the given boundary sets
-		for x in sorted(bounds_set_x):
-			y_prev = 0
-			x = x + 1
-			for y in sorted(bounds_set_y):
-				y = y + 1
-				group = SRA_array[y_prev:y,x_prev:x]
-				group[:,:] = np.all(group)
-				y_prev = y
-			x_prev = x
+			# Preparation of groups row/column wise
+			offset = np.zeros(len(z.shape), dtype=int)
+			offset[fast_axis] += 1
+			group_boundaries = group_boundaries + offset
+			group_boundaries = {tuple(boundary) for boundary in group_boundaries}
+			index = [0]*z.ndim
+			for slow in range(z.shape[slow_axis]):
+				group = set() 
+				index[slow_axis] = slow
+				for fast in range(z.shape[fast_axis]):
+					index[fast_axis] = fast
+					if tuple(index) in group_boundaries:
+						group_list.append(group)
+						group = set()
+					group.add(tuple(index))
+				group_list.append(group)
+		# merge groups together
+		final_groups = self._merge_groups(group_list)
+		for group in final_groups:
+			# np expects a list for every axis, so transposing
+			group_indices = tuple(np.array(list(group)).T)
+			# last step: only set SRA to candidate only groups
+			SRA_array[group_indices] = np.all(SRA_array[group_indices])
 		return SRA_array
 	def _get_median_heights(self, z, radius) -> np.array:
 		"""
@@ -518,3 +531,23 @@ class OSCP(AnomalyMasker):
 			threshold_index = -1
 		threshold = quantiles[threshold_index]
 		return threshold
+	def _merge_groups(self, initial_groups) -> list:
+		"""
+		Merge all groups that have at least one pairwise common entry.
+		Each group is a `set` of `tuple` standing for the strain array indices. 
+		The result is a list of pairwise distinct groups.
+		\todo More documentation
+		"""
+		result = []
+		while(initial_groups):
+			group_1 = initial_groups.pop()
+			merge_required = len(initial_groups) > 0
+			while merge_required:
+				merge_required = False
+				for group_2 in copy.deepcopy(initial_groups):
+					if group_1.intersection(group_2):
+						merge_required = True
+						initial_groups.remove(group_2)
+						group_1.update(group_2)
+			result.append(group_1)
+		return result
