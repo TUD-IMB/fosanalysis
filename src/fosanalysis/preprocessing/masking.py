@@ -285,9 +285,11 @@ class GTM(AnomalyMasker):
 		"""
 		raise NotImplementedError("GTM does not support true 2D operation. Please use `timepace='1D-space'` instead.")
 
-class MedianOutlierDetection(AnomalyMasker):
+class OSCP(AnomalyMasker):
 	"""
-	Class for outlier detection, implementation based on \cite Ismail2010.
+	Class for outlier detection an cancellation based on the outlier
+	specific correction procedure (OSCP) as originally presented in 
+	\cite Ismail_2010_Anoutliercorrection and \cite Ismail_2014_EvaluationOutlierSpecific.
 	The outlier detection is a two stage algorithm.
 	The first stage, the detection of outlier candidates is based on the
 	height difference of a pixel to the median height of its surrounding.
@@ -391,7 +393,7 @@ class MedianOutlierDetection(AnomalyMasker):
 	def _outlier_candidates(self, z, SRA_array) -> np.array:
 		"""
 		Detect outlier candidates in the given strain data.
-		This is the first phase according to \cite Ismail2010.
+		This is the first phase according to \cite Ismail_2010_Anoutliercorrection.
 		For each radius \f$r \in [1, r_{\mathrm{max}}]\f$, the relative
 		height of all pixels is compared to the \ref threshold.
 		\param z Array containing strain data.
@@ -407,7 +409,7 @@ class MedianOutlierDetection(AnomalyMasker):
 	def _verify_candidates_1d(self, z, SRA_array) -> np.array:
 		"""
 		This is the second phase of the algorithm according to
-		\cite Ismail2010, adapted for 1D operation.
+		\cite Ismail_2010_Anoutliercorrection, adapted for 1D operation.
 		Verify outlier candidates, by building groups, which are bordered
 		by large local height differencences.
 		Three different types of groups types are possible, containting:
