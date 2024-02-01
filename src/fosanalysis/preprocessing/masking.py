@@ -410,10 +410,12 @@ class OSCP(AnomalyMasker):
 		"""
 		This is the second phase of the algorithm according to
 		\cite Ismail_2010_Anoutliercorrection, adapted for 1D operation.
-		Verify outlier candidates, by building groups, which are bordered
-		by large local height differencences.
-		Three different types of groups types are possible, containting:
-		1. only normal pixels,
+		Outlier candidates are verified as SRAs, by building groups, which
+		are bordered by large enough increments between neighboring entries.
+		The increment threshold is estimated by \ref _get_threshold().
+		
+		Three different types of groups are possible:
+		1. normal pixels only,
 		2. mixed normal pixels and outlier candidates,
 		3. outlier candidates only.
 		
@@ -441,7 +443,33 @@ class OSCP(AnomalyMasker):
 		This is the second phase of the algorithm according to
 		\cite Ismail_2010_Anoutliercorrection, adapted for 2D operation.
 		\copydetails _verify_candidates_1d()
-		\todo Document
+		
+		Adaptation to a 2D takes some more steps, because the building of
+		the groups is not as straight-forward as in 1D.
+		This is not described in \cite Ismail_2010_Anoutliercorrection
+		and \cite Ismail_2014_EvaluationOutlierSpecific, so a detailed
+		description of the taken approach is provided here.
+		The detection of group boundaries is separated for each direction.
+		Once along the space axis and once along the time axis separately,
+		increments are calculated and the increment threshold is estimated
+		by \ref _get_threshold().
+		The next step (still separated for each direction) is generating
+		groups of indices by iterating over the arrays indices.
+		A new group is started if
+		- the current index is contained in the set of group boundaries
+			(indices of the group's start) or
+		- a new row (or column) is started (that is the end of the array
+			in this direction is reached and the iteration resumes with
+			the first entry of the next line.
+		
+		After all such groups are stored in a single list, the groups of
+		indices are merged using \ref _merge_groups(), until only pairwise
+		distinct groups are left.
+		If a pixel is contained in two groups, those groups are connected
+		and merged into one.
+		This results in non-rectangular shaped groups being built.
+		
+		Finally, only groups containing candidates only are verified as SRA.
 		"""
 		group_list = []
 		for fast_axis, length in enumerate(z.shape):
@@ -533,12 +561,13 @@ class OSCP(AnomalyMasker):
 		return threshold
 	def _merge_groups(self, initial_groups) -> list:
 		"""
-		Merge all groups that have at least one pairwise common entry.
-		Each group is a `set` of `tuple` standing for the strain array indices. 
-		The result is a list of pairwise distinct groups.
-		\todo More documentation
+		Merge all groups in the input that have at least one pairwise common entry.
+		Each group is a `set` of `tuple` standing for the strain array indices.
+		The result is a list of pairwise distinct groups, equivalent to the input.
+		\param initial_groups List of input groups (`set`s of `tuples`s).
 		"""
 		result = []
+		initial_groups = copy.deepcopy(initial_groups)
 		while(initial_groups):
 			group_1 = initial_groups.pop()
 			merge_required = len(initial_groups) > 0
