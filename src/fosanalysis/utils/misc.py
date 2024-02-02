@@ -138,6 +138,17 @@ def next_finite_neighbor(
 		result_index, result = next_finite_neighbor(array=array, index=result_index, to_left=to_left, recurse=recurse-1)
 	return result_index, result
 
+def np_to_python(data):
+	"""
+	Convert the given data a Python built-in type, if it is a `np.scalar`.
+	This function should be used, when type-checking.
+	Iterables are recursively converted into `list`.
+	"""
+	try:
+		return [np_to_python(i) for i in data]
+	except TypeError:
+		return data.item() if isinstance(data, np.generic) else data
+
 def sliding_window(data_array: np.array, radius) -> tuple:
 	"""
 	Generates a sliding window over an array.
@@ -168,8 +179,14 @@ def sliding_window(data_array: np.array, radius) -> tuple:
 	\retval window Sub-array view of the `data_array` centered around `pixel`. 
 	"""
 	data_array = np.array(data_array)
-	if isinstance(radius, int):
+	radius = np_to_python(radius)
+	try:
+		assert len(radius) == data_array.ndim
+		radius = tuple(radius)
+	except TypeError:
 		radius = (radius,)*data_array.ndim
+	except AssertionError:
+		raise ValueError("Shape of radius ({}) for sliding_window() not matching shape of array ({})".format(len(radius), data_array.ndim))
 	iterator = np.nditer(data_array, flags=["multi_index"])
 	for pixel_value in iterator:
 		pixel = iterator.multi_index
