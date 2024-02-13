@@ -1,10 +1,21 @@
 # Ignore list for git
-_*
+# Hidden files
 .*
+
+# Except this file
 !.gitignore
-data
+
+# Files from IDEs
+__pycache__
+
+# Building and packaging
 dist
 *.egg-info
+
+# Generated documentation
 Documentation
+
+# Test files and data storage
+data
 test*
 Test*
