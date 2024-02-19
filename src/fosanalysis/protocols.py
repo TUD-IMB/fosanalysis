@@ -552,10 +552,10 @@ class ODiSI6100TSVFile(Protocol):
 			This is used to search the nearest position in the segment.
 			For time series of gages (`is_gage=True`), this has no influence.
 		\copydetails _get_dict()
-		\return Returns a tuple of `(time_stamps, time_series, x_value)`.
+		\return Returns a tuple of `(x_value, time_stamps, time_series)`.
+		\retval x_value The accurate position, that was found.
 		\retval time_stamps List of time stamps.
 		\retval time_series List of strain values for at the position of `x_value`.
-		\retval x_value The accurate position, that was found.
 		"""
 		time_stamps = self.get_time_stamps(name, is_gage)
 		x_values = self.get_x_values(name, is_gage)
@@ -569,7 +569,7 @@ class ODiSI6100TSVFile(Protocol):
 		else:
 			index, x_value = utils.misc.find_closest_value(x_values, x)
 			time_series = np.array([data[index] for data in y_data])
-		return time_stamps, time_series, x_value
+		return x_value, time_stamps, time_series
 	def get_metadata(self,
 			name: str = None,
 			is_gage: bool = False) -> dict:

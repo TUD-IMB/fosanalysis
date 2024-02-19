@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filter and Repair objects now require both x-data and y-data
 - Renamed `fosutils.find_next_neighbor()` &rarr; `fosutils.next_finite_neighbor()`
 - Generalized the functionality and versatility of `preprocessing.filtering.SlidingFilter`, making `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian` obsolete
+- `protocols.ODiSI6100TSVFile.get_time_series`: Change return order form `(time_stamps, time_series, x_value)` to `(x_value, time_stamps, time_series)` for consistency with other data retrival methods
 
 ### Removed
 
