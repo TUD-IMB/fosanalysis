@@ -582,11 +582,15 @@ class OSCP(AnomalyMasker):
 
 class ZscoreOutlierDetection(AnomalyMasker):
 	"""
-	Class for outlier detection by three different kinds of z-score
+	Class for outlier detection by different kinds of z-score.
+	After calculating the z-score by the given method, 
+	it identifies SRAs by comparing the strain increments to a \ref threshold.
 	The algorithms only make sense for sufficient measuring values (not NaN). 
-	If a specific number of NaN values exceeded, the peakseparation should be skipped.
+	If a specific number of NaN values exceeded, 
+	the peakseparation should be skipped.
 
-	nach Whitaker & Hayes
+	The Whitaker & Hayes algorithm presented in \WHITAKER201882.
+	An overview of all z-score calculations can be found under
 	https://towardsdatascience.com/removing-spikes-from-raman-spectra-8a9fdda0ac22
 	"""
 	def __init__(self, 
@@ -597,14 +601,20 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			*args, **kwargs):
 		"""
 		Construct an instance of the class.
-		\param threshold \copybrief threshold \copydetails threshold
-		\param method \copybrief method \copydetails method				
-		\param timespace \copybrief timespace \copydetails timespace
+		\param threshold \copybrief threshold \copydetails threshold.
+		\param method \copybrief method \copydetails method.		
+		\param timespace \copybrief timespace \copydetails timespace.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, *args, **kwargs)
-		## define one of the different Z-score methods: simple, modified, sliding_modified or WH (Whitaker Hayes)
+		## Defines the used z-score method.
+		## Available methods are: 
+		## - `simple`: remove spikes using mean and standard deviation of strain data.
+		## - `modified`: uses the median and median absolute deviation (MAD).
+		## - `sliding_modified`: uses the median and MAD of a sliding window around the value.
+		## - `WH`: Whitaker & Hayes use the modified algorithm 
+		##			with difference between values x(i)-x(i-1).
 		self.method = method
 		## Relative height threshold above which a pixel is flagged as SRA.
 		## Default is 3.5
@@ -623,19 +633,16 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		if self.method == "simple":
 			z_score = self._get_z_score(z)
-			SRA_array = self._get_outlier_mask(z_score)
 		elif self.method == "modified":
 			z_score = self._get_modified_z_score(z)
-			SRA_array = self._get_outlier_mask(z_score)
 		elif self.method == "sliding_modified":
 			z_score = self._get_sliding_z_score(z)
-			SRA_array = self._get_outlier_mask(z_score)
 		elif self.method == "WH":
 			delta_s = self._get_delta_strain(z)
 			z_score = self._get_modified_z_score(delta_s)
-			SRA_array = self._get_outlier_mask(z_score)
 		else:
 			raise ValueError("No valid method")
+		SRA_array = self._get_outlier_mask(z_score)
 		return x, SRA_array
 	def _run_2d(self, 
 			x: np.array,
@@ -649,26 +656,23 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		if self.method == "simple":
 			z_score = self._get_z_score(z, axis=0)
-			SRA_array = self._get_outlier_mask(z_score)
 		elif self.method == "modified":
 			z_score = self._get_modified_z_score(z, axis=0)
-			SRA_array = self._get_outlier_mask(z_score)
 		elif self.method == "sliding_modified":
 			z_score = self._get_sliding_z_score(z, axis=0)
-			SRA_array = self._get_outlier_mask(z_score)
 		elif self.method == "WH":
 			delta_s = self._get_delta_strain(z, axis=0)
 			z_score = self._get_modified_z_score(delta_s, axis=0)
-			SRA_array = self._get_outlier_mask(z_score)
 		else:
 			raise ValueError("No valid 2d method")
+		SRA_array = self._get_outlier_mask(z_score)
 		return x, y, SRA_array
 	def _get_z_score(self, z, axis=None):
 		"""
-		Calculates the z-score of the given strain array.
+		Calculates the z-score of the given strain array with mean and standard deviation.
 		\param z Array containing strain data.
-		\param axis - 1 calculates mean and std above sensor length - 0 calculates mean and std above time
-		\return Returns a z-score array
+		\param axis 1 = z-score above sensor length, 0 = z-score above time, None = 1D.
+		\return Returns a z-score array.
 		"""
 		mean = np.nanmean(z, axis)
 		stdev = np.nanstd(z, axis)
@@ -677,48 +681,55 @@ class ZscoreOutlierDetection(AnomalyMasker):
 	def _get_modified_z_score(self, z, axis=None):
 		"""
 		Calculates the modified z-score of the given strain array.
+		It uses the median and median absolute deviation.
+		The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
 		\param z Array containing strain data.
-		\param axis - 1 calculates median above sensor length - 0 calculates median above time - None defines a 1dim array
-		\return Returns an array modified z-score
+		\param axis 1 = z-score above sensor length, 0 = z-score above time, None = 1D.
+		\return Returns an array modified z-score.
 		"""
-		median_absolute_deviation = np.nanmedian(np.abs(z - np.nanmedian(z, axis)))
-		z_score=0.6745 * ((z - np.nanmedian(z, axis)) / median_absolute_deviation)
+		mad_array = np.nanmedian(np.abs(z - np.nanmedian(z, axis)))
+		z_score = 0.6745 * ((z - np.nanmedian(z, axis)) / mad_array)
 		return z_score
 	def _get_sliding_z_score(self, z, axis=None):
 		"""
-		Calculates the modified z-score only for current vicinity, defined by radius
+		Calculates the modified z-score only for current vicinity, defined by radius.
+		It uses the median and median absolute deviation (MAD) of the defined window.
+		The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
 		\param z Array containing strain data.
-		\param axis - 1 calculates median above sensor length - 0 calculates median above time - None defines a 1dim array
-		\return Returns an array modified z-score
+		\param axis 1 = z-score above sensor length, 0 = z-score above time, None = 1D.
+		\return Returns an array modified z-score.
 		"""
-		median_array, median_absolute_deviation = self._get_medians_by_window(z, self.radius, axis)
-		z_score = 0.6745 * ((z - median_array) / median_absolute_deviation)
+		median_array, mad_array = self._get_medians_by_window(z, self.radius, axis)
+		z_score = 0.6745 * ((z - median_array) / mad_array)
 		return z_score
 	def _get_outlier_mask(self, z_score):
 		"""
-		Returns a True/False array (mask) which specifies z-scores greater than threshold
-		\param Array containing the z-score values
-		\return Boolean array with values as outlier mask
+		Returns a True/False array (mask) which specifies z-scores greater than threshold.
+		\param Array containing the z-score values.
+		\return Boolean array with values as outlier mask.
 		"""
 		mask = np.array(np.abs(z_score) > self.threshold)
 		return mask
 	def _get_delta_strain(self, z, axis=None):
 		"""
-		Calculates the difference between the current strain and the following strain of the given strain array.
+		Calculates the difference between the current strain 
+		and the following strain of the given strain array.
 		\param z Array containing strain data.
-		\param axis - 1 calculates delta strain above sensor length - 0 calculates delta strain above time
-		\return Returns an array delta strain
+		\param axis 1 = z-score above sensor length, 0 = z-score above time, None = 1D.
+		\return Returns an array delta strain.
 		"""
 		if (axis is None):
-			delta_s = misc.nan_diff_1d(z, to_begin=z[0])
+			delta_s = misc.nan_diff_1d(z)
+			delta_s = np.insert(delta_s, 0, np.nan)
 		else:
 			delta_s = misc.nan_diff(z, axis=axis)
 		return delta_s
 	def _get_outliers_delta_both(self, z):
 		"""
-		Calculates the difference between the current strain and the previous and following strain separate.
+		Calculates the difference between the current strain 
+		and the previous and following strain separate.
 		\param z-Array containing strain data.
-		\return Boolean array with values as outlier mask for both directions.
+		\return Boolean arrays with modified z-scores for both directions(left, right).
 		"""
 		modified_z_score_left = self._get_modified_z_score_delta_1d(z, True)
 		modified_z_score_right = self._get_modified_z_score_delta_1d(z, False)
@@ -730,8 +741,8 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		Calculates the modified z-score of the given strain array for one direction.
 		\param z Array containing strain data.
-		\param is_left True = z_score delta for left side - False = z_score delta for right side
-		\return Returns an array modified z-score for one direction
+		\param is_left True = z_score delta for left side, False = for right side.
+		\return Returns an array modified z-score for one direction.
 		"""
 		delta_strain = self._calculate_weighted_delta_strain_1d(z, is_left)
 		modified_zscore_delta = self._get_modified_z_score(delta_strain)
@@ -740,8 +751,8 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		Calculates the delta strain in one direction (left or right)
 		\param z Array containing strain data.
-		\param is_left True = delta strain for left side - False = delta strain for right side
-		\return Returns an array with delta strain for one direction
+		\param is_left True = z_score delta for left side, False = for right side.
+		\return Returns an array with delta strain for one direction.
 		"""
 		delta_strain = []
 		len_z = len(z)
@@ -769,33 +780,33 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		return delta_strain
 	def _get_medians_by_window(self, z, radius, axis = None):
 		"""
-		Get the height difference to the local vicinity of all the pixels.
-		The median height is retrieved by \ref filtering.SlidingFilter.
-		The local vicinity is determined by the inradius \f$r\f$ or the
-		quadratic sliding window (see \ref filtering.SlidingFilter.radius).
+		Get the difference to the local vicinity of all the pixels.
+		The local vicinity is determined by the radius.
 		Then, the absolute difference between the array of the median and
 		and the pixels's values is returned.
 		\param z Array containing strain data.
 		\param radius Inradius of the sliding window.
+		\param axis 1 = z-score above sensor length, 0 = z-score above time, None = 1D.
+		\return Returns arrays with median and absolute deviation median of vicinity.
 		"""
 		median = np.zeros_like(z)
-		median_absolute_deviation = np.zeros_like(z)
+		mad_array = np.zeros_like(z)
 		
 		if radius == 0:
 			median = np.nanmedian(z, axis)
-			median_absolute_deviation = np.nanmedian(np.abs(z-np.nanmedian(z, axis)))
+			mad_array = np.nanmedian(np.abs(z - np.nanmedian(z, axis)))
 		else:
 			for index, window in misc.sliding_window(z, radius):
 				curr_median = np.nanmedian(window, axis)
-				median_absolute_deviation[index] = self._get_absolute_deviation(value, window, curr_median)
+				mad_array[index] = self._get_absolute_deviation(window, curr_median)
 				median[index] = curr_median
-		return median, median_absolute_deviation
+		return median, mad_array
 	def _get_absolute_deviation(self, window, window_median) -> float:
 		"""
-		Get the absolute deviation median of the current vicinity
-		\param window - Current vicinity with values
-		\param window_median - Median of the current vicinity
-		\return - Median of absolute deviation
+		Get the absolute deviation median of the current vicinity.
+		\param window Current vicinity with values.
+		\param window_median Median of the current vicinity.
+		\return Returns median of absolute deviation.
 		"""
 		median = np.zeros_like(window)
 		for index, value in enumerate(window):
