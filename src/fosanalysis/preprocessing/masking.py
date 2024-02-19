@@ -583,7 +583,7 @@ class OSCP(AnomalyMasker):
 class ZscoreOutlierDetection(AnomalyMasker):
 	"""
 	Class for outlier detection by different kinds of z-scores.
-	After calculating the z-score by the given method, SRAs are identified.
+	After calculating the z-score by the given \ref method, SRAs are identified
 	by comparing the strain increments to a \ref threshold.
 	The algorithms only make sense for sufficient measuring values (not NaN).
 	
@@ -670,7 +670,10 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		Calculates the z-score of the given strain array with mean and standard deviation.
 		\param z Array containing strain data.
-		\param axis 1 = z-score along sensor length, 0 = z-score along time, None = 1D.
+		\param axis Axis along which the z-score should be calculated:
+			. `1`: along sensor length,
+			- `0`: along time,
+			- `None`: 1D.
 		\return Returns a z-score array.
 		"""
 		mean = np.nanmean(z, axis)
@@ -683,7 +686,10 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		It uses the median and median absolute deviation.
 		The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
 		\param z Array containing strain data.
-		\param axis 1 = z-score along sensor length, 0 = z-score along time, None = 1D.
+		\param axis Axis along which the z-score should be calculated:
+			. `1`: along sensor length,
+			- `0`: along time,
+			- `None`: 1D.
 		\return Returns an array modified z-score.
 		"""
 		mad_array = np.nanmedian(np.abs(z - np.nanmedian(z, axis)))
@@ -695,7 +701,10 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		It uses the median and median absolute deviation (MAD) of the defined window.
 		The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
 		\param z Array containing strain data.
-		\param axis 1 = z-score along sensor length, 0 = z-score along time, None = 1D.
+		\param axis Axis along which the z-score should be calculated:
+			. `1`: along sensor length,
+			- `0`: along time,
+			- `None`: 1D.
 		\return Returns an array modified z-score.
 		"""
 		median_array, mad_array = self._get_medians_by_window(z, self.radius, axis)
@@ -703,7 +712,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		return z_score
 	def _get_outlier_mask(self, z_score):
 		"""
-		Returns a True/False array (mask) which specifies z-scores greater than threshold.
+		Mask entries as SRA, whose z-scores exceed \ref threshold.
 		\param z_score Array containing the z-score values.
 		\return Boolean array with values as outlier mask.
 		"""
@@ -714,7 +723,10 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		Calculates the difference between the current strain 
 		and the following strain of the given strain array.
 		\param z Array containing strain data.
-		\param axis 1 = z-score above sensor length, 0 = z-score above time, None = 1D.
+		\param axis Axis along which the z-score should be calculated:
+			. `1`: along sensor length,
+			- `0`: along time,
+			- `None`: 1D.
 		\return Returns an array delta strain.
 		"""
 		if (axis is None):
@@ -740,7 +752,9 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		Calculates the modified z-score of the given strain array for one direction.
 		\param z Array containing strain data.
-		\param is_left True = z_score delta for left side, False = for right side.
+		\param is_left Switch for the direction of the z_score calculation:
+			- `True`: left hand side strain increment
+			- `False` right hand side strain increment.
 		\return Returns an array modified z-score for one direction.
 		"""
 		delta_strain = self._calculate_weighted_delta_strain_1d(z, is_left)
@@ -750,7 +764,9 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		"""
 		Calculates the delta strain in one direction (left or right)
 		\param z Array containing strain data.
-		\param is_left True = z_score delta for left side, False = for right side.
+		\param is_left Switch for the direction of the z_score calculation:
+			- `True`: left hand side strain increment
+			- `False` right hand side strain increment.
 		\return Returns an array with delta strain for one direction.
 		"""
 		delta_strain = []
@@ -785,7 +801,10 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		and the pixels's values is returned.
 		\param z Array containing strain data.
 		\param radius Inradius of the sliding window.
-		\param axis 1 = z-score along sensor length, 0 = z-score along time, None = 1D.
+		\param axis Axis along which the z-score should be calculated:
+			. `1`: along sensor length,
+			- `0`: along time,
+			- `None`: 1D.
 		\return Returns arrays with median and absolute deviation median of vicinity.
 		"""
 		median = np.zeros_like(z)
