@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Introduced new workflow for preprocessing:
     - New workflow class for preprocessing
-    - New module `preprocessing.ensemble` for data consolidation
+    - New module `preprocessing.ensemble` for data consolidation (time average or time median)
 - `protocols.ODiSI6100TSVFile.get_data()` for data retrieval
 - New SRA detection methods:
     - `preprocessing.masking.GTM`
-    - `preprocessing.masking.MedianOutlierDetection`
+    - `preprocessing.masking.OSCP`
+    - `preprocessing.masking.ZscoreOutlierDetection`
 - `utils.interpolation.scipy_interpolate1d`: interpolation wrapper function around scipy functionality
 - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
 
@@ -30,9 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `preprocessing.strip_smooth_crop()`
-- `protocols.ODiSI6100TSVFile.get_mean_over_y_record()` was split into two functions:
-	Firstly, `protocols.ODiSI6100TSVFile.get_data()` for easy data selection.
-	The consolidation is now done by a `preprocessing.ensemble` object.
+- `protocols.ODiSI6100TSVFile.get_mean_over_y_record()`, the two components of the function got separated:
+	Firstly, use `protocols.ODiSI6100TSVFile.get_data()` for easy data selection.
+	Secondly, the consolidation is now done by a `preprocessing.ensemble` object.
 - Preprocessing functionalities and clean up some unused attributes from `strainprofile.StrainProfile`
 - `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
 
