@@ -745,15 +745,15 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			if (is_left and i == 0) or (not is_left and i == len_z-1):
 				delta = np.nan
 			else:
-				if np.isnan(value) == True:
+				if np.isnan(value):
 					delta = np.nan
 				else:
 					pos = (i-1) if is_left else (i+1)
-					if np.isnan(z[pos]) == True:
+					if np.isnan(z[pos]):
 						k = pos
 						n = 0
 						try:
-							while np.isnan(z[k]) == True:
+							while np.isnan(z[k]):
 								k = (k - 1) if is_left else (k + 1)
 								n = n + 1
 							delta = (value - z[k]) / (n + 1)
