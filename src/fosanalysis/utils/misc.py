@@ -140,9 +140,11 @@ def next_finite_neighbor(
 
 def np_to_python(data):
 	"""
-	Convert the given data a Python built-in type, if it is a `np.scalar`.
+	Convert the given data to a Python built-in type.
 	This function should be used, when type-checking.
-	Iterables are recursively converted into `list`.
+	Iterables are recursively converted into `list` and instances of 
+	`np.scalar` are converted into standard data types using the method
+	[`np.item()`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.item.html).
 	"""
 	try:
 		return [np_to_python(i) for i in data]
