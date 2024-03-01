@@ -5,6 +5,8 @@ Contains class definitions for Crack and CrackList.
 \date 2022
 """
 
+import warnings
+
 import numpy as np
 
 class Crack():
@@ -12,14 +14,14 @@ class Crack():
 	Crack in the concrete.
 	"""
 	def __init__(self,
-						index: int = None,
-						location: float = None,
-						x_l: float = None,
-						x_r: float = None,
-						max_strain: float = None,
-						name: str = None,
-						width: float = None,
-						):
+			index: int = None,
+			location: float = None,
+			x_l: float = None,
+			x_r: float = None,
+			max_strain: float = None,
+			name: str = None,
+			width: float = None,
+			):
 		"""
 		Constructs a Crack object.
 		\param index \copybrief index For more, see \ref index.
@@ -120,22 +122,26 @@ class CrackList(list):
 			- `"lt"`: returns the first crack, for which holds: \f$x_{\mathrm{t,l}} < x \leq x_{\mathrm{t,r}}\f$.
 		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
 		"""
-		crack = None
+		if not self:
+			raise RuntimeWarning("Trying to get a crack from empty CrackList, falling back to `None`.")
+			return None
+		selected_crack = None
 		if method == "nearest":
 			min_dist = float("inf")
-			closest_crack = None
 			for crack in self:
-				dist = abs(x - crack.location)
-				if dist < min_dist:
-					min_dist = dist
-					closest_crack = crack
-			return closest_crack
+				if crack.location is not None:
+					dist = abs(x - crack.location)
+					if crack.dist < min_dist:
+						min_dist = dist
+						selected_crack = crack
 		elif method == "lt":
 			for crack in self:
-				if crack.x_l < x <= crack.x_r:
-					return crack
+				if crack.x_l is not None and crack.x_r is not None and crack.x_l < x <= crack.x_r:
+					selected_crack = crack
+					break
 		else:
-			raise ValueError("No such option '{}' known for `method`.".format(method))
+			raise ValueError("`method` '{}' unknown for getting a crack from CrackList.".format(method))
+		return selected_crack
 	def sort(self):
 		"""
 		Sort the list of cracks.
