@@ -68,29 +68,22 @@ def moving(data_array: np.array,
 	"""
 	# Convert data_array to a NumPy array
 	data_array = np.array(data_array)
-	# Ensure radius is a tuple
-	# Determine orig_index_arrays based on array dimensions and provided indices
+	# Assert, that radius, stepsize and step_size are tuples
 	if isinstance(radius, int):
 		radius = (radius,) * data_array.ndim
-	# do this similar for stepsize and the start pixel (start pixel if not given equal to radius)
 	if isinstance(start_pixel, int):
 		start_pixel = (start_pixel,) * data_array.ndim
 	if isinstance(step_size, int):
 		step_size = (step_size,) * data_array.ndim
 	orig_index_arrays = estimate_indices(data_array.shape, start_pixel, step_size)
-	orig_index_arrays = list(itertools.product(*orig_index_arrays))
-	print("orig_index_arrays=", orig_index_arrays)
-	# Generate combinations of indices
-	orig_index_combinations = orig_index_arrays
-	print("orig_index_combinations=", orig_index_combinations)
-	target_pixels = itertools.product(*(range(len(x)) for x in [orig_index_arrays]))
+	# Generate index combinations for the original pixels
+	orig_index_combinations = list(itertools.product(*orig_index_arrays))
+	# Generate index combinations for the target pixels
+	target_pixels = itertools.product(*(range(len(x)) for x in orig_index_arrays))
 	# Iterate over combinations and yield window information
-	for (window_center_orig, target_pixel) in zip(orig_index_combinations, target_pixels):
-		window_content = data_array[tuple(slice(max(0, i - r), min(s, i + r + 1)) for i, r, s in zip(window_center_orig, radius, data_array.shape))]
-		print("window_center_orig=", window_center_orig)
-		print("Target_pixel=", target_pixel)
-		print("window_content=", window_content)
-		yield window_center_orig, target_pixel, window_content
+	for (orig_pixel, target_pixel) in zip(orig_index_combinations, target_pixels):
+		window_content = data_array[tuple(slice(max(0, i - r), min(s, i + r + 1)) for i, r, s in zip(orig_pixel, radius, data_array.shape))]
+		yield orig_pixel, target_pixel, window_content
 
 def estimate_indices(
 			orig_length: tuple,
