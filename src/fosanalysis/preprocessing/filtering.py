@@ -180,7 +180,7 @@ class SlidingFilter(Filter):
 			return z
 		smooth_data = np.zeros_like(z)
 		# Smooth the middle
-		for pixel, window in utils.misc.sliding_window(z, radius):
+		for pixel, window in utils.windows.sliding(z, radius):
 			smooth_data[pixel] = self._operation(window)
 		return smooth_data
 	@abstractmethod
