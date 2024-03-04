@@ -31,7 +31,7 @@ class Downsampler:
 		"""
 		## aggregator from see \ref aggregate.Aggregate
 		self.aggregator = aggregator
-		## moving from see \ref windows.moving
+		## moving from see \ref utils.windows.moving
 		self.moving = moving
 		## radius of distance window from index value
 		self.radius = radius
