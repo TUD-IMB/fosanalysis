@@ -619,7 +619,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		## Relative height threshold above which a pixel is flagged as
 		## SRA, defaults to `3.5`.
 		self.threshold = threshold
-		## Inradius of the sliding window, defaults to `5`.
+		## Inradius of the sliding window, defaults to `0`.
 		self.radius = radius
 	def _run_1d(self,
 			x: np.array,
@@ -780,7 +780,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			median = np.nanmedian(z)
 			mad_array = np.nanmedian(np.abs(z - np.nanmedian(z)))
 		else:
-			for index, window in misc.sliding_window(z, radius):
+			for index, window in misc.windows.sliding(z, radius):
 				curr_median = np.nanmedian(window)
 				mad_array[index] = self._get_absolute_deviation(window, curr_median)
 				median[index] = curr_median

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `preprocessing.masking.ZscoreOutlierDetection`
 - `utils.interpolation.scipy_interpolate1d`: interpolation wrapper function around scipy functionality
 - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
+    - Introduced new `resizing` sub-package:
+        - New module `downsampling`
+        - New module `resampling` (functionality yet to implement)
+        - Move module `aggregate` into `resizing`
 
 ### Changed
 
