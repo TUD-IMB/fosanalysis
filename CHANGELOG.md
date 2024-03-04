@@ -19,10 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `preprocessing.masking.ZscoreOutlierDetection`
 - `utils.interpolation.scipy_interpolate1d`: interpolation wrapper function around scipy functionality
 - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
-    - Introduced new `resizing` sub-package:
-        - New module `downsampling`
-        - New module `resampling` (functionality yet to implement)
-        - Move module `aggregate` into `resizing`
+    - Introduced new `preprocessing.resizing` module for changing data shape:
+        - `downsampling`
+        - `resampling` (functionality yet to implement)
+        - move `aggregate` into `resizing`
 
 ### Changed
 
@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `fosutils.find_next_neighbor()` &rarr; `fosutils.next_finite_neighbor()`
 - Generalized the functionality and versatility of `preprocessing.filtering.SlidingFilter`, making `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian` obsolete
 - `protocols.ODiSI6100TSVFile.get_time_series`: Change return order form `(time_stamps, time_series, x_value)` to `(x_value, time_stamps, time_series)` for consistency with other data retrival methods
+- Move `aggregate.Aggregate` to `resizing.Aggregate`
 
 ### Removed
 

@@ -76,6 +76,9 @@ def moving(data_array: np.array,
 	"""
 	# Convert data_array to a NumPy array
 	data_array = np.array(data_array)
+	radius = misc.np_to_python(radius)
+	start_pixel = misc.np_to_python(start_pixel)
+	step_size = misc.np_to_python(step_size)
 	# Assert, that radius, stepsize and step_size are tuples
 	if isinstance(radius, int):
 		radius = (radius,) * data_array.ndim
