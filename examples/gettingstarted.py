@@ -32,7 +32,7 @@ maskingobject = fa.preprocessing.masking.GTM(delta_max=400,
 								)
 
 # Combine multiple readings of data into a 1D array.
-aggregateobject = fa.preprocessing.aggregate.Median()
+aggregateobject = fa.preprocessing.resizing.aggregate.Aggregate(method="nanmedian")
 
 # Fix missing data by replacing it with plausible data or remove NaN readings.
 repairobject = fa.preprocessing.repair.NaNFilter()

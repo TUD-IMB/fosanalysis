@@ -87,6 +87,6 @@ class Downsampler:
 		new_strain_data = np.zeros_like(orig_index_list, dtype=float)
 		# Iterate through windows and apply downsampling
 		for orig_pixel, target_pixel, window_content in self.moving(strain_data, radius, start_pixel, step_size):
-			downsampled_strain = self.aggregator.run(window_content)
+			downsampled_strain = self.aggregator.reduce(window_content, axis=None)
 			new_strain_data[target_pixel] = downsampled_strain
 		return target_x, target_time, new_strain_data
