@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Introduced new workflow for preprocessing:
-    - New worflow class for preprocessing
-    - New module `preprocessing.ensemble` for data consolidation
+    - New workflow class for preprocessing
+    - Introduced new `resizing` sub-package:
+        - New module `downsampling`
+        - New module `resampling` (functionality yet to implement)
+        - Move module `aggregate` into `resizing`
 
 ### Changed
 
