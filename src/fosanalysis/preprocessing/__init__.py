@@ -20,7 +20,7 @@ from . import base
 from . import filtering
 from . import masking
 from . import repair
-from . import aggregate
+from . import resizing
 
 class Preprocessing(base.Base, utils.base.Workflow):
 	"""
