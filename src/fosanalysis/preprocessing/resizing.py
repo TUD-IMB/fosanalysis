@@ -180,7 +180,7 @@ class Downsampler(base.Base):
 		start_pixel = start_pixel if start_pixel is not None else self.start_pixel
 		step_size = step_size if step_size is not None else self.step_size
 		# Estimate original indices for reduction of x and time arrays
-		moving_params = windows.determine_moving_paramaters(
+		moving_params = windows.determine_moving_parameters(
 							strain_data, radius, start_pixel, step_size
 							)
 		orig_index_lists, radius, start_pixel, step_size = moving_params

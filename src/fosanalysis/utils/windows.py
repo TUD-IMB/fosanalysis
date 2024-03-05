@@ -93,7 +93,7 @@ def moving(data_array: np.array,
 		aggregated result is to be stored.
 	\retval window_content A view of the `data_array`, around the `orig_pixel`.
 	"""
-	moving_params = determine_moving_paramaters(
+	moving_params = determine_moving_parameters(
 							data_array, radius, start_pixel, step_size
 							)
 	orig_index_lists, radius, start_pixel, step_size = moving_params
@@ -106,7 +106,7 @@ def moving(data_array: np.array,
 		window_content = data_array[tuple(slice(max(0, i - r), min(s, i + r + 1)) for i, r, s in zip(orig_pixel, radius, data_array.shape))]
 		yield orig_pixel, target_pixel, window_content
 
-def determine_moving_paramaters(
+def determine_moving_parameters(
 		data_array: np.array,
 		radius: tuple,
 		start_pixel: tuple = None,
