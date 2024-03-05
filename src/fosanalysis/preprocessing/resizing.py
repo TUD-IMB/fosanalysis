@@ -1,9 +1,9 @@
 
 """
 Contains functionality for resizing data:
-- \ref Aggregate: Reduce 2D to 1D (or 0D)
-- \ref Downsampling: Combining several readings into one using aggregate functions,
-- \ref Resampling: changing spatial or temporal spacing of data using interpolation.
+- Reduce 2D to 1D (or 0D): \ref Aggregate.
+- Combining several readings into one using aggregate functions: \ref Downsampler.
+- Changing spatial or temporal spacing of data using interpolation: \ref Resampler.
 
 \author Bertram Richter
 \date 2024
@@ -125,17 +125,31 @@ class Downsampler(base.Base):
 		Initialize the down sampler.
 		This method can be extended for any necessary initialization logic.
 		\param aggregator An instance of `Aggregate` used for aggregation.
-		\param radius The spatial and temporal radius for downsampling.
-		\param start_pixel The initial spatial index for downsampling.
-		\param step_size The step size for downsampling.
+		\param radius \copydoc radius
+		\param start_pixel \copydoc start_pixel
+		\param step_size \copydoc step_size
 		"""
 		## Aggregator from see \ref Aggregate
 		self.aggregator = aggregator
-		## radius of distance window from index value
+		## Inradius of the window's rectangle.
+		## If `radius` is an `int`, all axes will use this radius and the
+		## window is a square.
+		## For non-square windows, pass a tuple with a radius for each
+		## dimension of `data_array`.
+		## Along an axis, the window has a width of \f$2r + 1\f$ for each
+		## element \f$r\f$ of `radius`.
 		self.radius = radius
-		## start_pixel for `indices`
+		## Index of the first window's central pixel.
+		## If `start_pixel` is an `int`, it is used for all dimensions of `data_array`.
+		## To specify a custom starting element, pass a tuple with a step
+		## size for each dimension of `data_array`.
+		## If `None`, it defaults to `radius`, the moving window starts with
+		## a full slice.
 		self.start_pixel = start_pixel
-		## Step size for `indices`
+		## Step size how far the window moves in one step.
+		## If `step_size` is an `int`, it is used for all dimensions of `data_array`.
+		## If `None`, it defaults to \f$2r + 1\f$ for each element \f$r\f$
+		## of `radius`, which is equivalent to a rolling window.
 		self.step_size = step_size
 	def run(self,
 			x_orig: np.array,
@@ -150,9 +164,9 @@ class Downsampler(base.Base):
 		\param x_orig Array of x-axis values.
 		\param time_orig Array of time-axis values.
 		\param strain_data 2D array of strain data.
-		\param radius The spatial and temporal radius for downsampling.
-		\param start_pixel The initial spatial index for downsampling.
-		\param step_size The step size for downsampling.
+		\param radius \copydoc radius
+		\param start_pixel \copydoc start_pixel
+		\param step_size \copydoc step_size
 		\return Tuple containing `(target_x_points, target_time_points, new_strain_data)`.
 		\retval target_x_points The x-axis values after downsampling.
 		\retval target_time_points The time-axis values after downsampling.
@@ -165,27 +179,20 @@ class Downsampler(base.Base):
 		radius = radius if radius is not None else self.radius
 		start_pixel = start_pixel if start_pixel is not None else self.start_pixel
 		step_size = step_size if step_size is not None else self.step_size
-		# Assert, that radius, stepsize and step_size are tuples
-		radius = misc.np_to_python(radius)
-		start_pixel = misc.np_to_python(start_pixel)
-		step_size = misc.np_to_python(step_size)
-		if isinstance(radius, int):
-			radius = (radius,) * strain_data.ndim
-		if isinstance(start_pixel, int):
-			start_pixel = (start_pixel,) * strain_data.ndim
-		if isinstance(step_size, int):
-			step_size = (step_size,) * strain_data.ndim
 		# Estimate original indices for reduction of x and time arrays
-		orig_index_list = windows.estimate_indices(strain_data.shape, start_pixel, step_size)
-		target_x = x_orig[orig_index_list[0]] if x_orig is not None else None
+		moving_params = windows.determine_moving_paramaters(
+							strain_data, radius, start_pixel, step_size
+							)
+		orig_index_lists, radius, start_pixel, step_size = moving_params
+		target_x = x_orig[orig_index_lists[0]] if x_orig is not None else None
 		if strain_data.ndim == 2:
-			target_time = time_orig[orig_index_list[1]] if time_orig is not None else None
+			target_time = time_orig[orig_index_lists[1]] if time_orig is not None else None
 		elif strain_data.ndim == 1:
-			target_time = time_orig[orig_index_list[0]] if time_orig is not None else None
+			target_time = time_orig[orig_index_lists[0]] if time_orig is not None else None
 		else:
 			raise ValueError("Invalid input strain_data.ndim defined")
 		# Initialize an array for downsampled strain data
-		new_strain_data = np.zeros_like(orig_index_list, dtype=float)
+		new_strain_data = np.zeros([len(l) for l in orig_index_lists], dtype=float)
 		# Iterate through windows and apply downsampling
 		for orig_pixel, target_pixel, window_content in windows.moving(strain_data, radius, start_pixel, step_size):
 			downsampled_strain = self.aggregator.reduce(window_content, axis=None)
