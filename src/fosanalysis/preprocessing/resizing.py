@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functionality for resizing data:
 - Reduce 2D to 1D (or 0D): \ref Aggregate.
 - Combining several readings into one using aggregate functions: \ref Downsampler.
@@ -9,13 +9,15 @@ Contains functionality for resizing data:
 \date 2024
 """
 
+import datetime
 import numpy as np
 
 from . import base
 from fosanalysis.utils import windows, misc
+from fosanalysis.utils.interpolation import scipy_interpolate1d
 
 class Aggregate(base.Task):
-	"""
+	r"""
 	Change the dimension of an array using aggregate functions (such as
 	mean, median, min or max).
 	It can be used to reduce 2D to 1D strain data.
@@ -25,7 +27,7 @@ class Aggregate(base.Task):
 			module = np,
 			axis: int = 0,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		\param method A string or callable representing the method.
 		\param module The module (default is numpy).
@@ -43,7 +45,7 @@ class Aggregate(base.Task):
 	def setup(self,
 			method: str or callable,
 			module = np):
-		"""
+		r"""
 		Set the method for data processing.
 		This method allows setting the data processing method, which can
 		be either a string representing a NumPy function or a custom callable function.
@@ -69,7 +71,7 @@ class Aggregate(base.Task):
 			axis: int = None,
 			make_copy: bool = True,
 			*args, **kwargs) -> np.array:
-		"""
+		r"""
 		Reduce a 2D array to a 1D array using aggregate functions.
 		The aggregate function is implemented in \ref reduce().
 		The array of the crushed axis is set to `np.array(None)`.
@@ -102,7 +104,7 @@ class Aggregate(base.Task):
 			data: np.array,
 			axis: int,
 			*args, **kwargs) -> np.array:
-		"""
+		r"""
 		Reduce current 2D array of data to a 1D array.
 		\param data Array of data with functional data according to `data`.
 		\param axis \copybrief axis For more, see \ref axis.
@@ -112,24 +114,33 @@ class Aggregate(base.Task):
 		"""
 		return self.kernel(data, axis=axis, *args, **kwargs)
 
-class Downsampler(base.Task):
-	"""
-	Down sampling of the strain data
+class Downsampler(base.Base):
+	r"""
+	Class for reducing strain data size while keeping the data loss small
+	by combining several values into one value.
+	To achieve this, windows with a specified size (see \ref radius) are
+	placed on the original data in a regular grid of fixed \ref step_size
+	and a fixed \ref start_pixel.
+	Each window is then aggregated to one value, see \ref Aggregate.
+	In contrast to \ref Resampler, the grid is specified by array indices.
 	"""
 	def __init__(self,
 			aggregator: Aggregate,
 			radius: int = None,
 			start_pixel: int = None,
-			step_size: int = None):
-		"""
+			step_size: int = None,
+			*args, **kwargs):
+		r"""
 		Initialize the down sampler.
 		This method can be extended for any necessary initialization logic.
 		\param aggregator An instance of `Aggregate` used for aggregation.
 		\param radius \copydoc radius
 		\param start_pixel \copydoc start_pixel
 		\param step_size \copydoc step_size
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
-		## Aggregator from see \ref Aggregate
+		## Aggregator to use, see \ref Aggregate.
 		self.aggregator = aggregator
 		## Inradius of the window's rectangle.
 		## If `radius` is an `int`, all axes will use this radius and the
@@ -159,7 +170,7 @@ class Downsampler(base.Task):
 			start_pixel: tuple = None,
 			step_size: tuple = None,
 			) -> tuple:
-		"""
+		r"""
 		This method downsamples 2D and 1D Strain data using specified parameters.
 		\param x_orig Array of x-axis values.
 		\param time_orig Array of time-axis values.
@@ -200,7 +211,61 @@ class Downsampler(base.Task):
 		return target_x, target_time, new_strain_data
 
 class Resampler(base.Task):
+	r"""
+	Class for resampling one-dimensional or two-dimensional strain data.
+	In contrast, to \ref Downsampling, the target points are given in
+	the respective dimensions (`datetime.datetime` objects in time; sensor
+	coordinates in space) and irregular spacing along an axis is possible.
 	"""
-	\todo Implement and document
-	"""
-	pass
+	def __init__(self,
+			 target_x: np.array = None,
+			 target_time: np.array = None,
+			 method: str = "interp1d",
+			 method_kwargs: dict = None,
+			 timespace: str = "1D_space",
+			 *args, **kwargs):
+		r"""
+		Construct a Resampler instance.
+		\param target_x \copydoc target_x
+		\param target_time points for resampling.
+		\param method Resampling method (default is "interp1d").
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
+		"""
+		super().__init__(timespace=timespace, *args, **kwargs)
+		## Points in space, where strain values should be resampled.
+		self.target_x = target_x
+		## Points in time, where strain values should be resampled.
+		self.target_time = target_time
+		## Function or a string representing a function name, which will
+		## be passed to \ref fosanalysis.utils.interpolation.scipy_interpolate1d().
+		## Defaults to `"interp1d"`.
+		self.method = method
+		## Additional keyword arguments for the resampling method, will be 
+		## passed to \ref fosanalysis.utils.interpolation.scipy_interpolate1d().
+		self.method_kwargs = method_kwargs if method_kwargs is not None else {}
+	def _run_1d(self,
+			x: np.array,
+			z: np.array,
+			*args, **kwargs) -> tuple:
+		r"""
+		Resamples (by interpolating) one-dimensional data.
+		\param x Array of measuring point positions or time stamps
+		\param z Array of strain data in accordance to `x`.
+		\param *args Additional positional arguments, ignored.
+		\param **kwargs Additional keyword arguments, ignored.
+		\return Returns a tuple like `(target_x, target_z)`.
+		\retval target_x Array of target points (space or time).
+		\retval target_z Array of resampled data.
+		"""
+		if self.target_x is None or self.target_time is None:
+			raise ValueError("Target x and time points must be set before resampling.")
+		if isinstance(x[0], datetime.datetime):
+			x = misc.datetime_to_timestamp(x)
+			target_coord = misc.datetime_to_timestamp(self.target_time)
+			target_x = self.target_time
+		else:
+			target_coord = self.target_x
+			target_x = self.target_x
+		target_z = scipy_interpolate1d(x, z, target_coord, method=self.method, **self.method_kwargs)
+		return target_x, target_z

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
     - Introduced new `preprocessing.resizing` module for changing data shape:
         - `downsampling`
-        - `resampling` (functionality yet to implement)
+        - `resampling`
         - move `aggregate` into `resizing`
 - New functions `utils.misc.datetime_to_timestamp()` and `utils.misc.timestamp_to_datetime()`
 
@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Generalized the functionality and versatility of `preprocessing.filtering.SlidingFilter`, making `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian` obsolete
 - `protocols.ODiSI6100TSVFile.get_time_series`: Change return order form `(time_stamps, time_series, x_value)` to `(x_value, time_stamps, time_series)` for consistency with other data retrival methods
 - Move `aggregate.Aggregate` to `resizing.Aggregate`
+- Rename `preprocessing.base.DataCleaner` &rarr; `preprocessing.base.Task`
 
 ### Removed
 

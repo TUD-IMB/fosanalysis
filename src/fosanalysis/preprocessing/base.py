@@ -157,7 +157,6 @@ class Task(Base):
 		if not y_dim:
 			y = y_tmp
 		return x, y, z
-	@abstractmethod
 	def _run_1d(self,
 			x: np.array,
 			z: np.array,
@@ -181,7 +180,6 @@ class Task(Base):
 			Each of those might be changed.
 		"""
 		raise NotImplementedError()
-	@abstractmethod
 	def _run_2d(self,
 			x: np.array,
 			y: np.array,
