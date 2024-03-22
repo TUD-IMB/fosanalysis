@@ -52,9 +52,9 @@ class Base(utils.base.Task):
 			x, y, z = [copy.deepcopy(data) for data in [x, y, z]]
 		return x, y, z
 
-class DataCleaner(Base):
+class Task(Base):
 	"""
-	Abstract base class for preprocessing classes.
+	Abstract base class for preprocessing task classes.
 	"""
 	def __init__(self,
 			timespace: str = "1D_space",
@@ -133,14 +133,18 @@ class DataCleaner(Base):
 				x_tmp, z = self._run_1d(x_tmp, z, *args, **kwargs)
 		# Decide, whether to use real 2D operation or fake 2D operation
 		elif z.ndim == 2:
-			x_dim = x.ndim == 1 and x.shape[0] == z.shape[1]
-			y_dim = y.ndim == 1 and y.shape[0] == z.shape[0]
+			x_dim = (x.ndim == 1 and x.shape[0] == z.shape[1])
+			y_dim = (y.ndim == 1 and y.shape[0] == z.shape[0])
 			if not x_dim:
 				x_tmp = x
 				x = np.arange(z.shape[1])
+				timespace = "1d_time"
 			if not y_dim:
 				y_tmp = y
 				y = np.arange(z.shape[0])
+				timespace = "1d_space"
+			if not x_dim and not y_dim:
+				raise ValueError("Could not decide the 1D operation mode, as both x and y are None")
 			if timespace.lower() == "2d":
 				x, y, z = self._run_2d(x, y, z, *args, **kwargs)
 			else:
@@ -220,10 +224,17 @@ class DataCleaner(Base):
 			Each of those might be changed.
 		"""
 		timespace = timespace if timespace is not None else self.timespace
+		x_new = x
+		y_new = y
+		z_new = []
 		if timespace.lower() == "1d_space":
 			for row_id, row in enumerate(z):
-				x, z[row_id] = self._run_1d(x, row, *args, **kwargs)
+				x_new, z_row = self._run_1d(x, row, *args, **kwargs)
+				z_new.append(z_row)
+			z_new = np.array(z_new)
 		elif timespace.lower() == "1d_time":
 			for col_id, column in enumerate(z.T):
-				y, z.T[col_id] = self._run_1d(y, column, *args, **kwargs)
-		return x, y, z
+				y_new, z_col = self._run_1d(y, column, *args, **kwargs)
+				z_new.append(z_col)
+			z_new = np.array(z_new).T
+		return x_new, y_new, z_new

@@ -15,7 +15,7 @@ import scipy.interpolate
 from . import base
 from fosanalysis.utils.interpolation import scipy_interpolate1d
 
-class Repair(base.DataCleaner):
+class Repair(base.Task):
 	"""
 	Base class for algorithms to replace/remove missing data with plausible values.
 	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
@@ -138,7 +138,7 @@ class ScipyInterpolation1D(Repair):
 			*args, **kwargs) -> tuple:
 		"""
 		\copydoc ScipyInterpolation1D
-		\copydetails preprocessing.base.DataCleaner.run()
+		\copydetails preprocessing.base.Task.run()
 		\param method \copydoc method
 		\param method_kwargs \copydoc method_kwargs
 		"""

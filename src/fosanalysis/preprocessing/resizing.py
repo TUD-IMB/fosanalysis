@@ -14,7 +14,7 @@ import numpy as np
 from . import base
 from fosanalysis.utils import windows, misc
 
-class Aggregate(base.Base):
+class Aggregate(base.Task):
 	"""
 	Change the dimension of an array using aggregate functions (such as
 	mean, median, min or max).
@@ -112,7 +112,7 @@ class Aggregate(base.Base):
 		"""
 		return self.kernel(data, axis=axis, *args, **kwargs)
 
-class Downsampler(base.Base):
+class Downsampler(base.Task):
 	"""
 	Down sampling of the strain data
 	"""
@@ -199,7 +199,7 @@ class Downsampler(base.Base):
 			new_strain_data[target_pixel] = downsampled_strain
 		return target_x, target_time, new_strain_data
 
-class Resampler(base.Base):
+class Resampler(base.Task):
 	"""
 	\todo Implement and document
 	"""

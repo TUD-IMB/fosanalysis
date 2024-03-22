@@ -15,7 +15,7 @@ import numpy as np
 from fosanalysis import utils
 from . import base
 
-class Filter(base.DataCleaner):
+class Filter(base.Task):
 	"""
 	Abstract base class for filter classes.
 	These filters will modify the values, but not the shape of the arrays.
@@ -63,7 +63,7 @@ class Limit(Filter):
 		Limit the entries in the given list to the specified range.
 		Returns a list, which conforms to \f$\mathrm{minimum} \leq x \leq \mathrm{maximum} \forall x \in X\f$.
 		Entries, which exceed the given range are cropped to it.
-		\copydetails preprocessing.base.DataCleaner.run()
+		\copydetails preprocessing.base.Task.run()
 		\param minimum \copydoc minimum
 		\param maximum \copydoc maximum
 		"""
@@ -170,7 +170,7 @@ class SlidingFilter(Filter):
 		"""
 		The given data is filtered with a sliding window.
 		\copydetails SlidingFilter
-		\copydetails preprocessing.base.DataCleaner.run()
+		\copydetails preprocessing.base.Task.run()
 		\param radius \copydoc radius Defaults to \ref radius.
 		\param method \copydoc method
 		\param method_kwargs \copydoc method_kwargs
@@ -318,7 +318,7 @@ class Cluster(Filter):
 		"""
 		Carry out the filtering on one-dimensional data.
 		
-		\copydetails fosanalysis.preprocessing.base.DataCleaner._run_1d()
+		\copydetails fosanalysis.preprocessing.base.Task._run_1d()
 		"""
 		z_filtered = copy.deepcopy(z)
 		z_zero = copy.deepcopy(z)

@@ -15,7 +15,7 @@ from fosanalysis.utils import misc
 from . import base
 from . import filtering
 
-class AnomalyMasker(base.DataCleaner):
+class AnomalyMasker(base.Task):
 	"""
 	Abstract class for anomaly identification.
 	Strain reading anomalies (SRAs) are implausible data points.
@@ -36,7 +36,7 @@ class AnomalyMasker(base.DataCleaner):
 		\param identify_only If set to true, the array contains boolean
 			values, indicating a SRA by `True` and a valid entry by `False`.
 		
-		\copydetails preprocessing.base.DataCleaner.run()
+		\copydetails preprocessing.base.Task.run()
 		"""
 		SRA_array = np.logical_not(np.isfinite(z))
 		z = copy.deepcopy(z)
@@ -58,7 +58,7 @@ class AnomalyMasker(base.DataCleaner):
 			*args, **kwargs) -> tuple:
 		"""
 		Estimate, which entries are strain reading anomalies, in 1D.
-		\copydetails preprocessing.base.DataCleaner._run_1d()
+		\copydetails preprocessing.base.Task._run_1d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
 		This function returns the `SRA_array` instead of the `z` array.
 		"""
@@ -71,7 +71,7 @@ class AnomalyMasker(base.DataCleaner):
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
 		"""
-		\copydoc preprocessing.base.DataCleaner._run_2d()
+		\copydoc preprocessing.base.Task._run_2d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
 		This function returns the `SRA_array` instead of the `z` array.
 		"""
@@ -85,7 +85,7 @@ class AnomalyMasker(base.DataCleaner):
 			*args, **kwargs) -> tuple:
 		"""
 		Estimate, which entries are strain reading anomalies, in 2D.
-		\copydoc preprocessing.base.DataCleaner._map_2d()
+		\copydoc preprocessing.base.Task._map_2d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
 		This function returns the `SRA_array` instead of the `z` array.
 		"""
