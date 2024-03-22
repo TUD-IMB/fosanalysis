@@ -152,16 +152,16 @@ plt.show()
 ```
 
 The crack width calculation consists of the following steps.
-This workflow is implemented by a \ref fosanalysis.crackmonitoring.strainprofile.StrainProfile object.
+This workflow is implemented by a `fosanalysis.crackmonitoring.strainprofile.StrainProfile` object.
 
-1. Crack identification (see \ref fosanalysis.crackmonitoring.finding.CrackFinder)
-2. Definition of transfer lengths (separating the cracks) (see \ref fosanalysis.crackmonitoring.separation.CrackLengths)
-3. Compensation of tension stiffening (see \ref fosanalysis.compensation.tensionstiffening)
+1. Crack identification (see `fosanalysis.crackmonitoring.finding.CrackFinder`)
+2. Definition of transfer lengths, separating the cracks (see `fosanalysis.crackmonitoring.separation.CrackLengths`)
+3. Compensation of tension stiffening (see `fosanalysis.compensation.tensionstiffening`)
 4. Crack width calculation by means of strain integration
 
 The data is expected to be already cleaned, so we pass the results of the pre-processing.
 
-Since we know, the sensor was embedded in concrete or attached to the surface, we use \ref fosanalysis.crackmonitoring.strainprofile.Concrete.
+Since we know, the sensor was embedded in concrete or attached to the surface, we use `fosanalysis.crackmonitoring.strainprofile.Concrete`.
 It selects some task objects for those steps by default.
 We will skip over it here, but those objects could be configured in a similar way.
 

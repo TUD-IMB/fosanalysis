@@ -213,7 +213,7 @@ class Downsampler(base.Base):
 class Resampler(base.Task):
 	r"""
 	Class for resampling one-dimensional or two-dimensional strain data.
-	In contrast, to \ref Downsampling, the target points are given in
+	In contrast, to \ref Downsampler, the target points are given in
 	the respective dimensions (`datetime.datetime` objects in time; sensor
 	coordinates in space) and irregular spacing along an axis is possible.
 	"""
@@ -227,8 +227,10 @@ class Resampler(base.Task):
 		r"""
 		Construct a Resampler instance.
 		\param target_x \copydoc target_x
-		\param target_time points for resampling.
-		\param method Resampling method (default is "interp1d").
+		\param target_time \copydoc target_time
+		\param method \copydoc method
+		\param method_kwargs \copydoc method_kwargs
+		\param timespace \copydoc timespace
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
