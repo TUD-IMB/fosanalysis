@@ -5,6 +5,7 @@ Contains miscellaneous standalone functions.
 \date 2023
 """
 
+import datetime
 import numpy as np
 
 def find_closest_value(arr: np.array, v: float) -> tuple:
@@ -151,3 +152,18 @@ def np_to_python(data):
 	except TypeError:
 		return data.item() if isinstance(data, np.generic) else data
 
+def datetime_to_timestamp(datetime_array: np.array) -> np.array:
+	"""
+	Converts an array of datetime entries to an array of Unix timestamps.
+	\param datetime_array  Array of datetime objects.
+	\return Returns an array of Unix timestamps.
+	"""
+	return np.vectorize(datetime.datetime.timestamp)(datetime_array)
+
+def timestamp_to_datetime(timestamp_array: np.array) -> np.array:
+	"""
+	Converts an array of Unix timestamps to an array of datetime entries.
+	\param timestamp_array  Array of `float`s, representing Unix timestamps.
+	\return Returns an array of `datetime.datetime` objects.
+	"""
+	return np.vectorize(datetime.datetime.fromtimestamp)(timestamp_array)

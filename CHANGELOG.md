@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - `downsampling`
         - `resampling` (functionality yet to implement)
         - move `aggregate` into `resizing`
+- New functions `utils.misc.datetime_to_timestamp()` and `utils.misc.timestamp_to_datetime()`
 
 ### Changed
 
