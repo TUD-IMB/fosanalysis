@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functionality for integrating discretized funtions.
 \author Bertram Richter
 \date 2023
@@ -11,13 +11,13 @@ import scipy.integrate
 from . import base
 
 class Integrator(base.Task):
-	"""
+	r"""
 	Object to integrate a function \f$y = f(x)\f$ given by discrete argument data \f$x\f$ and associated values \f$y\f$.
 	"""
 	def __init__(self,
 				interpolation: str = "trapezoidal",
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs an Integrator object.
 		\param interpolation \copybrief interpolation For more, see \ref interpolation.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -35,7 +35,7 @@ class Integrator(base.Task):
 			initial: float = 0.0,
 			interpolation: str = None,
 			*args, **kwargs) -> np.array:
-		"""
+		r"""
 		Calculates the antiderivative \f$F(x) = \int f(x) dx + C\f$ to the given function over the given segment (indicated by `start_index` and `end_index`).
 		The given values are assumed to be preprocessed (`NaN`s are stripped already).
 		\param x_values List of x-positions \f$x\f$.
@@ -59,7 +59,7 @@ class Integrator(base.Task):
 			initial: float = 0.0,
 			interpolation: str = None,
 			*args, **kwargs) -> float:
-		"""
+		r"""
 		Calculates integral over the given segment (indicated by `start_index` and `end_index`) \f$F(x)|_{a}^{b} = \int_{a}^{b} f(x) dx + C\f$.
 		The given values are assumed to be preprocessed (`NaN`s are stripped already).
 		\param x_values List of x-positions \f$x\f$.

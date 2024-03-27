@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains the base class for all preprocessing classes.
 
 \author Bertram Richter
@@ -14,13 +14,13 @@ import numpy as np
 from fosanalysis import utils
 
 class Base(utils.base.Task):
-	"""
+	r"""
 	Abstract base class for preprocessing classes.
 	"""
 	@abstractmethod
 	def __init__(self,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		As this is an abstract class, it may not be instantiated directly itself.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -34,7 +34,7 @@ class Base(utils.base.Task):
 			z: np.array = None,
 			make_copy: bool = True,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		
 		\param x Array of measuring point positions.
 		\param y Array of time stamps.
@@ -53,13 +53,13 @@ class Base(utils.base.Task):
 		return x, y, z
 
 class Task(Base):
-	"""
+	r"""
 	Abstract base class for preprocessing task classes.
 	"""
 	def __init__(self,
 			timespace: str = "1D_space",
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		As this is an abstract class, it may not be instantiated directly itself.
 		\param timespace \copybrief timespace For more, see \ref timespace.
@@ -84,7 +84,7 @@ class Task(Base):
 			make_copy: bool = True,
 			timespace: str = None,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Each preprocessing object has a `run()` method.
 		The actual operations are reimplemented in \ref _run_1d() and \ref _run_2d().
 		This method decides based on the argument, how is operated over the data.
@@ -161,7 +161,7 @@ class Task(Base):
 			x: np.array,
 			z: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Reimplementations describe a one-dimensional operation.
 		This operation might be applied to on a 2D array by \ref _map_2d().
 		This function is called, if:
@@ -185,7 +185,7 @@ class Task(Base):
 			y: np.array,
 			z: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Native two-dimensional operation implementation.
 		Needs to be reimplemented by sub-classes.
 		This function is only called, if `z` is 2D and \ref timespace is `"2D"`.
@@ -205,7 +205,7 @@ class Task(Base):
 			z: np.array,
 			timespace: str = None,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Apply the 1D operation along either the space or time timespace.
 		Used for carrying out 1D-only algorithms on a 2D array row- or column-wise. 
 		\param x Array of measuring point positions.

@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functionality to separate cracks and set transfer lengths.
 \author Bertram Richter
 \date 2022
@@ -13,11 +13,11 @@ from fosanalysis import utils
 from . import cracks
 
 class CrackLengths(utils.base.Task):
-	"""
+	r"""
 	Assigns the transfer length to a all \ref cracks.Crack objects in a \ref cracks.CrackList.
 	"""
 	def __init__(self, **methods: dict):
-		"""
+		r"""
 		Constructs a CrackLength object.
 		\param methods \copybrief methods For more, see \ref methods.
 		"""
@@ -45,7 +45,7 @@ class CrackLengths(utils.base.Task):
 		## 	    - `"no"` Deactivate reset, leave the data as provided.
 		self.methods = methods if methods else {"min": True, "length": 0.2, "reset": "inner"}
 	def _first_index_leq_threshold(self, data, threshold) -> int:
-		"""
+		r"""
 		Return the index of the first entry in `data`, that is less or equal than the given threshold and `None`, if no entry fulfills this condition.
 		"""
 		for i, x in enumerate(data):
@@ -56,7 +56,7 @@ class CrackLengths(utils.base.Task):
 			x,
 			strain,
 			crack_list: cracks.CrackList) -> cracks.CrackList:
-		"""
+		r"""
 		Estimates the transfer length of all cracks according to \ref methods.
 		Limits that are `None` are replaced by \f$-\infty\f$ for the left and \f$\infty\f$ right limit prior to the assignments
 		\param x Positional x values.

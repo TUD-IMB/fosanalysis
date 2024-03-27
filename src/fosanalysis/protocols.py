@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functionality for interfacing files and network ports.
 \author Bertram Richter
 \date 2023
@@ -15,13 +15,13 @@ import numpy as np
 from . import utils
 
 class SensorRecord(dict):
-	"""
+	r"""
 	A single record of the fibre optical sensor.
 	"""
 	def __init__(self,
 				data: list,
 				**kwargs):
-		"""
+		r"""
 		Constructs a SensorRecord object.
 		As a dictinary, such an object may hold further information.
 		\param data The actual data of the record.
@@ -31,7 +31,7 @@ class SensorRecord(dict):
 		self["data"] = data
 		self.update(kwargs)
 	def to_tsv(self, itemsep: str = "\t") -> str:
-		"""
+		r"""
 		This function returns the TSV (tab separated values) representation of this record.
 		\param itemsep Separation character. Defaults to `"\t"` (tab).
 		"""
@@ -39,12 +39,12 @@ class SensorRecord(dict):
 		return itemsep.join([self["record_name"], self["message_type"], self["sensor_type"], *data_str])
 
 class Protocol(utils.base.Base):
-	"""
+	r"""
 	Abstract class, which specifies the basic interfaces, a protocol must implement.
 	"""
 	@abstractmethod
 	def __init__(self, *args, **kwargs):
-		"""
+		r"""
 		Constructs a Protocol object.
 		Needs to be reimplemented by sub-classes.
 		"""
@@ -53,26 +53,26 @@ class Protocol(utils.base.Base):
 		self.metadata = {}
 	@abstractmethod
 	def get_x_values(self) -> np.array:
-		"""
+		r"""
 		Returns the values of the x-axis record (location data). 
 		"""
 		raise NotImplementedError()
 	@abstractmethod
 	def get_y_table(self, *args, **kwargs) -> list:
-		"""
+		r"""
 		Returns the table of the strain data.
 		"""
 		raise NotImplementedError()
 
 class ODiSI6100TSVFile(Protocol):
-	"""
+	r"""
 	Implements the import of data from the Optical Distributed Sensor Interrogator (ODiSI) 610x series by Luna Inc.
 	"""
 	def __init__(self,
 			file: str = None,
 			itemsep: str = "\t",
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs the object containing the imported data.
 		\param file File name (fully specified path), from which the data has been read.
 			If not left empty (default: `None`), it is immediately read by \ref read_file().
@@ -110,7 +110,7 @@ class ODiSI6100TSVFile(Protocol):
 	def read_file(self,
 			file: str,
 			itemsep: str = "\t"):
-		"""
+		r"""
 		Read a file, parse its contents and extract the measurement data.
 		This function can be called multiple times, once for each file to read.
 		Both gage files (`*_gages.tsv`) and full (`*_full.tsv`) are supported.
@@ -182,7 +182,7 @@ class ODiSI6100TSVFile(Protocol):
 			segments: dict,
 			data: list,
 			file: str):
-		"""
+		r"""
 		Read gage and segment line to discover the gages and segments.
 		The gages are written into \ref gages.
 		The segments are written into \ref segments.
@@ -221,7 +221,7 @@ class ODiSI6100TSVFile(Protocol):
 			message_type: str,
 			sensor_type: str,
 			data: list):
-		"""
+		r"""
 		Run the extraction for all gages and segments.
 		\param gages Dictionary, containing gage information.
 			This includes, the position of the gage in the data.
@@ -251,7 +251,7 @@ class ODiSI6100TSVFile(Protocol):
 			message_type: str,
 			sensor_type: str,
 			data: list):
-		"""
+		r"""
 		Store the data into the dictionary.
 		Here, the differenciation between a gage and segment is done.
 		\param gage_segment Dictionary, containing information, which data to extract.
@@ -293,7 +293,7 @@ class ODiSI6100TSVFile(Protocol):
 	def _get_dict(self,
 			name: str = None,
 			is_gage: bool =False) -> dict:
-		"""
+		r"""
 		Return the dictionary matching the search criteria.
 		\param name Name of the gage or segment.
 			Defaults to the first gage or segment, depending on `is_gage`.
@@ -316,7 +316,7 @@ class ODiSI6100TSVFile(Protocol):
 	def get_tare(self,
 			name: str = None,
 			is_gage: bool = False) -> np.array:
-		"""
+		r"""
 		Returns the values of the tare record (calibration data).
 		\copydetails _get_dict()
 		"""
@@ -325,7 +325,7 @@ class ODiSI6100TSVFile(Protocol):
 	def get_x_values(self,
 			name: str = None,
 			is_gage: bool = False) -> np.array:
-		"""
+		r"""
 		Returns the values of the x-axis record (location data).
 		\copydetails _get_dict()
 		"""
@@ -335,7 +335,7 @@ class ODiSI6100TSVFile(Protocol):
 			name: str = None,
 			is_gage: bool = False,
 			record_list: list = None) -> list:
-		"""
+		r"""
 		Returns the table of the strain data.
 		\copydetails _get_dict()
 		\param record_list List of records, defaults to to the first segment found.
@@ -351,7 +351,7 @@ class ODiSI6100TSVFile(Protocol):
 			is_gage: bool = False,
 			single: bool = False,
 			) -> tuple:
-		"""
+		r"""
 		Get the positional data (x-axis), timestamps and strain data for
 		a gage/segment and a time interval.
 		
@@ -387,7 +387,7 @@ class ODiSI6100TSVFile(Protocol):
 			name: str = None,
 			is_gage: bool = False,
 			record_list: list = None) -> list:
-		"""
+		r"""
 		Get the time stamps of all stored records.
 		\copydetails _get_dict()
 		\param record_list List of records, defaults to to the first segment found.
@@ -402,7 +402,7 @@ class ODiSI6100TSVFile(Protocol):
 			is_gage: bool = False,
 			position: str = "closest",
 			) -> tuple:
-		"""
+		r"""
 		Get the \ref SensorRecord and its index, which is closest to the given time_stamp.
 		\param time_stamp The time stamp, for which the closest \ref SensorRecord should be returned.
 		
@@ -434,7 +434,7 @@ class ODiSI6100TSVFile(Protocol):
 			end = None,
 			name: str = None,
 			is_gage: bool = False,) -> list:
-		"""
+		r"""
 		Get a portion of the records in the table and return it as a list of \ref SensorRecord.
 		\param start The first record to be included.
 			Defaults to `None` (no restriction), i.e., the first reading.
@@ -545,7 +545,7 @@ class ODiSI6100TSVFile(Protocol):
 			x: float = 0.0,
 			name: str = None,
 			is_gage: bool = False,) -> tuple:
-		"""
+		r"""
 		Get the strain time series for a fixed position.
 		Therefore, the closest x-value to the given position is found and the according strain values are collected.
 		\param x Position, for which the time series should be retrieved.
@@ -573,7 +573,7 @@ class ODiSI6100TSVFile(Protocol):
 	def get_metadata(self,
 			name: str = None,
 			is_gage: bool = False) -> dict:
-		"""
+		r"""
 		Get the metadata dictionary, belonging to the segment/gage.
 		\copydetails _get_dict()
 		"""

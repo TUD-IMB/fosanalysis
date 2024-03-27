@@ -1,5 +1,5 @@
 
-"""
+r"""
 Central package of fosanalysis.
 
 \author Bertram Richter

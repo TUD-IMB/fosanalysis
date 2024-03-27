@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains modules related to crack monitoring of concrete structures.
 
 \author Bertram Richter

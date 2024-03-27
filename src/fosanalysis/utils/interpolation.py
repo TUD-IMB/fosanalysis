@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functionality for interpolating data.
 \author Bertram Richter
 \date 2023
@@ -14,7 +14,7 @@ def scipy_interpolate1d(
 		x_new: np.array,
 		method: str,
 		**kwargs,) -> np.array:
-	"""
+	r"""
 	Interpolate one-dimensional data.
 	\param x Original abcissa data.
 	\param y Original ordinate data.

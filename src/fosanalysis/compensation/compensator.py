@@ -1,5 +1,5 @@
 
-"""
+r"""
 Implements the base class for all compensator classes.
 
 \author Bertram Richter
@@ -13,11 +13,11 @@ import numpy as np
 from fosanalysis import utils
 
 class Compensator(utils.base.Task):
-	"""
+	r"""
 	Base for compensation classes.
 	"""
 	def __init__(self, *args, **kwargs):
-		"""
+		r"""
 		Base class for any compensatory class.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
@@ -25,7 +25,7 @@ class Compensator(utils.base.Task):
 		super().__init__(*args, **kwargs)
 	@abstractmethod
 	def run(self, x: np.array, strain: np.array, *args, **kwargs) -> np.array:
-		"""
+		r"""
 		This 
 		\param x Positional data.
 		\param strain Strain data, belonging to `x`.

@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains modules for data preprocessing, like:
 - filtering: dealing with noise, e.g. smoothing
 - identification of strain reading anomalies (SRAs),
@@ -23,13 +23,13 @@ from . import repair
 from . import resizing
 
 class Preprocessing(base.Base, utils.base.Workflow):
-	"""
+	r"""
 	Container for several preprocessing task, that are carried out in sequential order.
 	"""
 	def __init__(self,
 			tasklist: list,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a Preprocessing object.
 		\param tasklist \copybrief tasklist For more, see \ref tasklist.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -46,7 +46,7 @@ class Preprocessing(base.Base, utils.base.Workflow):
 			z: np.array,
 			make_copy: bool = True,
 			*args, **kwargs) -> np.array:
-		"""
+		r"""
 		The data is passed sequentially through all preprocessing task objects in \ref tasklist, in that specific order.
 		The output of a previous preprocessing task is used as the input to the next one.
 		\param x Array of measuring point positions.

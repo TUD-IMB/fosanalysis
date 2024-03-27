@@ -1,4 +1,4 @@
-"""
+r"""
 Contains class implementations, to remove implausible values from strain data.
 This can be used to remove strain reading anomalies (SRAs) from the data.
 
@@ -16,7 +16,7 @@ from . import base
 from . import filtering
 
 class AnomalyMasker(base.Task):
-	"""
+	r"""
 	Abstract class for anomaly identification.
 	Strain reading anomalies (SRAs) are implausible data points.
 	SRAs are replaced by `NaN` values, effectively marking them as dropouts.
@@ -29,7 +29,7 @@ class AnomalyMasker(base.Task):
 			timespace: str = None,
 			identify_only: bool = False,
 			*args, **kwargs) -> np.array:
-		"""
+		r"""
 		Mask strain reading anomalies with `NaN`s.
 		The strain data is replaced by `NaN` for all entries in the returned array being `True`.
 		
@@ -56,7 +56,7 @@ class AnomalyMasker(base.Task):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Estimate, which entries are strain reading anomalies, in 1D.
 		\copydetails preprocessing.base.Task._run_1d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
@@ -70,7 +70,7 @@ class AnomalyMasker(base.Task):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		\copydoc preprocessing.base.Task._run_2d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
 		This function returns the `SRA_array` instead of the `z` array.
@@ -83,7 +83,7 @@ class AnomalyMasker(base.Task):
 			SRA_array: np.array,
 			timespace: str = None,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Estimate, which entries are strain reading anomalies, in 2D.
 		\copydoc preprocessing.base.Task._map_2d()
 		\param SRA_array Array of boolean values indicating SRAs by `True` and a valid entries by `False`.
@@ -99,7 +99,7 @@ class AnomalyMasker(base.Task):
 		return x, y, SRA_array
 
 class GTM(AnomalyMasker):
-	"""
+	r"""
 	The geometric threshold method (GTM) identifies SRAs by comparing the strain increments to a threshold.
 	The implementation is improved upon the algorithm presentend in \cite Bado_2021_Postprocessingalgorithmsfor.
 	Each entry is compared to the most recent entry accepted as plausible.
@@ -120,7 +120,7 @@ class GTM(AnomalyMasker):
 			to_left: bool = False,
 			activate_reverse_sweep: bool = True,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct a GTM object.
 		\param delta_max \copybrief delta_max For more, see \ref delta_max.
 		\param forward_comparison_range \copybrief forward_comparison_range For more, see \ref forward_comparison_range.
@@ -175,7 +175,7 @@ class GTM(AnomalyMasker):
 			index: int,
 			to_left: bool,
 			) -> bool:
-		"""
+		r"""
 		Evaluate, if the candidate keeps its SRA flag by comparing it to its succeeding neighbors.
 		The candidate keeps its flag, if
 		\f[
@@ -218,7 +218,7 @@ class GTM(AnomalyMasker):
 			to_left: bool = None,
 			reverse_state: bool = False,
 			*args, **kwargs) -> np.array:
-		"""
+		r"""
 		Flag SRAs between the start and the end index (inclusive).
 		\param x Array of measuring point positions in accordance to `z`.
 		\param z Array of strain data in accordance to `x`.
@@ -273,19 +273,19 @@ class GTM(AnomalyMasker):
 									reverse_state=True)
 		return x, SRA_array
 	def _run_2d(self, 
-		x: np.array, 
-		y: np.array, 
-		z: np.array,
-		SRA_array: np.array,
-		*args, **kwargs)->tuple:
-		"""
+			x: np.array, 
+			y: np.array, 
+			z: np.array,
+			SRA_array: np.array,
+			*args, **kwargs)->tuple:
+		r"""
 		GTM has no true 2D operation mode.
 		Set \ref timespace to `"1D_space"`!
 		"""
 		raise NotImplementedError("GTM does not support true 2D operation. Please use `timepace='1D-space'` instead.")
 
 class OSCP(AnomalyMasker):
-	"""
+	r"""
 	Class for outlier detection an cancellation based on the outlier
 	specific correction procedure (OSCP) as originally presented in 
 	\cite Ismail_2010_Anoutliercorrection and \cite Ismail_2014_EvaluationOutlierSpecific.
@@ -312,7 +312,7 @@ class OSCP(AnomalyMasker):
 			min_quantile: float = 0.5,
 			timespace: str = "1D-space",
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		\param max_radius \copybrief max_radius \copydetails max_radius
 		\param delta_s \copybrief delta_s \copydetails delta_s
@@ -369,7 +369,7 @@ class OSCP(AnomalyMasker):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Estimate which entries are strain reading anomalies in 1D.
 		\copydetails AnomalyMasker._run_1d()
 		"""
@@ -382,7 +382,7 @@ class OSCP(AnomalyMasker):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Estimate which entries are strain reading anomalies in 2D.
 		\copydetails AnomalyMasker._run_2d()
 		"""
@@ -390,7 +390,7 @@ class OSCP(AnomalyMasker):
 		SRA_array = self._verify_candidates_2d(z, SRA_array)
 		return x, y, SRA_array
 	def _outlier_candidates(self, z, SRA_array) -> np.array:
-		"""
+		r"""
 		Detect outlier candidates in the given strain data.
 		This is the first phase according to \cite Ismail_2010_Anoutliercorrection.
 		For each radius \f$r \in [1, r_{\mathrm{max}}]\f$, the relative
@@ -406,7 +406,7 @@ class OSCP(AnomalyMasker):
 			SRA_array = np.logical_or(SRA_array, candidate_array)
 		return SRA_array
 	def _verify_candidates_1d(self, z, SRA_array) -> np.array:
-		"""
+		r"""
 		This is the second phase of the algorithm according to
 		\cite Ismail_2010_Anoutliercorrection, adapted for 1D operation.
 		Outlier candidates are verified as SRAs, by building groups, which
@@ -438,7 +438,7 @@ class OSCP(AnomalyMasker):
 		group[:] = np.all(group)
 		return SRA_array
 	def _verify_candidates_2d(self, z, SRA_array) -> np.array:
-		"""
+		r"""
 		This is the second phase of the algorithm according to
 		\cite Ismail_2010_Anoutliercorrection, adapted for 2D operation.
 		\copydetails _verify_candidates_1d()
@@ -503,7 +503,7 @@ class OSCP(AnomalyMasker):
 			SRA_array[group_indices] = np.all(SRA_array[group_indices])
 		return SRA_array
 	def _get_median_heights(self, z, radius) -> np.array:
-		"""
+		r"""
 		Get the height difference to the local vicinity of all the pixels.
 		The median height is retrieved by \ref filtering.SlidingFilter.
 		The local vicinity is determined by the inradius \f$r\f$ or the
@@ -520,7 +520,7 @@ class OSCP(AnomalyMasker):
 											radius=radius)
 		return np.abs(z - median_array)
 	def _get_quantiles(self, values: np.array) -> tuple:
-		"""
+		r"""
 		Get quantiles of the the given data (including finite values only).
 		Only quantiles above \ref min_quantile are returned.
 		If \ref n_quantile is `None`, the upper part (> \ref min_quantile)
@@ -539,7 +539,7 @@ class OSCP(AnomalyMasker):
 			cdf = np.linspace(1/length, 1, length)
 			return cdf[first_index:None], sorted_heights[first_index:None]
 	def _get_threshold(self, values: np.array) -> float:
-		"""
+		r"""
 		Estimate the anomaly threshold from the data.
 		The threshold \f$t\f$ is set to the point, where the cumulated
 		density function is leveled out. That is, whre the required
@@ -559,7 +559,7 @@ class OSCP(AnomalyMasker):
 		threshold = quantiles[threshold_index]
 		return threshold
 	def _merge_groups(self, initial_groups) -> list:
-		"""
+		r"""
 		Merge all groups in the input that have at least one pairwise common entry.
 		Each group is a `set` of `tuple` standing for the strain array indices.
 		The result is a list of pairwise distinct groups, equivalent to the input.
@@ -581,7 +581,7 @@ class OSCP(AnomalyMasker):
 		return result
 
 class ZscoreOutlierDetection(AnomalyMasker):
-	"""
+	r"""
 	Class for outlier detection by different kinds of z-scores.
 	After calculating the z-score by the given \ref method, SRAs are identified
 	by comparing the strain increments to a \ref threshold.
@@ -597,7 +597,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			timespace: str = "1D_space",
 			radius: int = 0,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		\param threshold \copydoc threshold
 		\param method \copydoc method
@@ -626,7 +626,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Estimate which entries are strain reading anomalies in 1D.
 		\copydetails AnomalyMasker._run_1d()
 		"""
@@ -649,14 +649,14 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Estimate which entries are strain reading anomalies in 2D.
 		\copydetails AnomalyMasker._run_2d()
 		"""
 		raise NotImplementedError("ZscoreOutlierDetection does not support true 2D operation. \
 					Please use `timepace='1D_space'` instead.")
 	def _get_z_score(self, z):
-		"""
+		r"""
 		Calculates the z-score of the given strain array with mean and standard deviation.
 		\param z Array containing strain data.
 		\return Returns a z-score array.
@@ -666,7 +666,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		z_score = (z - mean) / stdev
 		return z_score
 	def _get_modified_z_score(self, z):
-		"""
+		r"""
 		Calculates the modified z-score of the given strain array.
 		It uses the median and median absolute deviation.
 		The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
@@ -677,7 +677,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		z_score = 0.6745 * ((z - np.nanmedian(z)) / mad_array)
 		return z_score
 	def _get_sliding_z_score(self, z):
-		"""
+		r"""
 		Calculates the modified z-score only for current vicinity, defined by radius.
 		It uses the median and median absolute deviation (MAD) of the defined window.
 		The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
@@ -688,7 +688,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		z_score = 0.6745 * ((z - median_array) / mad_array)
 		return z_score
 	def _get_outlier_mask(self, z_score):
-		"""
+		r"""
 		Mask entries as SRA, whose z-scores exceed \ref threshold.
 		\param z_score Array containing the z-score values.
 		\return Boolean array with values as outlier mask.
@@ -696,7 +696,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		mask = np.array(np.abs(z_score) > self.threshold)
 		return mask
 	def _get_delta_strain(self, z):
-		"""
+		r"""
 		Calculates the difference between the current strain 
 		and the following strain of the given strain array.
 		\param z Array containing strain data.
@@ -706,7 +706,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		delta_s = np.insert(delta_s, 0, np.nan)
 		return delta_s
 	def _get_outliers_delta_both(self, z):
-		"""
+		r"""
 		Calculates the difference between the current strain 
 		and the previous and following strain separate.
 		\param z Array containing strain data.
@@ -719,7 +719,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		strain = np.logical_or(strain_left, strain_right)
 		return strain
 	def _get_modified_z_score_delta_1d(self, z, is_left):
-		"""
+		r"""
 		Calculates the modified z-score of the given strain array for one direction.
 		\param z Array containing strain data.
 		\param is_left Switch for the direction of the z_score calculation:
@@ -731,7 +731,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		modified_zscore_delta = self._get_modified_z_score(delta_strain)
 		return modified_zscore_delta
 	def _calculate_weighted_delta_strain_1d(self, z, is_left):
-		"""
+		r"""
 		Calculates the delta strain in one direction (left or right)
 		\param z Array containing strain data.
 		\param is_left Switch for the direction of the z_score calculation:
@@ -764,7 +764,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			delta_strain.append(delta)
 		return delta_strain
 	def _get_medians_by_window(self, z, radius):
-		"""
+		r"""
 		Get the difference to the local vicinity of all the pixels.
 		The local vicinity is determined by the radius.
 		Then, the absolute difference between the array of the median and
@@ -786,7 +786,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 				median[index] = curr_median
 		return median, mad_array
 	def _get_absolute_deviation(self, window, window_median) -> float:
-		"""
+		r"""
 		Get the absolute deviation median of the current vicinity.
 		\param window Current vicinity with values.
 		\param window_median Median of the current vicinity.

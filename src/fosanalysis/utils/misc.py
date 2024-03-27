@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains miscellaneous standalone functions.
 \author Bertram Richter
 \date 2023
@@ -9,7 +9,7 @@ import datetime
 import numpy as np
 
 def find_closest_value(arr: np.array, v: float) -> tuple:
-	"""
+	r"""
 	Returns index and value in `arr`, that is closest to the given `v`.
 	In case of equal distance of `v` to both neighbors, the smaller one is chosen.
 	\param arr Array like (1D) of values in ascending order.
@@ -32,7 +32,7 @@ def find_closest_value(arr: np.array, v: float) -> tuple:
 	return i, arr[i]
 
 def last_finite_index_1d(arr: np.array) -> np.array:
-	"""
+	r"""
 	Returns an array of indices of the last finite index in a 1D array.
 	The returned array has the same shape as `arr`.
 	
@@ -64,7 +64,7 @@ def last_finite_index_1d(arr: np.array) -> np.array:
 	return last_finite_array
 
 def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
-	"""
+	r"""
 	Returns an array of indices of the last finite index.
 	This function is a wrapper around \ref last_finite_index_1d().
 	\param arr Array like.
@@ -74,7 +74,7 @@ def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
 	return np.apply_along_axis(last_finite_index_1d, axis=axis, arr=arr)
 
 def nan_diff_1d(arr: np.array) -> np.array:
-	"""
+	r"""
 	Calculate the difference to the previous finite entry.
 	This is similar to `np.diff()`, but skipping `NaN` or `inf` entries.
 	Example:
@@ -94,7 +94,7 @@ def nan_diff_1d(arr: np.array) -> np.array:
 	return diff_array
 
 def nan_diff(arr: np.array, axis: int = -1) -> np.array:
-	"""
+	r"""
 	Calculate the difference to the previous finite entry.
 	This function is a wrapper around \ref nan_diff_1d().
 	\param arr Array like.
@@ -109,7 +109,7 @@ def next_finite_neighbor(
 		to_left: bool,
 		recurse: int = 0,
 		) -> tuple:
-	"""
+	r"""
 	Find the next finite neighbor of the entry `array[index]`.
 	An entry `<entry>` is finite, if `np.isfinite(<entry>) == True`.
 	\param array Array, on which the search is carried out.
@@ -140,7 +140,7 @@ def next_finite_neighbor(
 	return result_index, result
 
 def np_to_python(data):
-	"""
+	r"""
 	Convert the given data to a Python built-in type.
 	This function should be used, when type-checking.
 	Iterables are recursively converted into `list` and instances of 

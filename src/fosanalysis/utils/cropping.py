@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functionality to restrict data to a given area of interest.
 \author Bertram Richter
 \date 2023
@@ -18,7 +18,7 @@ def cropping(x_values: np.array,
 			length: float = None,
 			offset: float = None,
 			*args, **kwargs) -> tuple:
-	"""
+	r"""
 	Crop a data set \f$x_i,\: y_i\f$ based on locational data \f$x\f$.
 	The process consists of two steps:
 	1. The \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$.
@@ -64,7 +64,7 @@ def cropping(x_values: np.array,
 	return x_cropped, y_cropped
 
 class Crop(base.Task):
-	"""
+	r"""
 	Object, for cropping data sets and saving the preset.
 	"""
 	def __init__(self,
@@ -73,7 +73,7 @@ class Crop(base.Task):
 			length: float = None,
 			offset: float = None,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		\param start_pos \copydoc start_pos
 		\param end_pos \copydoc end_pos
@@ -102,7 +102,7 @@ class Crop(base.Task):
 			length: float = None,
 			offset: float = None,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		This is a wrapper around \ref cropping.cropping(), where each
 		parameter defaults to the attribute of the same name.
 		\copydoc cropping()

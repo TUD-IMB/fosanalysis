@@ -1,5 +1,5 @@
 
-"""
+r"""
 This script generates the `demofile` for [Getting Started](doc/GettingStarted.md).
 The demofile simulates a real file exported by the ODiSI Software by Luna Inc.
 \author Bertram Richter
@@ -12,7 +12,7 @@ import os
 import scipy.stats
 
 def generate_header():
-	"""
+	r"""
 	Prints the header file
 	"""
 	file_contents = []
@@ -25,7 +25,7 @@ def generate_x(start, end, gage_length):
 	return np.round(np.arange(start, end, gage_length), 5)
 
 def generate_data(x_axis, rng, noise_gain):
-	"""
+	r"""
 	Generates the body data.
 	"""
 	y_base = np.zeros(x_axis.shape)
@@ -63,7 +63,7 @@ def generate_data(x_axis, rng, noise_gain):
 	return y_data
 
 def main():
-	"""
+	r"""
 	Run the script.
 	"""
 	file = "data/demofile.tsv"

@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains class implementations, for strain function repair algorithms.
 Those can be used to attempt the reconstruction of more or less heavily destroyed strain profiles.
 
@@ -16,7 +16,7 @@ from . import base
 from fosanalysis.utils.interpolation import scipy_interpolate1d
 
 class Repair(base.Task):
-	"""
+	r"""
 	Base class for algorithms to replace/remove missing data with plausible values.
 	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
 	This is done by replacing the dropouts by plausible values and/or removing dropouts.
@@ -24,13 +24,13 @@ class Repair(base.Task):
 	"""
 
 class NaNFilter(base.Base):
-	"""
+	r"""
 	A filter, that removes any columns from a given number of data sets (matrix), that contain `not a number` entries.
 	"""
 	def __init__(self,
 			axis: int = 0,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an instance of the class.
 		\param axis \copydoc axis
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -50,7 +50,7 @@ class NaNFilter(base.Base):
 			axis: int = None,
 			make_copy: bool = True,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		From the given `z` array, all columns or rows (depending on `axis`),
 		which contain contain `NaN`.
 		Corresponding entries of the coordinate vector (`x` or `y`) are removed aswell. 
@@ -82,7 +82,7 @@ class NaNFilter(base.Base):
 		return x, y, z
 
 class ScipyInterpolation1D(Repair):
-	"""
+	r"""
 	Replace dropouts (`NaN`s) with values interpolated by the given method.
 	The following steps are carried out:
 	1. The `NaN` values are removed using \ref NaNFilter.
@@ -96,7 +96,7 @@ class ScipyInterpolation1D(Repair):
 			method: str = "Akima1DInterpolator",
 			method_kwargs: dict = None,
 			*args, **kwargs):
-		"""
+		r"""
 		Construct an ScipyInterpolation1D object.
 		\param method \copydoc method
 		\param method_kwargs \copydoc method_kwargs
@@ -136,7 +136,7 @@ class ScipyInterpolation1D(Repair):
 			method: str = None,
 			method_kwargs: dict = None,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		\copydoc ScipyInterpolation1D
 		\copydetails preprocessing.base.Task.run()
 		\param method \copydoc method
@@ -154,7 +154,7 @@ class ScipyInterpolation1D(Repair):
 			method: str = None,
 			method_kwargs: dict = None,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		Replace dropouts (`NaN`s) with values interpolated by the given method.
 		\param x Array of measuring point positions in accordance to `z`.
 		\param z Array of strain data in accordance to `x`.
@@ -181,7 +181,7 @@ class ScipyInterpolation1D(Repair):
 			z: np.array,
 			SRA_array: np.array,
 			*args, **kwargs) -> tuple:
-		"""
+		r"""
 		ScipyInterpolation1D has no true 2D operation mode.
 		Set \ref timespace to `"1D_space"`!
 		"""

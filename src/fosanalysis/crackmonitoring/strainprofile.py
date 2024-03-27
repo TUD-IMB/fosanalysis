@@ -18,7 +18,7 @@ from . import finding
 from . import separation
 
 class StrainProfile(utils.base.Workflow):
-	"""
+	r"""
 	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	The crack widths are calculated with the general equation:
 	\f[
@@ -46,7 +46,7 @@ class StrainProfile(utils.base.Workflow):
 			suppress_compression: bool = True,
 			ts_compensator = None,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a strain profile object.
 		\param x \copybrief x For more, see \ref x.
 		\param strain \copybrief strain For more, see \ref strain.
@@ -106,7 +106,7 @@ class StrainProfile(utils.base.Workflow):
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
 	def clean_data(self):
-		"""
+		r"""
 		Resetting several attributes to it's original state before any calculations.
 		Clears:
 		- \ref crack_list,
@@ -117,7 +117,7 @@ class StrainProfile(utils.base.Workflow):
 		self.shrink_calibration_values = None
 		self.tension_stiffening_values = None
 	def calculate_crack_widths(self, clean: bool = True) -> cracks.CrackList:
-		"""
+		r"""
 		Returns the crack widths.
 		The following is done:
 		1. Find the crack positions, see \ref find_cracks().
@@ -156,13 +156,13 @@ class StrainProfile(utils.base.Workflow):
 			crack.width = self.integrator.integrate_segment(x_seg, y_seg)
 		return self.crack_list
 	def find_cracks(self):
-		"""
+		r"""
 		Identify cracks, settings are stored in \ref crackfinder.
 		"""
 		self.crack_list = self.crackfinder.run(self.x, self.strain)
 		return self.crack_list
 	def set_lt(self) -> list:
-		"""
+		r"""
 		Estimate transfer length to \ref crack_list, settings are stored in \ref lengthsplitter.
 		If \ref crack_list is empty, \ref find_cracks() is carried out beforehand.
 		"""
@@ -171,7 +171,7 @@ class StrainProfile(utils.base.Workflow):
 		self.crack_list = self.lengthsplitter.run(self.x, self.strain, self.crack_list)
 		return self.crack_list
 	def compensate_shrink(self, *args, **kwargs) -> np.array:
-		"""
+		r"""
 		Calculate the shrink influence of the concrete and store it in \ref shrink_calibration_values.
 		It is required to provide the following attributes:
 		- \ref x,
@@ -186,7 +186,7 @@ class StrainProfile(utils.base.Workflow):
 		else:
 			return self.shrink_calibration_values()
 	def calculate_tension_stiffening(self) -> np.array:
-		"""
+		r"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		\return An array with the compensation values for each measuring point is returned.
 		"""
@@ -202,7 +202,7 @@ class StrainProfile(utils.base.Workflow):
 						*cracks_tuple: tuple,
 						recalculate: bool = True,
 						):
-		"""
+		r"""
 		Use this function to manually add a crack to \ref crack_list at the closest measuring point to `x` after an intial crack identification.
 		It assumes, that \ref find_cracks() is run beforehand at least once.
 		Afterwards, \ref set_lt() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
@@ -237,7 +237,7 @@ class StrainProfile(utils.base.Workflow):
 						*cracks_tuple: tuple,
 						recalculate: bool = True,
 						) -> list:
-		"""
+		r"""
 		Use this function to manually delete cracks from \ref crack_list, that were wrongfully identified automatically by \ref find_cracks().
 		After the deletion, \ref set_lt() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
 		\param cracks_tuple Any number of integers (list indexes) of the cracks that should be deleted.
@@ -254,14 +254,14 @@ class StrainProfile(utils.base.Workflow):
 		return delete_cracks
 
 class Concrete(StrainProfile):
-	"""
+	r"""
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
 	The crack width calculation is carried out according to \cite Fischer_2019_Distributedfiberoptic.
 	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Fischer.
 	"""
 	def __init__(self,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a strain profile object, of a sensor embedded in concrete.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
@@ -273,7 +273,7 @@ class Concrete(StrainProfile):
 		super().__init__(*args, **default_values)
 
 class Rebar(StrainProfile):
-	"""
+	r"""
 	The strain profile is assumed to be from a sensor attached to a reinforcement rebar.
 	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin.
 	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Berrocal.
@@ -291,7 +291,7 @@ class Rebar(StrainProfile):
 			alpha: float,
 			rho: float,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a strain profile object, of a sensor attached to a reinforcement rebar.
 		\param alpha \copybrief compensation.tensionstiffening.Berrocal.alpha For more, see \ref compensation.tensionstiffening.Berrocal.alpha.
 		\param rho \copybrief compensation.tensionstiffening.Berrocal.rho For more, see \ref compensation.tensionstiffening.Berrocal.rho.

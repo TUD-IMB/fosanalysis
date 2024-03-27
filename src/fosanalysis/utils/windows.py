@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains functions to shift a (partly) view of an array across the full array.
 
 \author Bertram Richter
@@ -12,7 +12,7 @@ import itertools
 from . import misc
 
 def sliding(data_array: np.array, radius):
-	"""
+	r"""
 	Generates a sliding window over an array.
 	This function returns a generator, hence, it should be use like:
 	```.py
@@ -62,7 +62,7 @@ def moving(data_array: np.array,
 		start_pixel: tuple = None,
 		step_size: tuple = None,
 		):
-	"""
+	r"""
 	Generates a symmetric moving window over an array.
 	This function returns a generator that yields information about the window_center_orig, target_pixel, and the content of the window.
 		Converts data_array to a Numpy array. Ensuring radius as a tuple. do this similar for stepsize and the start pixel
@@ -112,7 +112,7 @@ def determine_moving_parameters(
 		start_pixel: tuple = None,
 		step_size: tuple = None,
 		) -> list:
-	"""
+	r"""
 	Generate indices for a moving window and check the other parameters.
 	\param data_array Array of data over which the window should move.
 	\param radius Inradius of the window's rectangle.

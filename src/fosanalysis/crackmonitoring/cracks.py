@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains class definitions for Crack and CrackList.
 \author Bertram Richter
 \date 2022
@@ -10,7 +10,7 @@ import warnings
 import numpy as np
 
 class Crack():
-	"""
+	r"""
 	Crack in the concrete.
 	"""
 	def __init__(self,
@@ -22,7 +22,7 @@ class Crack():
 			name: str = None,
 			width: float = None,
 			):
-		"""
+		r"""
 		Constructs a Crack object.
 		\param index \copybrief index For more, see \ref index.
 		\param location \copybrief location For more, see \ref location.
@@ -49,31 +49,31 @@ class Crack():
 		self.name = name
 	@property
 	def lt(self):
-		"""
+		r"""
 		Returns the length of the transfer length.
 		"""
 		return self.x_r - self.x_l
 	@property
 	def lt_l(self):
-		"""" Distance from the crack position to the left-hand side end of its transfer length. """
+		r""" Distance from the crack position to the left-hand side end of its transfer length. """
 		return self.location - self.x_l
 	@property
 	def lt_r(self):
-		"""" Distance from the crack position to the right-hand side end of its transfer length. """
+		r""" Distance from the crack position to the right-hand side end of its transfer length. """
 		return self.x_r - self.location
 	@property
 	def segment(self):
-		"""
+		r"""
 		Returns the absolute influence segment of the crack.
 		"""
 		return self.x_l, self.x_r
 
 class CrackList(list):
-	"""
+	r"""
 	List of crack objects.
 	"""
 	def __init__(self, *crack_list):
-		"""
+		r"""
 		Constructs a CrackList.
 		\param crack_list Data, from which the CrackList is constructed. Possible arguments :
 		- any number of \ref Crack objects,
@@ -86,26 +86,26 @@ class CrackList(list):
 		super().__init__(crack_list)
 	@property
 	def x_l(self) -> list:
-		""" Returns a list with the left-hand side border of transfer length of all cracks. """
+		r""" Returns a list with the left-hand side border of transfer length of all cracks. """
 		return self.get_attribute_list("x_l")
 	@property
 	def x_r(self) -> list:
-		""" Returns a list with the right-hand side border of transfer length of all cracks. """
+		r""" Returns a list with the right-hand side border of transfer length of all cracks. """
 		return self.get_attribute_list("x_r")
 	@property
 	def locations(self) -> list:
-		""" Returns a list with the locations of all cracks. """
+		r""" Returns a list with the locations of all cracks. """
 		return self.get_attribute_list("location")
 	@property
 	def max_strains(self) -> list:
-		""" Returns a list with the peak strains of all cracks. """
+		r""" Returns a list with the peak strains of all cracks. """
 		return self.get_attribute_list("max_strain")
 	@property
 	def widths(self) -> list:
-		""" Returns a list with the widths of all cracks. """
+		r""" Returns a list with the widths of all cracks. """
 		return self.get_attribute_list("width")
 	def get_attribute_list(self, attribute: str, fallback = None) -> list:
-		"""
+		r"""
 		Extract a list of values from the given attribute of all cracks.
 		\param attribute Name of the attribute to extract.
 			If a crack object has not such attribute, `fallback` is returned.
@@ -114,7 +114,7 @@ class CrackList(list):
 		"""
 		return [getattr(crack, attribute, fallback) for crack in self]
 	def get_crack(self, x, method: str = "nearest") -> Crack:
-		"""
+		r"""
 		Get the \ref Crack according to the given position `x` and the `method`.
 		\param x Position along the Sensor.
 		\param method Method, that is used, to use decide, how the crack is chosen. Available methods:
@@ -143,7 +143,7 @@ class CrackList(list):
 			raise ValueError("`method` '{}' unknown for getting a crack from CrackList.".format(method))
 		return selected_crack
 	def sort(self):
-		"""
+		r"""
 		Sort the list of cracks.
 		"""
 		orig_order = [crack.location for crack in self]

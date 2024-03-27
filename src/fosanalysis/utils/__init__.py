@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains utility modules with general pupose.
 
 \author Bertram Richter
