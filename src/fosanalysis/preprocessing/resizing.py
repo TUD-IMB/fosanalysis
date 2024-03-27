@@ -16,7 +16,7 @@ from . import base
 from fosanalysis.utils import windows, misc
 from fosanalysis.utils.interpolation import scipy_interpolate1d
 
-class Aggregate(base.Task):
+class Aggregate(base.Base):
 	r"""
 	Change the dimension of an array using aggregate functions (such as
 	mean, median, min or max).
@@ -25,22 +25,31 @@ class Aggregate(base.Task):
 	def __init__(self,
 			method: str or callable,
 			module = np,
-			axis: int = 0,
+			timespace: str = "1d_space",
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
 		\param method A string or callable representing the method.
 		\param module The module (default is numpy).
-		\param axis \copybrief axis For more, see \ref axis.
+		\param timespace \copybrief timespace For more, see \ref timespace.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## Axis in which the data should be consolidated.
+		## Setting, how to compact the 2d array.
 		## Available options:
-		## - `0` (default): Compact data into a single reading of the sensor length.
-		## - `1`: Compact data into a time series for a single gage.
-		self.axis = axis
+		## - `"1d_space"`: (default): Reduce the temporal component and
+		##	keep the spatial component by aggregating several readings
+		##	into a single reading.
+		## Results in a 1D array of the same size as `x`.
+		## - `"1d_time"`: Reduce the spatial component and keep the
+		##	temporal component by aggregating several time series into
+		##	a single time series.
+		## Results in a 1D array of the same size as `y`.
+		## - `"2d"`: Compact data into a single value. Both spatial and
+		##	temporal component are reduced.
+		## Results in a 0D array with a single element.
+		self.timespace = timespace
 		self.setup(method, module)
 	def setup(self,
 			method: str or callable,
@@ -68,7 +77,7 @@ class Aggregate(base.Task):
 			x: np.array,
 			y: np.array,
 			z: np.array,
-			axis: int = None,
+			timespace: str = None,
 			make_copy: bool = True,
 			*args, **kwargs) -> np.array:
 		r"""
@@ -78,28 +87,38 @@ class Aggregate(base.Task):
 		\param x Array of measuring point positions.
 		\param y Array of time stamps.
 		\param z Array of strain data in accordance to `x` and `y`.
-		\param axis \copybrief axis For more, see \ref axis.
+		\param timespace \copybrief timespace For more, see \ref timespace.
 		\param make_copy Switch, whether a deepcopy of the passed data should be done.
 			Defaults to `True`.
 		\param *args Additional positional arguments to customize the behaviour.
 		\param **kwargs Additional keyword arguments to customize the behaviour.
 		\return Returns a tuple like `(x, y, z)`.
 			They correspond to the input variables of the same name.
-			Each of those might be changed.
+			The resulting shape of the return values depending on \ref
+			timespace is as follows:
+			
+			|`"timespace"`|       x        |       y        |           z            |
+			|:----------:|:--------------:|:--------------:|:----------------------:|
+			|`"1d_space"`|       x        |`np.array(None)`|1d array, same size as x|
+			|`"1d_time"` |`np.array(None)`|       y        |1d array, same size as y|
+			|   `"2d"`   |`np.array(None)`|`np.array(None)`|    np.array(float)     |
 		"""
 		x, y, z = super().run(x, y, z, make_copy=make_copy, *args, **kwargs)
-		axis = axis if axis is not None else self.axis
+		timespace = timespace if timespace is not None else self.timespace
 		if z.ndim == 1:
 			return x, y, z
 		elif z.ndim ==2:
-			if axis == 0:
+			axis = None
+			if timespace.lower() == "1d_space":
 				y = np.array(None)
-			else:
+				axis = 0
+			elif timespace.lower() == "1d_time":
 				x = np.array(None)
+				axis = 1
 			reduced_array = self.reduce(z, axis, *args, **kwargs).flatten()
 			return x, y, reduced_array
 		else:
-			raise ValueError('Array is neither 1D nor 2D.')
+			raise ValueError("Array is neither 1D nor 2D.")
 	def reduce(self,
 			data: np.array,
 			axis: int,
@@ -107,7 +126,8 @@ class Aggregate(base.Task):
 		r"""
 		Reduce current 2D array of data to a 1D array.
 		\param data Array of data with functional data according to `data`.
-		\param axis \copybrief axis For more, see \ref axis.
+		\param axis Axis in which the data should be consolidated.
+			This is in accordance with the `numpy` axis definitions.
 		\param *args Additional positional arguments, passed to \ref kernel.
 		\param **kwargs Additional keyword arguments, passed to \ref kernel.
 		\return Returns an array, where multiple readings are combined to one single array.
