@@ -11,6 +11,7 @@ Contains functionality for resizing data:
 
 import datetime
 import numpy as np
+import scipy
 
 from . import base
 from fosanalysis.utils import windows, misc
@@ -240,7 +241,7 @@ class Resampler(base.Task):
 	def __init__(self,
 			 target_x: np.array = None,
 			 target_time: np.array = None,
-			 method: str = "interp1d",
+			 method: str = None,
 			 method_kwargs: dict = None,
 			 timespace: str = "1D_space",
 			 *args, **kwargs):
@@ -259,12 +260,17 @@ class Resampler(base.Task):
 		self.target_x = target_x
 		## Points in time, where strain values should be resampled.
 		self.target_time = target_time
-		## Function or a string representing a function name, which will
-		## be passed to \ref fosanalysis.utils.interpolation.scipy_interpolate1d().
-		## Defaults to `"interp1d"`.
+		## Name of the interpolation method used.
+		## For 1D operation, this is either a function object or a string
+		# representing a function name, which will be passed to
+		## \ref fosanalysis.utils.interpolation.scipy_interpolate1d(),
+		## defaulting to `"interp1d"`.
+		##
+		## For 2D operation, use one of the options for the `method`
+		## keyword argument accepted by `scipy.interpolate.interpn()`,
+		## defaulting to `"linear"`.
 		self.method = method
-		## Additional keyword arguments for the resampling method, will be 
-		## passed to \ref fosanalysis.utils.interpolation.scipy_interpolate1d().
+		## Additional keyword arguments for the interpolation function.
 		self.method_kwargs = method_kwargs if method_kwargs is not None else {}
 	def _run_1d(self,
 			x: np.array,
@@ -278,16 +284,51 @@ class Resampler(base.Task):
 		\param **kwargs Additional keyword arguments, ignored.
 		\return Returns a tuple like `(target_x, target_z)`.
 		\retval target_x Array of target points (space or time).
-		\retval target_z Array of resampled data.
+		\retval target_z Array of resampled strain.
 		"""
-		if self.target_x is None or self.target_time is None:
-			raise ValueError("Target x and time points must be set before resampling.")
-		if isinstance(x[0], datetime.datetime):
+		try:
+			# if x is temporal data
 			x = misc.datetime_to_timestamp(x)
 			target_coord = misc.datetime_to_timestamp(self.target_time)
 			target_x = self.target_time
-		else:
+		except:
+			# x is spatial data
 			target_coord = self.target_x
 			target_x = self.target_x
-		target_z = scipy_interpolate1d(x, z, target_coord, method=self.method, **self.method_kwargs)
+		if target_coord is None:
+			raise ValueError("Target coordinates are `None`, must be set before resampling.")
+		method = self.method if self.method is not None else "interp1d"
+		target_z = scipy_interpolate1d(x, z, target_coord, method=method, **self.method_kwargs)
 		return target_x, target_z
+	def _run_2d(self,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			*args, **kwargs) -> tuple:
+		r"""
+		Resample a strain array using both spatial and temporal coordinates.
+		\param x: Original spatial (x-coordinate) data.
+		\param y: Original temporal (y-coordinate) data.
+		\param z: Original strain values.
+		\param *args: Additional positional arguments, ignored.
+		\param **kwargs: Additional keyword arguments, ignored.
+		\return Returns a tuple like `(x, y, z)`.
+		\retval x This is the \ref target_x
+		\retval y \ref target_time
+		\retval z Resampled strain array, according to \ref target_x and
+			\ref target_time.
+		"""
+		if self.target_x is None or self.target_time is None:
+			raise ValueError("Target x and time points must be set before resampling.")
+		try:
+			y = misc.datetime_to_timestamp(y)
+		except:
+			pass
+		target_time = misc.datetime_to_timestamp(self.target_time)
+		# Resample
+		method = self.method if self.method is not None else "linear"
+		interpolated_strain = scipy.interpolate.interpn(
+							(y, x), z,
+							xi=(target_time[:, np.newaxis], self.target_x),
+							method=method, **self.method_kwargs)
+		return self.target_x, self.target_time, interpolated_strain
