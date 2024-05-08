@@ -133,6 +133,9 @@ class ODiSI6100TSVFile(Protocol):
 		with open(self.file, "r") as f:
 			for line in f:
 				line_list = line.strip().split(self.itemsep)
+				# Skip blank lines
+				if not any(line_list):
+					continue
 				if in_header:
 					# Find the header to body separator
 					if "---" in line_list[0]:

@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move `aggregate.Aggregate` to `resizing.Aggregate`
 - Rename `preprocessing.base.DataCleaner` &rarr; `preprocessing.base.Task`
 
+### Fixed
+
+- `protocols.ODiSI6100TSVFile.read_file()` will now skip blank lines instead of crashing
+
 ### Removed
 
 - `preprocessing.strip_smooth_crop()`
