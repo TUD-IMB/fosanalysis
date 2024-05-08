@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - `resampling`
         - move `aggregate` into `resizing`
 - New functions `utils.misc.datetime_to_timestamp()` and `utils.misc.timestamp_to_datetime()`
+- Functionality to read only base data (metadata, gages/segments, tare, x-axis) or whole file
 
 ### Changed
 
@@ -43,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	Secondly, the consolidation is now done by a `preprocessing.ensemble` object.
 - Preprocessing functionalities and clean up some unused attributes from `strainprofile.StrainProfile`
 - `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
+- Ability of ODiSI6100TSVFile to read multiple files, only one file will be supported
 
 ## [v0.3] – 2023-??-??
 
