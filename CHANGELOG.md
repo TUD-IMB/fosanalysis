@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - `resampling`
         - move `aggregate` into `resizing`
 - New functions `utils.misc.datetime_to_timestamp()` and `utils.misc.timestamp_to_datetime()`
-- Functionality to read only base data (metadata, gages/segments, tare, x-axis) or whole file
+- Option to read tsv header data (metadata, gages/segments, tare, x-axis) only
 
 ### Changed
 
