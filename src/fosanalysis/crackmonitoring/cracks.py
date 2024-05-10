@@ -103,7 +103,8 @@ class CrackList(list):
 		"""
 		if len(crack_list) == 1 and hasattr(crack_list[0], "__iter__"):
 			crack_list = crack_list[0]
-		assert all([isinstance(entry, Crack) for entry in crack_list]) or len(crack_list) == 0, "At least one entry is not a Crack!"
+		assert all([isinstance(entry, Crack) for entry in crack_list]) \
+			or len(crack_list) == 0, "At least one entry is not a Crack!"
 		super().__init__(crack_list)
 	@property
 	def x_l(self) -> list:
@@ -125,48 +126,136 @@ class CrackList(list):
 	def widths(self) -> list:
 		r""" Returns a list with the widths of all cracks. """
 		return self.get_attribute_list("width")
-	def get_attribute_list(self, attribute: str, fallback = None) -> list:
+	def get_attribute_list(self, attribute: str) -> list:
 		r"""
 		Extract a list of values from the given attribute of all cracks.
 		\param attribute Name of the attribute to extract.
-			If a crack object has not such attribute, `fallback` is returned.
-		\param fallback Value to report, if a crack has no such attribute set.
-			Defaults to `None`.
+			If the attribute of the crack object is not set, `None` is reported instead.
 		"""
-		return [getattr(crack, attribute, fallback) for crack in self]
-	def get_crack(self, x, method: str = "nearest") -> Crack:
+		return [crack[attribute] for crack in self]
+	def get_cracks_by_location(self,
+			*locations: tuple,
+			tol: float = None,
+			method: str = "nearest",
+			make_copy: bool = True,
+			placeholder: bool = False,
+			):
 		r"""
-		Get the \ref Crack according to the given position `x` and the `method`.
-		\param x Position along the Sensor.
-		\param method Method, that is used, to use decide, how the crack is chosen. Available methods:
-			- `"nearest"` (default): returns the crack, for which the distance between the location and `x` is the smallest among all cracks.
-			- `"lt"`: returns the first crack, for which holds: \f$x_{\mathrm{t,l}} < x \leq x_{\mathrm{t,r}}\f$.
-		\return Returns the \ref Crack. If no crack satisfies the condition, `None` is returned.
+		Get a list of \ref Cracks according to the given list of positions `locations` and the `method`.
+		\param locations Locations along the sensor to get cracks at.
+		\param tol Tolerance in location difference, to take a Crack into account.
+			Only used with `method = "nearest"`.
+			Defaults to `None`, which is turned off.
+		\param method Method, that is used, to use decide, how the cracks are chosen. Available methods:
+			- `"nearest"` (default): adds the crack to the CrackList,
+				for which the distance between the location of the crack
+				and the entry in `locations` is the smallest among all cracks.
+			- `"lt"`: returns the first crack, for which holds:
+				\f$x_{\mathrm{t,l}} < x \leq x_{\mathrm{t,r}}\f$.
+		\param make_copy If set to `True`, independent copies are returned.
+			Defaults to `False`.
+		\param placeholder Switch to report `None`, when no suitable Crack is found.
+			Defaults to `False`, which is no replacement.
+		\return Returns a \ref CrackList.
 		"""
-		if not self:
-			raise RuntimeWarning("Trying to get a crack from empty CrackList, falling back to `None`.")
-			return None
-		selected_crack = None
+		selected_crack_list = CrackList()
 		if method == "nearest":
-			min_dist = float("inf")
-			for crack in self:
-				if crack.location is not None:
-					dist = abs(x - crack.location)
-					if crack.dist < min_dist:
-						min_dist = dist
-						selected_crack = crack
+			crack_locations = self.get_attribute_list("location")
+			crack_locations = np.array([entry if entry is not None else float("nan") for entry in crack_locations])
+			if not np.any(np.isfinite(crack_locations)):
+				return selected_crack_list
+			for loc in locations:
+				dist = np.array(np.abs(loc - crack_locations))
+				min_index = np.nanargmin(dist)
+				if tol is None or dist[min_index] <= tol:
+					selected_crack_list.append(self[min_index])
+				elif placeholder:
+					selected_crack_list.append(None)
 		elif method == "lt":
-			for crack in self:
-				if crack.x_l is not None and crack.x_r is not None and crack.x_l < x <= crack.x_r:
-					selected_crack = crack
-					break
+			for loc in locations:
+				found_crack = None
+				for crack in self:
+					try:
+						if crack["x_l"] < loc <= crack["x_r"]:
+							found_crack = crack
+							break
+					except:
+						pass
+				if found_crack is not None or placeholder:
+					selected_crack_list.append(found_crack)
 		else:
 			raise ValueError("`method` '{}' unknown for getting a crack from CrackList.".format(method))
-		return selected_crack
-	def sort(self):
+		if make_copy:
+			return copy.deepcopy(selected_crack_list)
+		else:
+			return selected_crack_list
+	def get_cracks_attribute_by_range(self,
+			attribute: str = "location",
+			minimum: float = -np.inf,
+			maximum: float = np.inf,
+			make_copy: bool = True,
+			):
 		r"""
-		Sort the list of cracks.
+		Get a list of \ref Crack objects according to the given attribute.
+		\param attribute Name of the relevant attribute
+		\param minimum threshold for the minimal accepted value of the attribute
+		\param maximum threshold for the maximal accepted value of the attribute
+		\param make_copy if true, a deepcopy of the CrackList is returned.
+		\return Returns the \ref CrackList.
+			If no crack satisfies the condition, an empty CrackList is returned.
 		"""
-		orig_order = [crack.location for crack in self]
+		selected_crack_list = CrackList()
+		for crack in self:
+			try:
+				if minimum <= crack[attribute] <= maximum:
+					selected_crack_list.append(crack)
+			except:
+				pass
+		if make_copy:
+			return copy.deepcopy(selected_crack_list)
+		else:
+			return selected_crack_list
+	def get_cracks_attribute_is_none(self,
+			attribute: str,
+			make_copy: bool = True,
+			):
+		r"""
+		Get a list of \ref Cracks whose attribute is None.
+		\param attribute Name of the relevant attribute
+		\param make_copy if true, a deepcopy of the CrackList is returned.
+		\return Returns the \ref CrackList.
+			If no crack satisfies the condition, an empty CrackList is returned.
+		"""
+		selected_crack_list = CrackList()
+		crack_attribute = self.get_attribute_list(attribute)
+		for i, attr in enumerate(crack_attribute):
+			if attr is None:
+				selected_crack_list.append(self[i])
+		if make_copy:
+			return copy.deepcopy(selected_crack_list)
+		else:
+			return selected_crack_list
+	def clear_attribute(self,
+			attribute: str,
+			make_copy: bool = True,
+			):
+		r"""
+		Sets the attribute to `None` for each \ref Crack object contained.
+		"""
+		if make_copy:
+			new_cracklist = copy.deepcopy(self)
+			for crack_object in new_cracklist:
+				del crack_object[attribute]
+			return new_cracklist
+		else:
+			for crack_object in self:
+				del crack_object[attribute]
+			return self
+	def sort(self, attribute: str = "location"):
+		r"""
+		Sort the list of \ref Cracks according to the given attribute.
+		\param attribute Name of the relevant attribute
+		"""
+		orig_order = self.get_attribute_list(attribute)
 		index_list = np.argsort(orig_order)
 		self.__init__(*(self[i] for i in index_list))
