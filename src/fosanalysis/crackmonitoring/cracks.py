@@ -8,31 +8,30 @@ Contains class definitions for Crack and CrackList.
 import warnings
 
 import numpy as np
+import copy
+
 
 class Crack():
 	r"""
 	Crack in the concrete.
 	"""
 	def __init__(self,
-			index: int = None,
 			location: float = None,
+			index: int = None,
 			x_l: float = None,
 			x_r: float = None,
 			max_strain: float = None,
-			name: str = None,
 			width: float = None,
-			):
+			**kwargs):
 		r"""
 		Constructs a Crack object.
-		\param index \copybrief index For more, see \ref index.
 		\param location \copybrief location For more, see \ref location.
+		\param index \copybrief index For more, see \ref index.
 		\param x_l \copybrief x_l For more, see \ref x_l.
 		\param x_r \copybrief x_r For more, see \ref x_r.
 		\param max_strain \copybrief max_strain For more, see \ref max_strain.
-		\param name \copybrief name For more, see \ref name.
 		\param width \copybrief width For more, see \ref width.
 		"""
-		super().__init__()
 		## Position index in the sanitized measurement data of \ref strainprofile.StrainProfile (e.g.\ `x`).
 		self.index = index
 		## Absolute location along the fibre optical sensor.
@@ -41,32 +40,54 @@ class Crack():
 		self.x_l = x_l
 		## Absolute location right-hand side end of its transfer length.
 		self.x_r = x_r
-		## The opening width of the crack. The width is calculated by integrating the strain over the transfer length. 
+		## The opening width of the crack.
+		## The width is calculated by integrating the strain over the transfer length.
 		self.width = width
-		## The strain in the fibre-optical sensor at the \ref location. 
+		## The strain in the fibre-optical sensor at the \ref location.
 		self.max_strain = max_strain
-		## Name of the crack.
-		self.name = name
+		for key, value in kwargs.items():
+			self[key] = value
+	def __getitem__(self, key):
+		return getattr(self, key, None)
+	def __setitem__(self, key, value):
+		return setattr(self, key, value)
+	def __delitem__(self, key):
+		try:
+			delattr(self, key)
+		except:
+			pass
 	@property
 	def lt(self):
 		r"""
 		Returns the length of the transfer length.
 		"""
-		return self.x_r - self.x_l
+		try:
+			return self["x_r"] - self["x_l"]
+		except:
+			return None
 	@property
 	def lt_l(self):
 		r""" Distance from the crack position to the left-hand side end of its transfer length. """
-		return self.location - self.x_l
+		try:
+			return self["location"] - self["x_l"]
+		except:
+			return None
 	@property
 	def lt_r(self):
 		r""" Distance from the crack position to the right-hand side end of its transfer length. """
-		return self.x_r - self.location
+		try:
+			return self["x_r"] - self["location"]
+		except:
+			return None
 	@property
 	def segment(self):
 		r"""
 		Returns the absolute influence segment of the crack.
 		"""
-		return self.x_l, self.x_r
+		try:
+			return self["x_l"], self["x_r"]
+		except:
+			None
 
 class CrackList(list):
 	r"""
