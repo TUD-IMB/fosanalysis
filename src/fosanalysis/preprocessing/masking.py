@@ -11,7 +11,7 @@ import copy
 
 import numpy as np
 
-from fosanalysis.utils import misc
+from fosanalysis.utils import misc, windows
 from . import base
 from . import filtering
 
@@ -595,13 +595,13 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			method: str, 
 			threshold: float = 3.5,
 			radius: int = 0,
-			timespace: str = "1D_space",
+			timespace: str = "1d_space",
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
 		\param threshold \copydoc threshold
-		\param method \copydoc method
-		\param radius \copydoc radius
+		\param method \copybrief method \copydetails method
+		\param radius \copybrief radius \copydetails radius
 		\param timespace \copybrief timespace \copydetails timespace
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
@@ -780,7 +780,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 			median = np.nanmedian(z)
 			mad_array = np.nanmedian(np.abs(z - np.nanmedian(z)))
 		else:
-			for index, window in misc.windows.sliding(z, radius):
+			for index, window in windows.sliding(z, radius):
 				curr_median = np.nanmedian(window)
 				mad_array[index] = self._get_absolute_deviation(window, curr_median)
 				median[index] = curr_median
