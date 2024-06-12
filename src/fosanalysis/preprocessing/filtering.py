@@ -347,7 +347,7 @@ class Cluster(Filter):
 		Cluster has no true 2D operation mode.
 		Set \ref timespace to `"1D_space"`!
 		"""
-		raise NotImplementedError("Cluster does not support true 2D operation. Try `timepace='1D-space'` instead.")
+		raise NotImplementedError("Cluster does not support true 2D operation. Try `timepace='1d_space'` instead.")
 	def _get_weights(self,
 			pixel: int,
 			x_array: np.array,

@@ -235,4 +235,6 @@ class Task(Base):
 				y_new, z_col = self._run_1d(y, column, *args, **kwargs)
 				z_new.append(z_col)
 			z_new = np.array(z_new).T
+		else:
+			raise ValueError("No such option for timespace known: '{}'.".format(timespace))
 		return x_new, y_new, z_new

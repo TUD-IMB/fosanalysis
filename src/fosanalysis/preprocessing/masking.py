@@ -282,7 +282,7 @@ class GTM(AnomalyMasker):
 		GTM has no true 2D operation mode.
 		Set \ref timespace to `"1D_space"`!
 		"""
-		raise NotImplementedError("GTM does not support true 2D operation. Please use `timepace='1D-space'` instead.")
+		raise NotImplementedError("GTM does not support true 2D operation. Please use `timepace='1d_space'` instead.")
 
 class OSCP(AnomalyMasker):
 	r"""
@@ -310,7 +310,7 @@ class OSCP(AnomalyMasker):
 			delta_s: float = None,
 			n_quantile: int = 50,
 			min_quantile: float = 0.5,
-			timespace: str = "1D-space",
+			timespace: str = "1d_space",
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
@@ -594,15 +594,15 @@ class ZscoreOutlierDetection(AnomalyMasker):
 	def __init__(self, 
 			method: str, 
 			threshold: float = 3.5,
-			timespace: str = "1D_space",
 			radius: int = 0,
+			timespace: str = "1D_space",
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
 		\param threshold \copydoc threshold
 		\param method \copydoc method
-		\param timespace \copydoc timespace
 		\param radius \copydoc radius
+		\param timespace \copybrief timespace \copydetails timespace
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
