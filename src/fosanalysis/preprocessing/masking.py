@@ -325,11 +325,12 @@ class OSCP(AnomalyMasker):
 		"""
 		super().__init__(timespace=timespace, *args, **kwargs)
 		assert delta_s is not None or threshold is not None, "Either delta_s or threshold must be set!"
-		## Maximum reach of the vicintity for relative height comparison.
+		## Maximum reach of the vicinity for relative height comparison.
 		## This is the inradius of the quadratic sliding window, which
-		## will contain at most \f$(r+1)^2\f$ pixels.
+		## will contain at most \f$(r+1)^2\f$ pixels for 2D and
+		## \f$(r+1)\f$ pixels for 1D.
 		## The size of the vicinity is determines also the size of the
-		## largest detectable oulier cluster. On the other hand,
+		## largest detectable outlier cluster. On the other hand,
 		##  it also determines the smallest preservable feature.
 		self.max_radius = max_radius
 		## Setting for the threshold estimation.
@@ -356,14 +357,6 @@ class OSCP(AnomalyMasker):
 		## of relative heights is kept for threshold estimation.
 		## Defaults to `0.5`, which is the upper half.
 		self.min_quantile = min_quantile
-		## Calculation object to retrieve the height of the local vicinity,
-		## The local vicinity (neighbors) is the content of a quadratic
-		## sliding window centered at the current pixel.
-		## The height is determined by the median of this sliding window.
-		self.local_height_calc = filtering.SlidingFilter(
-				radius=None,
-				method="nanmedian",
-				timespace="2D")
 	def _run_1d(self,
 			x: np.array,
 			z: np.array,
@@ -513,11 +506,15 @@ class OSCP(AnomalyMasker):
 		\param z Array containing strain data.
 		\param radius Inradius of the sliding window.
 		"""
-		x_tmp, y_tmp, median_array = self.local_height_calc.run(
+		local_height_calc = filtering.SlidingFilter(
+				radius=radius,
+				method="nanmedian",
+				timespace=self.timespace)
+		x_tmp, y_tmp, median_array = local_height_calc.run(
 											x=None,
 											y=None,
 											z=z,
-											radius=radius)
+											)
 		return np.abs(z - median_array)
 	def _get_quantiles(self, values: np.array) -> tuple:
 		r"""
