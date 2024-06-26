@@ -81,7 +81,7 @@ def nan_diff_1d(arr: np.array) -> np.array:
 	```.py
 	>>> a = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
-	>>> diff_to_last_finite_1d(a)
+	>>> nan_diff_1d(a)
 	array([1., nan, -inf, 3.])
 	```
 	\param arr Array like, needs to be 1D.
@@ -96,6 +96,7 @@ def nan_diff_1d(arr: np.array) -> np.array:
 def nan_diff(arr: np.array, axis: int = -1) -> np.array:
 	r"""
 	Calculate the difference to the previous finite entry.
+	This is similar to `np.diff()`, but skipping `NaN` or `inf` entries.
 	This function is a wrapper around \ref nan_diff_1d().
 	\param arr Array like.
 	\param axis Axis along which to calculate the incremental difference.
