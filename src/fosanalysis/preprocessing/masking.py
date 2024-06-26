@@ -280,7 +280,7 @@ class GTM(AnomalyMasker):
 			*args, **kwargs)->tuple:
 		r"""
 		GTM has no true 2D operation mode.
-		Set \ref timespace to `"1D_space"`!
+		Set \ref timespace to `"1d_space"`!
 		"""
 		raise NotImplementedError("GTM does not support true 2D operation. Please use `timepace='1d_space'` instead.")
 
@@ -651,7 +651,7 @@ class ZscoreOutlierDetection(AnomalyMasker):
 		\copydetails AnomalyMasker._run_2d()
 		"""
 		raise NotImplementedError("ZscoreOutlierDetection does not support true 2D operation. \
-					Please use `timepace='1D_space'` instead.")
+					Please use `timepace='1d_space'` instead.")
 	def _get_z_score(self, z):
 		r"""
 		Calculates the z-score of the given strain array with mean and standard deviation.

@@ -243,7 +243,7 @@ class Resampler(base.Task):
 			 target_time: np.array = None,
 			 method: str = None,
 			 method_kwargs: dict = None,
-			 timespace: str = "1D_space",
+			 timespace: str = "1d_space",
 			 *args, **kwargs):
 		r"""
 		Construct a Resampler instance.

@@ -57,7 +57,7 @@ class Task(Base):
 	Abstract base class for preprocessing task classes.
 	"""
 	def __init__(self,
-			timespace: str = "1D_space",
+			timespace: str = "1d_space",
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
@@ -70,10 +70,10 @@ class Task(Base):
 		## Indicator, which approach is used for operations on a 2d array.
 		## Available options:
 		## - `"2D"`: Use the native 2D implementation.
-		## - `"1D_space"`: Use the native 1D implementation, in the space domain.
+		## - `"1d_space"`: Use the native 1D implementation, in the space domain.
 		##	This is repeated for each time stamp in the measurement campaign. 
 		##	An iteration step processes a complete reading of sensor length.
-		## - `"1D_time"`:  Use the native 1D implementation, in the time domain.
+		## - `"1d_time"`:  Use the native 1D implementation, in the time domain.
 		##	This is repeated for each gage location along the sensor. 
 		##	An iteration step processes a time series for a sensor position.
 		self.timespace = timespace
@@ -166,11 +166,11 @@ class Task(Base):
 		This operation might be applied to on a 2D array by \ref _map_2d().
 		This function is called, if:
 		- the `z` is 1D or
-		- \ref timespace is set to `"1D_space"` or `"1D_time"`.
+		- \ref timespace is set to `"1d_space"` or `"1d_time"`.
 		\param x Array of coordinate positions.
 			Dependent on \ref timespace it may hold:
-			- `x`: sensor coordinates, (`timespace = "1D_space"`)
-			- `y`: time data (`timespace = "1D_time"`)
+			- `x`: sensor coordinates, (`timespace = "1d_space"`)
+			- `y`: time data (`timespace = "1d_time"`)
 			- indices, if none of both previous options match the `z`'s shape.
 		\param z Array of strain data in accordance to `x` and `y`.
 		\param *args Additional positional arguments to customize the behaviour.

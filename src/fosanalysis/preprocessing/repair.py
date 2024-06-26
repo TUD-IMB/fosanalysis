@@ -183,6 +183,6 @@ class ScipyInterpolation1D(Repair):
 			*args, **kwargs) -> tuple:
 		r"""
 		ScipyInterpolation1D has no true 2D operation mode.
-		Set \ref timespace to `"1D_space"`!
+		Set \ref timespace to `"1d_space"`!
 		"""
 		raise NotImplementedError("ScipyInterpolation1D does not support true 2D operation. Please use `timepace='1d_space'` instead.")

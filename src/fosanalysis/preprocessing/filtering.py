@@ -345,7 +345,7 @@ class Cluster(Filter):
 			*args, **kwargs) -> tuple:
 		r"""
 		Cluster has no true 2D operation mode.
-		Set \ref timespace to `"1D_space"`!
+		Set \ref timespace to `"1d_space"`!
 		"""
 		raise NotImplementedError("Cluster does not support true 2D operation. Try `timepace='1d_space'` instead.")
 	def _get_weights(self,
