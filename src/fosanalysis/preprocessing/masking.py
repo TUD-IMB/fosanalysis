@@ -325,13 +325,10 @@ class OSCP(AnomalyMasker):
 		"""
 		super().__init__(timespace=timespace, *args, **kwargs)
 		assert delta_s is not None or threshold is not None, "Either delta_s or threshold must be set!"
-		## Maximum reach of the vicinity for relative height comparison.
-		## This is the inradius of the quadratic sliding window, which
-		## will contain at most \f$(r+1)^2\f$ pixels for 2D and
-		## \f$(r+1)\f$ pixels for 1D.
-		## The size of the vicinity is determines also the size of the
-		## largest detectable outlier cluster. On the other hand,
-		##  it also determines the smallest preservable feature.
+		## The radius of the largest sliding window used in the outlier
+		## candidate detection stage \f$r_{\mathrm{max}} > 1\f$ determines
+		## the size of the largest detectable outlier cluster, but also
+		## the the smallest preservable feature.
 		self.max_radius = max_radius
 		## Setting for the threshold estimation.
 		## This is minimal slope before the cumulated density function (CDF)
@@ -392,7 +389,7 @@ class OSCP(AnomalyMasker):
 		\param SRA_array Array indicating, outlier condidates.
 		\return Returns an updated `SRA_array`, with outlier candidates.
 		"""
-		for radius in range(1, self.max_radius):
+		for radius in range(1, self.max_radius + 1):
 			height_array = self._get_median_heights(z, radius)
 			threshold = self._get_threshold(height_array)
 			candidate_array = height_array > threshold
