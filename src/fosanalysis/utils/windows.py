@@ -11,6 +11,55 @@ import itertools
 
 from . import misc
 
+def sliding_window_function(arr: np.array,
+					radius,
+					fn,
+					pad_mode: str = None,
+					*args, **kwargs) -> np.array:
+	r"""
+	Applies the function `fn` to a sliding window over the array `arr`.
+	\note Results in the margins (the first and last entries closer than
+		`radius` to the edge of the array in each direction) are not
+		reliable, as they suffer from boundary effects.
+		This is caused by the sliding window only visit "complete" windows.
+		In the margins, the values of the edge is repeated.
+		The padding behavior can be changed with `pad_mode`.
+	\param arr Array of data, over which the window should slide.
+	\param radius Inradius of the window, sets the window's widths.
+		Along an axis, the window has a width of \f$(2r+1)\f$.
+		It is expected to be an `int` a `tuple`.
+		If `radius` is an integer, it is used for all axes.
+		The windows will contain \f$(2r+1)^n\f$ entries.
+		To set indiviual widths along for each dimension, use a `tuple`.
+		This `tuple`'s length has to match the dimension of `arr`.
+	\param fn A function object (type: `callable`), taking a `np.array`
+		as input and returning a `float`.
+	\param pad_mode Mode for padding the edges of the result array.
+		Defaults to `"edge"`, which repeats the result value on the edge.
+		For more, options, see [`numpy.pad()`](https://numpy.org/doc/stable/reference/generated/numpy.pad.html)
+	\param *args Additional positional arguments; ignored.
+	\param **kwargs Additional keyword arguments; ignored.
+	\return Return a `np.array` with the same shape as `arr`.
+		Each entry is the result of applying `fn` to a window reaching
+		`radius` into each direction.
+	"""
+	pad_mode = pad_mode if pad_mode is not None else "edge"
+	arr = np.array(arr)
+	radius = misc.np_to_python(radius)
+	if isinstance(radius, int):
+		radius = (radius,)*arr.ndim
+	try:
+		assert len(radius) == arr.ndim
+		radius = tuple([int(r) for r in radius])
+	except AssertionError:
+		raise ValueError("Shape of radius ({}) does not match the shape of array ({})".format(radius, arr.ndim))
+	window_size = tuple([int(r * 2 + 1) for r in radius])
+	view = np.lib.stride_tricks.sliding_window_view(arr, window_size)
+	axis = tuple(range(-1, -arr.ndim - 1, -1)) if arr.ndim > 1 else -1
+	fn_result = fn(view, axis=axis)
+	pad = np.pad(fn_result, pad_width=radius, mode=pad_mode)
+	return pad
+
 def sliding(data_array: np.array, radius):
 	r"""
 	Generates a sliding window over an array.
@@ -27,7 +76,7 @@ def sliding(data_array: np.array, radius):
 	In the margins, the window contains fewer entries.
 	Thus, boundary effects are to be expected, when using this function.
 	\remark Note, that a views of the original array are yielded, not copies.
-		Changing a pixel's value in the window will change original array.
+		Changing a pixel's value in the window will change the original array.
 	\param data_array Array of data, over which the window should slide.
 	\param radius Inradius of the window, sets the window's widths.
 		Along an axis, the window has a width of \f$(2r+1)\f$.
