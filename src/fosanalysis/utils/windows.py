@@ -16,7 +16,7 @@ def sliding(data_array: np.array, radius):
 	Generates a sliding window over an array.
 	This function returns a generator, hence, it should be use like:
 	```.py
-	for pixel, window in sliding_Filter(<array>, <radius>):
+	for pixel, window in sliding(<array>, <radius>):
 		# do something
 		pass
 	```
