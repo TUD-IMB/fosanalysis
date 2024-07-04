@@ -116,14 +116,13 @@ class SlidingFilter(Filter):
 	def __init__(self,
 			radius: int,
 			method: str,
-			method_kwargs: dict = None,
+			pad_mode: str = None,
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
 		As this is an abstract class, it may not be instantiated directly itself.
 		\param radius \copydoc radius
 		\param method \copydoc method
-		\param method_kwargs \copydoc method_kwargs
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
@@ -141,22 +140,20 @@ class SlidingFilter(Filter):
 		## This method is used to reduce the content of the sliding window to a single value.
 		## This accepts either:
 		## 1. Name of a numpy function (type: `str`):
-		## 	The numpy function `np.<method>` is chosen and used like if a `callable` was provided (second option). 
+		## 	The numpy function `np.<method>` is chosen and used like if
+		## 	a `callable` was provided (second option). 
 		## 	Some useful options are (see the numpy documentation for details):
 		## 		- `"nanmean"`: 
 		## 		- `"nanmedian"`
 		## 		- `"nanmin"`
 		##		- `"nanmax"`
-		## 2. A function object (type: `callable`):
-		## 	This function is used as provided and internally called like this:
-		## 	`result = method(<np.array>, **method_kwargs)`.
-		## 	Requirements for this function are:
-		## 		- input parameters: a numpy array and optionally keyword arguments (see \ref method_kwargs),
-		## 		- return value is a `float`.
+		## 2. A function object (type: `callable`), taking a `np.array`
+		## as input and returning a `float`.
 		self.method = method
-		## This dictionary contains optional keyword arguments for \ref method.
-		## It can be used to change the behaviour of that function.
-		self.method_kwargs = method_kwargs if method_kwargs is not None else {}
+		## Mode for padding the edges of the result array.
+		## Defaults to `"edge"`, which repeats the result value on the edge.
+		## For more, options, see [`numpy.pad()`](https://numpy.org/doc/stable/reference/generated/numpy.pad.html)
+		self.pad_mode = pad_mode
 	def run(self,
 			x: np.array,
 			y: np.array,
@@ -165,7 +162,6 @@ class SlidingFilter(Filter):
 			make_copy: bool = True,
 			radius: int = None,
 			method: str = None,
-			method_kwargs: dict = None,
 			*args, **kwargs) -> tuple:
 		r"""
 		The given data is filtered with a sliding window.
@@ -173,14 +169,12 @@ class SlidingFilter(Filter):
 		\copydetails preprocessing.base.Task.run()
 		\param radius \copydoc radius Defaults to \ref radius.
 		\param method \copydoc method
-		\param method_kwargs \copydoc method_kwargs
 		"""
 		return super().run(x, y, z,
 				timespace=timespace,
 				make_copy=make_copy,
 				radius=radius,
 				method=method,
-				method_kwargs=method_kwargs,
 				*args, **kwargs)
 	def _run_1d(self,
 			x: np.array, 
@@ -197,7 +191,6 @@ class SlidingFilter(Filter):
 			z: np.array,
 			radius = None,
 			method: str = None,
-			method_kwargs: dict = None,
 			*args, **kwargs) -> np.array:
 		r"""
 		Move the window over the input array and apply \ref method on it.
@@ -208,22 +201,16 @@ class SlidingFilter(Filter):
 		\param z Array of strain data.
 		\param radius \copydoc radius Defaults to \ref radius.
 		\param method \copydoc method
-		\param method_kwargs \copydoc method_kwargs
 		\param *args Additional positional arguments, will be ignored.
 		\param **kwargs Additional keyword arguments, will be ignored.
 		\return Returns an array with the same shape as `z`.
 		"""
 		radius = radius if radius is not None else self.radius
 		method = method if method is not None else self.method
-		method_kwargs = method_kwargs if method_kwargs is not None else self.method_kwargs
-		method_kwargs = method_kwargs if method_kwargs is not None else {}
 		method_function = method if callable(method) else getattr(np, method)
 		if radius == 0:
 			return z
-		smooth_data = np.zeros_like(z)
-		for pixel, window in utils.windows.sliding(z, radius):
-			smooth_data[pixel] = method_function(window, **method_kwargs)
-		return smooth_data
+		return utils.windows.sliding_window_function(z, radius, method_function)
 
 class Cluster(Filter):
 	r"""
