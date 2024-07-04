@@ -1,5 +1,6 @@
+
 r"""
-Contains class implementations, to remove implausible values from strain data.
+Contains class implementations to remove implausible values from strain data.
 This can be used to remove strain reading anomalies (SRAs) from the data.
 
 \author Bertram Richter
@@ -10,7 +11,6 @@ from abc import abstractmethod
 import copy
 
 import numpy as np
-from numpy.lib.stride_tricks import sliding_window_view
 
 from fosanalysis.utils import misc, windows
 from . import base
@@ -596,8 +596,8 @@ class ZSOD(AnomalyMasker):
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, *args, **kwargs)
-		## Relative height threshold above which a pixel is flagged as
-		## SRA, defaults to `3.5`.
+		## Relative height threshold above which a pixel is flagged as SRA.
+		## Defaults to `3.5`.
 		self.threshold = threshold
 	def _run_2d(self, 
 			x: np.array,
@@ -610,7 +610,7 @@ class ZSOD(AnomalyMasker):
 		\copydetails AnomalyMasker._run_2d()
 		"""
 		raise NotImplementedError("ZscoreOutlierDetection does not support true 2D operation. \
-					Please use `timepace='1D_space'` instead.")
+					Please use `timepace='1d_space'` instead.")
 	def _get_outlier_mask(self, z_score):
 		r"""
 		Mask entries as SRA, whose z-scores exceed \ref threshold.
@@ -622,7 +622,7 @@ class ZSOD(AnomalyMasker):
 	
 class ZscoreOutlierDetection(ZSOD):
 	r"""	
-	Class for the standard score approach for spike detection.
+	Class for the standard z-score approach for spike detection.
 	Describing a data point in terms of its relationship to the mean and
 	standard deviation of strain values.
 	The method can be mainly used for constant (noise) signals.
@@ -650,19 +650,8 @@ class ZscoreOutlierDetection(ZSOD):
 		\copydetails AnomalyMasker._run_1d()
 		"""
 		z_score = self._get_z_score(z)
-		SRA_array = super()._get_outlier_mask(z_score)
+		SRA_array = self._get_outlier_mask(z_score)
 		return x, SRA_array
-	def _run_2d(self, 
-			x: np.array,
-			y: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 2D.
-		\copydetails AnomalyMasker._run_2d()
-		"""
-		super()._run_2d(x, y, z, SRA_array)
 	def _get_z_score(self, z):
 		r"""
 		Calculates the z-score of the given strain array with mean and standard deviation.
@@ -679,7 +668,7 @@ class ModifiedZscoreDetection(ZSOD):
 	Class for the modified z-score approach for spike detection.
 	This method uses the median and the median absolute deviation
 	rather than the mean and standard deviation.
-	The multiplier 0.6745 is the 0.75th quartile of the standard normal distribution.
+	The multiplier 0.6745 is the 0.75th quantile of the standard normal distribution.
 	Disadvantage: Peaks can also detect as strain reading anomaly.
 	See \cite Iglewicz_Hoaglin_1993_How_to_detect_and_handle_outliers.
 	"""
@@ -705,33 +694,23 @@ class ModifiedZscoreDetection(ZSOD):
 		\copydetails AnomalyMasker._run_1d()
 		"""
 		z_score = self._get_modified_z_score(z)
-		SRA_array = super()._get_outlier_mask(z_score)
+		SRA_array = self._get_outlier_mask(z_score)
 		return x, SRA_array
-	def _run_2d(self, 
-			x: np.array,
-			y: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 2D.
-		\copydetails AnomalyMasker._run_2d()
-		"""
-		super()._run_2d(x, y, z, SRA_array)
 	def _get_modified_z_score(self, z):
 		r"""
 		Calculates the modified z-score of the given strain array.
 		\param z Array containing strain data.
 		\return Returns an array modified z-score.
 		"""
-		mad_array = np.nanmedian(np.abs(z - np.nanmedian(z)))
-		z_score = 0.6745 * ((z - np.nanmedian(z)) / mad_array)
+		median_value = np.nanmedian(z)
+		mad_array = np.nanmedian(np.abs(z - median_value))
+		z_score = 0.6745 * ((z - median_value) / mad_array)
 		return z_score
 
 class SlidingModifiedZscore(ZSOD):
 	r"""	
 	Class that calculates the modified zscore over a moving window.
-	The window is defined by the given radius and has a width of 2*r+1.
+	The window is defined by the given radius and has a width of \f$2r+1\f$.
 	The median will be calculated only for the current vicinity.
 	"""
 	def __init__(self, 
@@ -760,19 +739,8 @@ class SlidingModifiedZscore(ZSOD):
 		\copydetails AnomalyMasker._run_1d()
 		"""
 		z_score = self._get_sliding_z_score(z)
-		SRA_array = super()._get_outlier_mask(z_score)
+		SRA_array = self._get_outlier_mask(z_score)
 		return x, SRA_array
-	def _run_2d(self, 
-			x: np.array,
-			y: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 2D.
-		\copydetails AnomalyMasker._run_2d()
-		"""
-		super()._run_2d(x, y, z, SRA_array)
 	def _get_sliding_z_score(self, z):
 		r"""
 		Calculates the modified z-score with the absolute deviation of current vicinity.
@@ -800,18 +768,16 @@ class SlidingModifiedZscore(ZSOD):
 		\return Returns arrays with median and absolute deviation of vicinity.
 		"""
 		if self.radius == 0:
-			median = np.nanmedian(z)
+			median_array = np.nanmedian(z)
 		else:
-			window_size = self.radius * 2 + 1
-			seq = np.concatenate([z[-self.radius:], z, z[0:self.radius]])
-			median = np.nanmedian(sliding_window_view(seq, (window_size,)), axis=1)
-		ad_values = np.abs(z - median)
-		return median, ad_values
+			median_array = windows.sliding_window_function(z, self.radius, np.nanmedian)
+		ad_values = np.abs(z - median_array)
+		return median_array, ad_values
 
 class WhitakerAndHayes(ZSOD):
 	r"""	
 	The Whitaker & Hayes algorithm uses the high intensity and small width of spikes.
-	Therefore it use the difference between a strain value and the next value.
+	Therefore it uses the difference between a strain value and the next value.
 	The algorithm presented in \cite Whitaker_2018_ASimpleAlgorithmDespiking.
 	"""
 	def __init__(self, 
@@ -839,19 +805,8 @@ class WhitakerAndHayes(ZSOD):
 		"""
 		delta_s = self._get_delta_strain(z)
 		z_score = self._get_modified_z_score(delta_s)
-		SRA_array = super()._get_outlier_mask(z_score)
+		SRA_array = self._get_outlier_mask(z_score)
 		return x, SRA_array
-	def _run_2d(self, 
-			x: np.array,
-			y: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 2D.
-		\copydetails AnomalyMasker._run_2d()
-		"""
-		super()._run_2d(x, y, z, SRA_array)
 	def _get_delta_strain(self, z):
 		r"""
 		Calculates the difference between the current strain 
@@ -870,6 +825,7 @@ class WhitakerAndHayes(ZSOD):
 		\param z Array containing strain data.
 		\return Returns an array modified z-score.
 		"""
-		mad_array = np.nanmedian(np.abs(z - np.nanmedian(z)))
-		z_score = 0.6745 * ((z - np.nanmedian(z)) / mad_array)
+		median_value = np.nanmedian(z)
+		mad_array = np.nanmedian(np.abs(z - median_value))
+		z_score = 0.6745 * ((z - median_value) / mad_array)
 		return z_score
