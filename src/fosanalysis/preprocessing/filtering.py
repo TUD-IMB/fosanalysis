@@ -123,6 +123,7 @@ class SlidingFilter(Filter):
 		As this is an abstract class, it may not be instantiated directly itself.
 		\param radius \copydoc radius
 		\param method \copydoc method
+		\param pad_mode \copydoc pad_mode
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""

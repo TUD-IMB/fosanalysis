@@ -578,8 +578,8 @@ class OSCP(AnomalyMasker):
 class ZSOD(AnomalyMasker):
 	r"""
 	Abstract base class for outlier detection by different kinds of z-scores.
-	After calculating the z-score by the given \ref method, SRAs are identified
-	by comparing the strain increments to a \ref threshold.
+	After calculating the z-score by the given \ref _get_z_score(), SRAs
+	are identified by comparing the strain increments to a \ref threshold.
 	The algorithms only make sense for sufficient measuring values (not NaN).
 	An overview of all z-score calculations can be found at
 	https://towardsdatascience.com/removing-spikes-from-raman-spectra-8a9fdda0ac22
@@ -599,6 +599,18 @@ class ZSOD(AnomalyMasker):
 		## Relative height threshold above which a pixel is flagged as SRA.
 		## Defaults to `3.5`.
 		self.threshold = threshold
+	def _run_1d(self,
+			x: np.array,
+			z: np.array,
+			SRA_array: np.array,
+			*args, **kwargs) -> tuple:
+		r"""
+		Estimate which entries are strain reading anomalies in 1D.
+		\copydetails AnomalyMasker._run_1d()
+		"""
+		z_score = self._get_z_score(z)
+		SRA_array = self._get_outlier_mask(z_score)
+		return x, SRA_array
 	def _run_2d(self, 
 			x: np.array,
 			y: np.array,
@@ -611,7 +623,7 @@ class ZSOD(AnomalyMasker):
 		"""
 		raise NotImplementedError("ZscoreOutlierDetection does not support true 2D operation. \
 					Please use `timepace='1d_space'` instead.")
-	def _get_outlier_mask(self, z_score):
+	def _get_outlier_mask(self, z_score: np.array) -> np.array:
 		r"""
 		Mask entries as SRA, whose z-scores exceed \ref threshold.
 		\param z_score Array containing the z-score values.
@@ -619,6 +631,13 @@ class ZSOD(AnomalyMasker):
 		"""
 		mask = np.array(np.abs(z_score) > self.threshold)
 		return mask
+	@abstractmethod
+	def _get_z_score(self, z: np.array) -> np.array:
+		"""
+		Calculate the z-score for the given array.
+		Sub-classes need to provide a meaningful implementation.
+		"""
+		raise NotImplementedError()
 	
 class ZscoreOutlierDetection(ZSOD):
 	r"""	
@@ -640,19 +659,7 @@ class ZscoreOutlierDetection(ZSOD):
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
-	def _run_1d(self,
-			x: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 1D.
-		\copydetails AnomalyMasker._run_1d()
-		"""
-		z_score = self._get_z_score(z)
-		SRA_array = self._get_outlier_mask(z_score)
-		return x, SRA_array
-	def _get_z_score(self, z):
+	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the z-score of the given strain array with mean and standard deviation.
 		\param z Array containing strain data.
@@ -684,19 +691,7 @@ class ModifiedZscoreDetection(ZSOD):
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
-	def _run_1d(self,
-			x: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 1D.
-		\copydetails AnomalyMasker._run_1d()
-		"""
-		z_score = self._get_modified_z_score(z)
-		SRA_array = self._get_outlier_mask(z_score)
-		return x, SRA_array
-	def _get_modified_z_score(self, z):
+	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the modified z-score of the given strain array.
 		\param z Array containing strain data.
@@ -729,19 +724,22 @@ class SlidingModifiedZscore(ZSOD):
 		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
 		## Inradius of the sliding window, defaults to `0`.
 		self.radius = radius
-	def _run_1d(self,
-			x: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
+	def _get_medians_by_window(self, z: np.array) -> np.array:
 		r"""
-		Estimate which entries are strain reading anomalies in 1D.
-		\copydetails AnomalyMasker._run_1d()
+		Get the difference to the local vicinity of all the pixels.
+		The local vicinity is determined by the radius.
+		Then, the absolute deviation between the array of the median and
+		and the pixels's values is returned.
+		\param z Array containing strain data.
+		\return Returns arrays with median and absolute deviation of vicinity.
 		"""
-		z_score = self._get_sliding_z_score(z)
-		SRA_array = self._get_outlier_mask(z_score)
-		return x, SRA_array
-	def _get_sliding_z_score(self, z):
+		if self.radius == 0:
+			median_array = np.nanmedian(z)
+		else:
+			median_array = windows.sliding_window_function(z, self.radius, np.nanmedian)
+		ad_values = np.abs(z - median_array)
+		return median_array, ad_values
+	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the modified z-score with the absolute deviation of current vicinity.
 		If the MAD is zero, the mean of the absolute deviation will be used.
@@ -757,22 +755,6 @@ class SlidingModifiedZscore(ZSOD):
 			factor = np.nanmean(ad_values) * 1.253314
 		z_score = values / factor
 		return z_score
-	def _get_medians_by_window(self, z):
-		r"""
-		Get the difference to the local vicinity of all the pixels.
-		The local vicinity is determined by the radius.
-		Then, the absolute deviation between the array of the median and
-		and the pixels's values is returned.
-		\param z Array containing strain data.
-		\param radius Inradius of the sliding window.
-		\return Returns arrays with median and absolute deviation of vicinity.
-		"""
-		if self.radius == 0:
-			median_array = np.nanmedian(z)
-		else:
-			median_array = windows.sliding_window_function(z, self.radius, np.nanmedian)
-		ad_values = np.abs(z - median_array)
-		return median_array, ad_values
 
 class WhitakerAndHayes(ZSOD):
 	r"""	
@@ -787,27 +769,12 @@ class WhitakerAndHayes(ZSOD):
 		r"""
 		Construct an instance of the class.
 		\param threshold \copydoc threshold
-		\param method \copybrief method \copydetails method
-		\param radius \copybrief radius \copydetails radius
 		\param timespace \copybrief timespace \copydetails timespace
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
-	def _run_1d(self,
-			x: np.array,
-			z: np.array,
-			SRA_array: np.array,
-			*args, **kwargs) -> tuple:
-		r"""
-		Estimate which entries are strain reading anomalies in 1D.
-		\copydetails AnomalyMasker._run_1d()
-		"""
-		delta_s = self._get_delta_strain(z)
-		z_score = self._get_modified_z_score(delta_s)
-		SRA_array = self._get_outlier_mask(z_score)
-		return x, SRA_array
-	def _get_delta_strain(self, z):
+	def _get_delta_strain(self, z: np.array) -> np.array:
 		r"""
 		Calculates the difference between the current strain 
 		and the following strain of the given strain array.
@@ -817,7 +784,7 @@ class WhitakerAndHayes(ZSOD):
 		delta_s = misc.nan_diff_1d(z)
 		delta_s = np.insert(delta_s, 0, np.nan)
 		return delta_s
-	def _get_modified_z_score(self, z):
+	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the modified z-score of the given strain array.
 		It uses the median and median absolute deviation.
@@ -825,7 +792,8 @@ class WhitakerAndHayes(ZSOD):
 		\param z Array containing strain data.
 		\return Returns an array modified z-score.
 		"""
-		median_value = np.nanmedian(z)
-		mad_array = np.nanmedian(np.abs(z - median_value))
-		z_score = 0.6745 * ((z - median_value) / mad_array)
+		delta_s = self._get_delta_strain(z)
+		median_value = np.nanmedian(delta_s)
+		mad_array = np.nanmedian(np.abs(delta_s - median_value))
+		z_score = 0.6745 * ((delta_s - median_value) / mad_array)
 		return z_score
