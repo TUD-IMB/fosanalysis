@@ -621,8 +621,9 @@ class ZSOD(AnomalyMasker):
 		Estimate which entries are strain reading anomalies in 2D.
 		\copydetails AnomalyMasker._run_2d()
 		"""
-		raise NotImplementedError("ZscoreOutlierDetection does not support true 2D operation. \
-					Please use `timepace='1d_space'` instead.")
+		z_score = self._get_z_score(z)
+		SRA_array = self._get_outlier_mask(z_score)
+		return x, y, SRA_array
 	def _get_outlier_mask(self, z_score: np.array) -> np.array:
 		r"""
 		Mask entries as SRA, whose z-scores exceed \ref threshold.
@@ -638,7 +639,7 @@ class ZSOD(AnomalyMasker):
 		Sub-classes need to provide a meaningful implementation.
 		"""
 		raise NotImplementedError()
-	
+
 class ZscoreOutlierDetection(ZSOD):
 	r"""	
 	Class for the standard z-score approach for spike detection.
@@ -647,18 +648,6 @@ class ZscoreOutlierDetection(ZSOD):
 	The method can be mainly used for constant (noise) signals.
 	See \cite Iglewicz_Hoaglin_1993_How_to_detect_and_handle_outliers.
 	"""
-	def __init__(self, 
-			threshold: float = 3.5,
-			timespace: str = "1d_space",
-			*args, **kwargs):
-		r"""
-		Construct an instance of the class.
-		\param threshold \copydoc threshold
-		\param timespace \copybrief timespace \copydetails timespace
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
 	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the z-score of the given strain array with mean and standard deviation.
@@ -669,7 +658,7 @@ class ZscoreOutlierDetection(ZSOD):
 		stdev = np.nanstd(z)
 		z_score = (z - mean) / stdev
 		return z_score
-	
+
 class ModifiedZscoreDetection(ZSOD):
 	r"""	
 	Class for the modified z-score approach for spike detection.
@@ -679,18 +668,6 @@ class ModifiedZscoreDetection(ZSOD):
 	Disadvantage: Peaks can also detect as strain reading anomaly.
 	See \cite Iglewicz_Hoaglin_1993_How_to_detect_and_handle_outliers.
 	"""
-	def __init__(self, 
-			threshold: float = 3.5,
-			timespace: str = "1d_space",
-			*args, **kwargs):
-		r"""
-		Construct an instance of the class.
-		\param threshold \copydoc threshold
-		\param timespace \copybrief timespace \copydetails timespace
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
 	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the modified z-score of the given strain array.
@@ -709,20 +686,22 @@ class SlidingModifiedZscore(ZSOD):
 	The median will be calculated only for the current vicinity.
 	"""
 	def __init__(self, 
-			threshold: float = 3.5,
 			radius: int = 0,
+			threshold: float = 3.5,
 			timespace: str = "1d_space",
 			*args, **kwargs):
 		r"""
 		Construct an instance of the class.
-		\param threshold \copydoc threshold
 		\param radius \copybrief radius \copydetails radius
+		\param threshold \copydoc threshold
 		\param timespace \copybrief timespace \copydetails timespace
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
-		## Inradius of the sliding window, defaults to `0`.
+		## Inradius of the sliding window.
+		## Defaults to `0`, which disables the sliding window operation,
+		## essentially equivalent to \ref ModifiedZscoreDetection.
 		self.radius = radius
 	def _get_medians_by_window(self, z: np.array) -> np.array:
 		r"""
@@ -762,18 +741,6 @@ class WhitakerAndHayes(ZSOD):
 	Therefore it uses the difference between a strain value and the next value.
 	The algorithm presented in \cite Whitaker_2018_ASimpleAlgorithmDespiking.
 	"""
-	def __init__(self, 
-			threshold: float = 3.5,
-			timespace: str = "1d_space",
-			*args, **kwargs):
-		r"""
-		Construct an instance of the class.
-		\param threshold \copydoc threshold
-		\param timespace \copybrief timespace \copydetails timespace
-		\param *args Additional positional arguments, will be passed to the superconstructor.
-		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
-		"""
-		super().__init__(timespace=timespace, threshold=threshold, *args, **kwargs)
 	def _get_delta_strain(self, z: np.array) -> np.array:
 		r"""
 		Calculates the difference between the current strain 
