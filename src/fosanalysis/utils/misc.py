@@ -31,16 +31,17 @@ def find_closest_value(arr: np.array, v: float) -> tuple:
 		i = i if dist_r < dist_l else i-1
 	return i, arr[i]
 
-def last_finite_index_1d(arr: np.array) -> np.array:
+def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
 	r"""
-	Returns an array of indices of the last finite index in a 1D array.
+	Returns an array with the indices of the most recent finite entry
+	when traversing the `arr` along the specified axis.
 	The returned array has the same shape as `arr`.
 	
 	Example:
 	```.py
 	>>> a = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
-	>>> last_finite_index_1d(a)
+	>>> last_finite_index(a)
 	array([0, 1, 1, 1, 4])
 	```
 	
@@ -49,29 +50,20 @@ def last_finite_index_1d(arr: np.array) -> np.array:
 	```.py
 	>>> a = np.array(["nan","nan", "inf", 5], dtype=float)
 	array([nan, nan, inf, 5.])
-	>>> last_finite_index_1d(a)
+	>>> last_finite_index(a)
 	array([0, 0, 0, 3])
-	```
 	
-	\param arr Array like, needs to be 1D.
-	"""
-	arr = np.array(arr)
-	last_finite_array = np.zeros_like(arr, dtype=int)
-	last_finite = 0
-	for i in range(arr.shape[0]):
-		last_finite = i if np.isfinite(arr[i]) else last_finite
-		last_finite_array[i] = last_finite
-	return last_finite_array
-
-def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
-	r"""
-	Returns an array of indices of the last finite index.
-	This function is a wrapper around \ref last_finite_index_1d().
 	\param arr Array like.
 	\param axis Axis along which to apply the indexing.
 		Defaults to the last axis.
 	"""
-	return np.apply_along_axis(last_finite_index_1d, axis=axis, arr=arr)
+	arr = np.array(arr)
+	is_finite = np.isfinite(arr)
+	finite_indices = np.argwhere(is_finite)
+	last_finite_array = np.zeros_like(arr, dtype=int)
+	last_finite_array[is_finite] = finite_indices[:,axis]
+	last_finite_array = np.maximum.accumulate(last_finite_array, axis=axis)
+	return last_finite_array
 
 def nan_diff_1d(arr: np.array) -> np.array:
 	r"""
@@ -88,7 +80,7 @@ def nan_diff_1d(arr: np.array) -> np.array:
 	"""
 	arr = np.array(arr)
 	diff_array = np.zeros(arr.shape[0]-1, dtype=float)
-	last_finite_array = last_finite_index_1d(arr)
+	last_finite_array = last_finite_index(arr)
 	for i in range(1, arr.shape[0]):
 		diff_array[i-1] = arr[i] - arr[last_finite_array[i-1]]
 	return diff_array
