@@ -39,18 +39,18 @@ def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
 	
 	Example:
 	```.py
-	>>> a = np.array([1.,2.,"nan", "inf", 5], dtype=float)
+	>>> arr = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
-	>>> last_finite_index(a)
+	>>> last_finite_index(arr)
 	array([0, 1, 1, 1, 4])
 	```
 	
 	The first element is assumed to be a finite value.
 	All indices before the first finite entry will be `0`.
 	```.py
-	>>> a = np.array(["nan","nan", "inf", 5], dtype=float)
+	>>> arr = np.array(["nan","nan", "inf", 5], dtype=float)
 	array([nan, nan, inf, 5.])
-	>>> last_finite_index(a)
+	>>> last_finite_index(arr)
 	array([0, 0, 0, 3])
 	
 	\param arr Array like.
@@ -71,18 +71,17 @@ def nan_diff_1d(arr: np.array) -> np.array:
 	This is similar to `np.diff()`, but skipping `NaN` or `inf` entries.
 	Example:
 	```.py
-	>>> a = np.array([1.,2.,"nan", "inf", 5], dtype=float)
+	>>> arr = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
-	>>> nan_diff_1d(a)
+	>>> nan_diff_1d(arr)
 	array([1., nan, -inf, 3.])
 	```
 	\param arr Array like, needs to be 1D.
 	"""
 	arr = np.array(arr)
-	diff_array = np.zeros(arr.shape[0]-1, dtype=float)
 	last_finite_array = last_finite_index(arr)
-	for i in range(1, arr.shape[0]):
-		diff_array[i-1] = arr[i] - arr[last_finite_array[i-1]]
+	arr_to_diff = arr[last_finite_array]
+	diff_array = arr[1:] - arr_to_diff[:-1]
 	return diff_array
 
 def nan_diff(arr: np.array, axis: int = -1) -> np.array:
@@ -90,6 +89,14 @@ def nan_diff(arr: np.array, axis: int = -1) -> np.array:
 	Calculate the difference to the previous finite entry.
 	This is similar to `np.diff()`, but skipping `NaN` or `inf` entries.
 	This function is a wrapper around \ref nan_diff_1d().
+	
+	Example:
+	```.py
+	>>> arr = np.array([1.,2.,"nan", "inf", 5], dtype=float)
+	array([1., 2., nan, inf, 5.])
+	>>> nan_diff(arr)
+	array([1., nan, -inf, 3.])
+	```
 	\param arr Array like.
 	\param axis Axis along which to calculate the incremental difference.
 		Defaults to the last axis.
