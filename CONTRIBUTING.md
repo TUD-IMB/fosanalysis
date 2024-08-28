@@ -39,8 +39,3 @@ However, to keep it clean, please use the following workflow.
 5. Tag a reviewer (request review).
 6. Wait for review, discuss and resolve the remaining problems (go back to 3.).
 7. If everything is resolved, `<working_branch_name>` will be merged for you.
-
-## Contributers
-(In alphabetical order)
-- Max Herbers
-- Bertram Richter

@@ -22,14 +22,15 @@ Overview of news is given in [CHANGELOG](./CHANGELOG.md).
 If you use this framework, please cite this paper:
 
 ```
-@article{Richter_2023_Crack_Monitoring_on_Concrete,
-  author   = {Richter, Bertram and Herbers, Max and Marx, Steffen},
-  title    = {Crack Monitoring on Concrete Structures with Distributed Fiber Optic Sensors~-- Towards Automated Data Evaluation and Assessment},
-  year     = {2023},
-  journal  = {Structural Concrete},
-  doi      = {},
-  pubstate = {submitted},
-  note     = {(under review)},
+@article{Richter_2023_CrackMonitoringConcrete,
+  author          = {Richter, Bertram and Herbers, Max and Marx, Steffen},
+  date            = {2023},
+  journaltitle    = {Structural Concrete},
+  title           = {Crack monitoring on concrete structures with distributed fiber optic sensors---Toward automated data evaluation and assessment},
+  doi             = {10.1002/suco.202300100},
+  issn            = {1751-7648},
+  journalsubtitle = {Journal of the fib},
+  language        = {english},
 }
 ```
 

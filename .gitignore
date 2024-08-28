@@ -4,16 +4,23 @@
 _*
 .*
 
-# File extensions
+# Temporary files
 *.bak
-*.egg-info
 *.orig
 *.tmp
 
-# Data or generated content
-data
+# Files from IDEs and cache
+__pycache__
+
+# Building and packaging
 dist
+*.egg-info
+
+# Generated documentation
 Documentation
+
+# Test files and data storage
+data
 test*
 Test*
 

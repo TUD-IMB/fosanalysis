@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preprocessing functionalities and clean up some unused attributes from `strainprofile.StrainProfile`
 - `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
 
-## [v0.3] – 2023-??-??
+## [v0.3] – 2023-11-13
 
 ### Added
 

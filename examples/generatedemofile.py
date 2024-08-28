@@ -101,7 +101,7 @@ def main():
 		f.write("Firmware Version:	1.6.6 (08/18/2020)" + "\n")
 		f.write("FPGA Version:	v7.3.1-15016 (08/14/2020)" + "\n")
 		f.write("Measurement Rate Per Channel:	{} Hz".format(frequency) + "\n")
-		f.write("Gage Pitch (mm):	0.65" + "\n")
+		f.write("Gage Pitch (mm):	{}".format(gage_length*1000) + "\n")
 		f.write("Standoff Cable Length (m):	50" + "\n")
 		f.write("Temperature offset:	0.0" + "\n")
 		f.write("Performance Mode:	Full Optimization" + "\n")

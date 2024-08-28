@@ -7,9 +7,9 @@ To install the latest stable version, please run
 - Linux and Mac: `python3 -m pip install -U fosanalysis`
 - Windows: `py -m pip install -U fosanalysis`
 
-It is generally recommendend, to install it in a virtual environment.
+It is generally recommended, to install it in a virtual environment, which is not scope of this tutorial.
 
-In order to obtain the development versions:
+In order to obtain one of the development versions:
 - clone or download the project from [GitHub](https://github.com/TUD-IMB/fosanalysis).
 - install the required dependencies:
     - `scipy`, see [scipy.org](https://scipy.org) for the documentation.
@@ -26,7 +26,7 @@ Workflow components combine several such task components in a plug and play mann
 This enables fine-grained, easy to understand algorithm configuration.
 
 ## Getting Started
-Assuming a successful installation, you can follow the steps the this short tutorial.
+Assuming a successful installation, you can follow this short tutorial.
 For this, we need two scripts:
 - `generatedemofile.py` writes some artificial data, to `./data/demofile.tsv` relative to the working directory, when executed.
 - `gettingstarted.py` contains the code, resulting from following along with this tutorial.
@@ -46,9 +46,7 @@ import fosanalysis as fa
 ```
 
 After that, data can be imported from a demonstration file.
-This file contains artificial data in the format as exported by the Luna Inc. ODiSI Software.
-To (re-)generate this file, the script \ref examples.generatedemofile needs to be run once.
-This script is available with the development version.
+
 
 ```.py
 sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
@@ -108,7 +106,7 @@ with theimplicit interpolation by the integation algorithm.
 repairobject = fa.preprocessing.repair.NaNFilter()
 ```
 
-The leftover noise is reducec by filtering.
+The leftover noise is reduced by filtering.
 Careful filtering might improve the data quality, but don't overdo it!
 
 ```.py
@@ -210,7 +208,7 @@ ax1.set_xlabel("Position x [m]")
 ax1.set_ylabel("Strain [µm/m]")
 ax2 = ax1.twinx()
 ax2.set_ylabel("Crack width [µm]", c="red")
-ax2.tick_params(axis ="y", labelcolor = "red") 
+ax2.tick_params(axis ="y", labelcolor = "red")
 ax1.plot(sp.x, sp.strain, c="k", label="strain")
 ax1.plot(sp.x, sp.tension_stiffening_values, c="k", ls="--", label="ts")
 ax1.plot(c_loc, c_s, c="k", ls="", marker="v", label="peak")
@@ -223,4 +221,4 @@ ax2.legend(loc="best", handles=h1+h2, labels=l1+l2)
 plt.show()
 ```
 
-For the full script, see `examples.gettingstarted`.
+For the full script, see `examples.gettingstarted`, available with the source code.
