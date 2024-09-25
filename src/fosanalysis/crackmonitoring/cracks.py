@@ -13,7 +13,15 @@ import copy
 
 class Crack():
 	r"""
-	Crack in the concrete.
+	A Crack object presents a in the concrete with its properties.
+	The attributes of a Crack object are additionally exposed in a
+	special `dict`-like interface
+	The `dict`-like interface should be preferred over calling the
+	attributes directly.
+	Querying an unset (or nonexistant) attribute using the `dict`-like
+	interface returns `None` without raising an error.
+	Hence, attributes explicitely set to `None` or nonexitant report the same.
+	In this context, `None` means "N/A, no answer or not available".
 	"""
 	def __init__(self,
 			location: float = None,
@@ -31,10 +39,11 @@ class Crack():
 		\param x_r \copybrief x_r For more, see \ref x_r.
 		\param max_strain \copybrief max_strain For more, see \ref max_strain.
 		\param width \copybrief width For more, see \ref width.
+		\param **kwargs Additional keyword arguments, stored as attributes ().
 		"""
 		## Position index in the sanitized measurement data of \ref strainprofile.StrainProfile (e.g.\ `x`).
 		self.index = index
-		## Absolute location along the fibre optical sensor.
+		## Absolute location (e.g.\ in meters) along the fibre optical sensor.
 		self.location = location
 		## Absolute location left-hand side end of its transfer length.
 		self.x_l = x_l
@@ -141,7 +150,7 @@ class CrackList(list):
 			placeholder: bool = False,
 			):
 		r"""
-		Get a list of \ref Cracks according to the given list of positions `locations` and the `method`.
+		Get a list of \ref Crack according to the given list of positions `locations` and the `method`.
 		\param locations Locations along the sensor to get cracks at.
 		\param tol Tolerance in location difference, to take a Crack into account.
 			Only used with `method = "nearest"`.
@@ -220,7 +229,7 @@ class CrackList(list):
 			make_copy: bool = True,
 			):
 		r"""
-		Get a list of \ref Cracks whose attribute is None.
+		Get a list of \ref Crack whose attribute is None.
 		\param attribute Name of the relevant attribute
 		\param make_copy if true, a deepcopy of the CrackList is returned.
 		\return Returns the \ref CrackList.
@@ -253,7 +262,7 @@ class CrackList(list):
 			return self
 	def sort(self, attribute: str = "location"):
 		r"""
-		Sort the list of \ref Cracks according to the given attribute.
+		Sort the list of \ref Crack according to the given attribute.
 		\param attribute Name of the relevant attribute
 		"""
 		orig_order = self.get_attribute_list(attribute)
