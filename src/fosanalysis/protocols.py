@@ -1,4 +1,3 @@
-
 r"""
 Contains functionality for interfacing files and network ports.
 \author Bertram Richter
@@ -66,16 +65,20 @@ class Protocol(utils.base.Base):
 
 class ODiSI6100TSVFile(Protocol):
 	r"""
-	Implements the import of data from the Optical Distributed Sensor Interrogator (ODiSI) 610x series by Luna Inc.
+	Data inferface for the `.tsv` measurement files exported by the
+	ODiSI 6100 series interrogators by Luna Inc \cite LunaInnovations2020.
+	Both gage files (`*_gages.tsv`) and full (`*_full.tsv`) are supported.
 	"""
 	def __init__(self,
-			file: str = None,
+			file: str,
+			only_header: bool = False,
 			itemsep: str = "\t",
 			*args, **kwargs):
 		r"""
-		Constructs the object containing the imported data.
-		\param file File name (fully specified path), from which the data has been read.
-			If not left empty (default: `None`), it is immediately read by \ref read_file().
+		Construct the interface object and parse a `.tsv` file.
+		\param file \copydoc file
+			It is immediately read by \ref read_file().
+		\param only_header \copydoc only_header
 		\param itemsep String, which separates items (columns) in the file.
 			Defaults to `"\t"` (tab).
 		\param *args Additional positional arguments, will be passed to the superconstructor.
@@ -91,7 +94,6 @@ class ODiSI6100TSVFile(Protocol):
 		## 	As it is used as the ending slicing index, actually one more.
 		## - `x`: Positional data for the segment.
 		## - `y_data`: List of \ref SensorRecord for the measurement data.
-		## - `file`: File path, from where the data was imported.
 		self.segments = OrderedDict()
 		## Dictionary of gages
 		## Each gage is stored as a sub-dictionary with its name as a key.
@@ -99,52 +101,55 @@ class ODiSI6100TSVFile(Protocol):
 		## - `index`: Start index of the gage
 		## - `x`: Positional data for the gage.
 		## - `y_data`: List of \ref SensorRecord for the measurement data.
-		## - `file`: File path, from where the data was imported.
 		self.gages = OrderedDict()
-		## Dictionary, which stores metadata for each file imported.
-		## The path of the imported file is used as key.
-		## The according metadata is stored as sub-dictionary to each key.
+		## Dictionary, which stores metadata with the fieldname as key.
 		self.metadata = {}
+		## Fully specified file path), from which the data is read.
+		## The file is parsed at instantiation on a ODiSI6100TSVFile object,
+		## but can be re-read with \ref read_file().
+		self.file = file
+		## Stores the given item separator.
+		self.itemsep = itemsep
+		## Switch to omit processing the complete file.
+		## Default is `False` (read whole file).
+		## If set to `True`, parsing is stopped at the first measurement
+		## and only header data (meta data, gages/segments, tare, x-axis)
+		## is read.
+		self.only_header = only_header
 		if file is not None:
-			self.read_file(file=file, itemsep=itemsep)
-	def read_file(self,
-			file: str,
-			itemsep: str = "\t"):
+			self.read_file(only_header)
+	def read_file(self, only_header: bool):
 		r"""
-		Read a file, parse its contents and extract the measurement data.
-		This function can be called multiple times, once for each file to read.
-		Both gage files (`*_gages.tsv`) and full (`*_full.tsv`) are supported.
+		Parse the content of \ref file and extract the measurement data.
+		It can be called multiple times for reading base data or the whole file.
 		The content is added to the \ref gages and \ref segments dictionaries.
-		The metadata is stored as sub-dictionary in \ref metadata with `file` as key.
-		
-		\note
-		This works fine for importing associated full and gage files.
-		However, importing a second file of the same type is discuraged.
-		It will overwrite some (but not all) previously data.
-		
-		\param file File name (fully specified path), from which the data has been read.
-		\param itemsep String, which separates items (columns) in the file.
-			Defaults to `"\t"` (tab).
+		The metadata is stored as dictionary in \ref metadata.
+		\param only_header \copydoc only_header
 		"""
 		in_header = True
 		status_gages_segments = None
 		gages = OrderedDict()
 		segments = OrderedDict()
-		metadata = {}
-		with open(file) as f:
+		with open(self.file, "r") as f:
 			for line in f:
-				line_list = line.strip().split(itemsep)
+				line_list = line.strip().split(self.itemsep)
+				# Skip blank lines
+				if not any(line_list):
+					continue
 				if in_header:
 					# Find the header to body separator
-					if line_list[0] == "----------------------------------------":
+					if "---" in line_list[0]:
 						# Switch reading modes from header to data
 						in_header = False
 					else:
 						# Read in metadata
 						fieldname = line_list[0][:-1]	# First entry and strip the colon (:)
-						metadata[fieldname] = line_list[1] if len(line_list) > 1 else None
+						self.metadata[fieldname] = line_list[1] if len(line_list) > 1 else None
 				else:
 					record_name, message_type, sensor_type, *data = line_list
+					# If only_header is True and the line begins with a timestamp, stop the reading.
+					if only_header and message_type.lower() == "measurement":
+						break
 					if status_gages_segments is None:
 						# Decide if input data is a full or a gage/segment
 						status_gages_segments = (record_name.lower() == "Gage/Segment Name".lower())
@@ -152,15 +157,13 @@ class ODiSI6100TSVFile(Protocol):
 							# The reading data gets separated into gages and the segments
 							gages, segments = self._read_gage_segments_info(gages,
 																		segments,
-																		data,
-																		file)
+																		data)
 						else:
 							segments["full"] = {"start": 0,
 												"end": len(data),
 												"length": len(data),
 												"x": None,
-												"y_data": [],
-												"file": file,}
+												"y_data": []}
 							self._read_gage_segment_data(gages,
 														segments,
 														record_name,
@@ -174,14 +177,12 @@ class ODiSI6100TSVFile(Protocol):
 													message_type,
 													sensor_type,
 													data)
-		self.metadata[file] = metadata
-		self.gages.update(gages)
-		self.segments.update(segments)
+		self.gages = gages
+		self.segments = segments
 	def _read_gage_segments_info(self,
 			gages: dict,
 			segments: dict,
-			data: list,
-			file: str):
+			data: list):
 		r"""
 		Read gage and segment line to discover the gages and segments.
 		The gages are written into \ref gages.
@@ -190,8 +191,6 @@ class ODiSI6100TSVFile(Protocol):
 		\param gages Dictionary, to which data of named gages is written.
 		\param segments Dictionary, to which data of named segments is written.
 		\param data List of split line, assumed to contain the gage and segment names.
-		\param file File name (fully specified path), from which the data has been read.
-			This will be stored in each segment or gage to know, where it came from.
 		"""
 		segment_name = None
 		# loop over all the entries in the line
@@ -205,10 +204,10 @@ class ODiSI6100TSVFile(Protocol):
 					segments[segment_name]["length"] = index - segments[segment_name]["start"]
 				# get the segment name and start a new segment
 				segment_name = value.split("[")[0]
-				segments[segment_name] = {"start": index, "end": None, "x": None, "y_data": [], "file": file}
+				segments[segment_name] = {"start": index, "end": None, "x": None, "y_data": []}
 			elif segment_name is None:
 					# Gage reading
-					gages[value] = {"index": index, "x": None, "y_data": [], "file": file}
+					gages[value] = {"index": index, "x": None, "y_data": []}
 		# end the last segment
 		if segment_name is not None:
 			segments[segment_name]["end"] = len(data)
@@ -222,7 +221,7 @@ class ODiSI6100TSVFile(Protocol):
 			sensor_type: str,
 			data: list):
 		r"""
-		Run the extraction for all gages and segments.
+		Private method to run the extraction for all gages and segments.
 		\param gages Dictionary, containing gage information.
 			This includes, the position of the gage in the data.
 		\param segments Dictionary, containing segment information.
@@ -252,7 +251,7 @@ class ODiSI6100TSVFile(Protocol):
 			sensor_type: str,
 			data: list):
 		r"""
-		Store the data into the dictionary.
+		Private method to store the data into the dictionary.
 		Here, the differenciation between a gage and segment is done.
 		\param gage_segment Dictionary, containing information, which data to extract.
 			A segment is assumed, if the dictionary contains the key `"length"`.
@@ -294,7 +293,7 @@ class ODiSI6100TSVFile(Protocol):
 			name: str = None,
 			is_gage: bool =False) -> dict:
 		r"""
-		Return the dictionary matching the search criteria.
+		Private method to return the dictionary matching the search criteria.
 		\param name Name of the gage or segment.
 			Defaults to the first gage or segment, depending on `is_gage`.
 			This name needs to exactly match the key in the dictionary.
@@ -570,16 +569,8 @@ class ODiSI6100TSVFile(Protocol):
 			index, x_value = utils.misc.find_closest_value(x_values, x)
 			time_series = np.array([data[index] for data in y_data])
 		return x_value, time_stamps, time_series
-	def get_metadata(self,
-			name: str = None,
-			is_gage: bool = False) -> dict:
+	def get_metadata(self) -> dict:
 		r"""
-		Get the metadata dictionary, belonging to the segment/gage.
-		\copydetails _get_dict()
+		Get the metadata dictionary.
 		"""
-		target = self._get_dict(name, is_gage)
-		file = target.get("file", None)
-		if file is not None:
-			return self.metadata.get(file, None)
-		else:
-			raise RuntimeError("Found no file for the metadata")
+		return self.metadata

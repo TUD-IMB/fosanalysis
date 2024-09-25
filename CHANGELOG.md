@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - `resampling`
         - move `aggregate` into `resizing`
 - New functions `utils.misc.datetime_to_timestamp()` and `utils.misc.timestamp_to_datetime()`
+- Option to read tsv header data (metadata, gages/segments, tare, x-axis) only
+- Add a dictionary-like interface to `crackmonitoring.crack.Crack`, not set attributes are now always reported as `None`
+- `CrackList.get_cracks_by_location()` supersedes the removed `CrackList.get_crack()`
+- More methods for `CrackList`: `get_cracks_attribute_by_range()`, `get_cracks_attribute_is_none()`, `clear_attribute()`
 
 ### Changed
 
@@ -35,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move `aggregate.Aggregate` to `resizing.Aggregate`
 - Rename `preprocessing.base.DataCleaner` &rarr; `preprocessing.base.Task`
 
+### Fixed
+
+- `protocols.ODiSI6100TSVFile.read_file()` will now skip blank lines instead of crashing
+
 ### Removed
 
 - `preprocessing.strip_smooth_crop()`
@@ -43,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	Secondly, the consolidation is now done by a `preprocessing.ensemble` object.
 - Preprocessing functionalities and clean up some unused attributes from `strainprofile.StrainProfile`
 - `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
+- Ability of ODiSI6100TSVFile to read multiple files, only one file will be supported
+- `CrackList.get_crack()`, superseded by `CrackList.get_cracks_by_location`
 
 ## [v0.3] – 2023-11-13
 
