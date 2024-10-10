@@ -714,9 +714,9 @@ class SlidingModifiedZscore(ZSOD):
 			median_array = np.nanmedian(z)
 		else:
 			median_array = windows.sliding_window_function(z, self.radius, np.nanmedian)
-		ad_values = np.abs(z - median_array)
-		mad = np.nanmedian(ad_values)
 		values = z - median_array
+		ad_values = np.abs(values)
+		mad = np.nanmedian(ad_values)
 		if mad != 0:
 			factor = mad / 0.6745
 		else:
