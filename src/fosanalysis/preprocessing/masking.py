@@ -729,9 +729,9 @@ class SlidingModifiedZscore(ZSOD):
 		mad = np.nanmedian(ad_values)
 		values = z - median_array
 		if mad != 0:
-			factor = mad * 1.486
+			factor = mad / 0.6745
 		else:
-			factor = np.nanmean(ad_values) * 1.253314
+			factor = np.nanmean(ad_values) / 0.7979
 		z_score = values / factor
 		return z_score
 
