@@ -703,21 +703,6 @@ class SlidingModifiedZscore(ZSOD):
 		## Defaults to `0`, which disables the sliding window operation,
 		## essentially equivalent to \ref ModifiedZscoreDetection.
 		self.radius = radius
-	def _get_medians_by_window(self, z: np.array) -> np.array:
-		r"""
-		Get the difference to the local vicinity of all the pixels.
-		The local vicinity is determined by the radius.
-		Then, the absolute deviation between the array of the median and
-		and the pixels's values is returned.
-		\param z Array containing strain data.
-		\return Returns arrays with median and absolute deviation of vicinity.
-		"""
-		if self.radius == 0:
-			median_array = np.nanmedian(z)
-		else:
-			median_array = windows.sliding_window_function(z, self.radius, np.nanmedian)
-		ad_values = np.abs(z - median_array)
-		return median_array, ad_values
 	def _get_z_score(self, z: np.array) -> np.array:
 		r"""
 		Calculates the modified z-score with the absolute deviation of current vicinity.
@@ -725,7 +710,11 @@ class SlidingModifiedZscore(ZSOD):
 		\param z Array containing strain data.
 		\return Returns an array modified z-score.
 		"""
-		median_array, ad_values = self._get_medians_by_window(z)
+		if self.radius == 0:
+			median_array = np.nanmedian(z)
+		else:
+			median_array = windows.sliding_window_function(z, self.radius, np.nanmedian)
+		ad_values = np.abs(z - median_array)
 		mad = np.nanmedian(ad_values)
 		values = z - median_array
 		if mad != 0:
