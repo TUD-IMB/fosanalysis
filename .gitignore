@@ -1,11 +1,15 @@
 # Ignore list for git
+
 # Hidden files
+_*
 .*
 
-# Except this file
-!.gitignore
+# Temporary files
+*.bak
+*.orig
+*.tmp
 
-# Files from IDEs
+# Files from IDEs and cache
 __pycache__
 
 # Building and packaging
@@ -19,3 +23,8 @@ Documentation
 data
 test*
 Test*
+
+# Exemptions
+__init__.py
+!.gitignore
+!.gitlab-ci.yml

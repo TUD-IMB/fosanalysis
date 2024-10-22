@@ -1,0 +1,14 @@
+pages:
+  tags:
+    - documentation
+  image: alpine
+  before_script:
+    - apk update && apk add doxygen graphviz ttf-freefont
+  script:
+    - doxygen Doxyfile
+    - mv Documentation/html/ public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - develop
