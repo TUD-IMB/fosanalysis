@@ -49,10 +49,11 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/TUD-IMB/fosanalysis"
-"Bug Reports" = "https://github.com/TUD-IMB/fosanalysis/issues"
-"Source" = "https://github.com/TUD-IMB/fosanalysis"
-"Changelog" = "https://github.com/TUD-IMB/fosanalysis/blob/master/CHANGELOG.md"
+"homepage" = "https://github.com/TUD-IMB/fosanalysis"
+"source" = "https://github.com/TUD-IMB/fosanalysis"
+"issues" = "https://github.com/TUD-IMB/fosanalysis/issues"
+"changelog" = "https://github.com/TUD-IMB/fosanalysis/blob/master/CHANGELOG.md"
+"documentation" = "https://pypi.org/project/fosanalysis/"
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]

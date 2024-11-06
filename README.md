@@ -12,8 +12,10 @@ To install the latest stable version, please run (or equivalent in your IDE):
 - Linux and Mac: `python3 -m pip install -U fosanalysis`
 - Windows: `py -m pip install -U fosanalysis`
 
+The documentation for the most recent release is available [here](https://tud-imb.github.io/fosanalysis/).
 A quick guide on how to use this framework is provided in [Getting Started](./doc/GettingStarted.md).
-To build the full documentation, run `doxygen` in the root directory of the project (this directory) and it will generate it in the directory `./Documentation/`
+To build the documentation yourself, run `doxygen` in the root directory of the project (this directory).
+The generated files will available in the directory `./Documentation/`.
 
 See [CONTRIBUTING](./CONTRIBUTING.md) for details on how to contribute to `fosanalysis`.
 
@@ -36,5 +38,5 @@ If you use this framework, please cite this paper:
 
 # Licence and Copyright
 **Author:** Bertram Richter, more see [CONTRIBUTING](./CONTRIBUTING.md).  
-**Copyright:** Copyright by the authors, 2023.  
+**Copyright:** Copyright by the authors, 2023—2024.  
 **License:** This software is released under GPLv3, see [LICENSE](./LICENSE) for details.
