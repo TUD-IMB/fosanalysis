@@ -9,8 +9,6 @@ import warnings
 
 import numpy as np
 
-from . import base
-
 def cropping(x_values: np.array,
 			z_values: np.array,
 			start_pos: float = None,
