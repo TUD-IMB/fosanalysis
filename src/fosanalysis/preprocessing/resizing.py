@@ -149,7 +149,77 @@ class Aggregate(Resizing):
 		"""
 		return self.kernel(data, axis=axis, *args, **kwargs)
 
-class Downsampler(base.Base):
+class Crop(Resizing):
+	r"""
+	Object, for cropping data sets and saving the preset.
+	"""
+	def __init__(self,
+			start_pos: float = None,
+			end_pos: float = None,
+			length: float = None,
+			offset: float = None,
+			*args, **kwargs):
+		r"""
+		Construct an instance of the class.
+		\param start_pos \copydoc start_pos
+		\param end_pos \copydoc end_pos
+		\param length \copydoc length
+		\param offset \copydoc offset
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
+		"""
+		super().__init__(*args, **kwargs)
+		## The starting position \f$s\f$ specifies the length of the sensor, before entering the measurement area.
+		## Defaults to `None` (no data is removed at the beginning).
+		self.start_pos = start_pos
+		## The end position \f$s\f$ specifies the length of the sensor, when leaving the measurement area. 
+		## If both \ref length and \ref end_pos are provided, \ref end_pos takes precedence.
+		## Defaults to `None` (no data is removed at the end).
+		self.end_pos = end_pos
+		## Before cropping, \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$, defaults to `0`.
+		self.offset = offset
+		## Length of the data excerpt. If set, it is used to determine the \ref end_pos.
+		## If both \ref length and \ref end_pos are provided, \ref end_pos takes precedence.
+		self.length = length
+	def run(self,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			start_pos: float = None,
+			end_pos: float = None,
+			length: float = None,
+			offset: float = None,
+			*args, **kwargs) -> tuple:
+		r"""
+		This is a wrapper around \ref cropping.cropping() which.
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param start_pos The starting position \f$s\f$ specifies the length of the sensor, before entering the measurement area.
+			Defaults to `None` (no data is removed at the beginning).
+		\param end_pos The end position \f$s\f$ specifies the length of the sensor, when leaving the measurement area. 
+			If both `length` and `end_pos` are provided, `end_pos` takes precedence.
+			Defaults to `None` (no data is removed at the end).
+		\param length Length of the data excerpt. If set, it is used to determine the `end_pos`.
+			If both `length` and `end_pos` are provided, `end_pos` takes precedence.
+		\param offset Before cropping, \f$x\f$ data is shifted by the offset \f$o\f$, such that \f$x \gets x + o\f$, defaults to `0`.
+		\param *args Additional positional arguments, passed to \ref cropping.cropping().
+		\param **kwargs Additional keyword arguments, passed to \ref cropping.cropping().
+		"""
+		start_pos = start_pos if start_pos is not None else self.start_pos
+		end_pos = end_pos if end_pos is not None else self.end_pos
+		length = length if length is not None else self.length
+		offset = offset if offset is not None else self.offset
+		x_cropped, z_cropped = cropping.cropping(x_values=x,
+										z_values=z,
+										start_pos=start_pos,
+										end_pos=end_pos,
+										length=length,
+										offset=offset,
+										*args, **kwargs)
+		return x_cropped, y, z_cropped
+
+class Downsampler(Resizing):
 	r"""
 	Class for reducing strain data size while keeping the data loss small
 	by combining several values into one value.
