@@ -96,24 +96,32 @@ aggregateobject = fa.preprocessing.aggregate.Median()
 ```
 
 Dropouts are readings without a finite value (not a number (NaN)).
-To intergrate the strain signal, it needs to be free of dropouts.
+To integrate the strain signal, it needs to be free of dropouts.
 The simplest approach is to just remove dropouts from the measurements.
-Another is replacing the doopouts with plausible data.
+Another is replacing the doopouts with plausible data (interpolation).
 Removing dropouts without replacement is equivalent to interpolating
-with theimplicit interpolation by the integation algorithm.
+with the implicit interpolation by the integration algorithm.
 
 ```.py
-repairobject = fa.preprocessing.repair.NaNFilter()
+#repairobject = fa.preprocessing.repair.NaNFilter()
+repairobject = fa.preprocessing.repair.ScipyInterpolation1D()
 ```
 
 The leftover noise is reduced by filtering.
 Careful filtering might improve the data quality, but don't overdo it!
 
 ```.py
-filterobject = fa.preprocessing.filtering.SlidingFilter(radius=2, method="nanmean")
+filterobject = fa.preprocessing.filtering.SlidingFilter(radius=5, method="nanmedian")
 ```
 
-After defining the task objects for the pre-processing, the order is to established.
+To restrict the data to the area of our interest, we use the `Crop` object.
+In this example the segment of interest ranges from 3 m – 5 m.
+
+```.py
+crop = fa.preprocessing.resizing.Crop(start_pos=3, end_pos=5)
+```
+
+After defining the task objects for the pre-processing, the task order is to established.
 A pre-processing workflow object is created and the order list is handed to it.
 
 ```.py
@@ -122,6 +130,7 @@ tasklist=[
 	aggregateobject,
 	repairobject,
 	filterobject,
+	crop,
 	]
 preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 ```
@@ -133,19 +142,12 @@ The output of each task is passed as the input to the next task.
 x_processed, times, strain_processed = preprocessingobject.run(x=x, y=times, z=strain_table)
 ```
 
-After the data is preprocessed, we can restrict the data to the area of our interest.
-In this example the segment of interest ranges from 3 m – 5 m.
-
-```.py
-crop = fa.utils.cropping.Crop(start_pos=3, end_pos=5)
-x_cropped, strain_cropped = crop.run(x_processed, strain_processed)
-```
-
 Plot the raw data and the pre-processed data for visual comparison.
 
 ```.py
 plt.plot(x, strain_table[0], label="raw")
-plt.plot(x_cropped, strain_cropped, label="preprocessed")
+plt.plot(x_processed, strain_processed, label="processed")
+plt.legend(loc="best")
 plt.show()
 ```
 
@@ -164,7 +166,7 @@ It selects some task objects for those steps by default.
 We will skip over it here, but those objects could be configured in a similar way.
 
 ```.py
-sp = fa.crackmonitoring.strainprofile.Concrete(x=x_cropped, strain=strain_cropped)
+sp = fa.crackmonitoring.strainprofile.Concrete(x=x_processed, strain=strain_processed)
 ```
 
 Now, identifying crack locations and calculating their respective widths is as simple as:

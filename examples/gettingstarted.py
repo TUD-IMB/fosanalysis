@@ -34,10 +34,14 @@ maskingobject = fa.preprocessing.masking.GTM(delta_max=400,
 aggregateobject = fa.preprocessing.resizing.Aggregate(method="nanmedian")
 
 # Fix missing data by replacing it with plausible data or remove NaN readings.
-repairobject = fa.preprocessing.repair.NaNFilter()
+#repairobject = fa.preprocessing.repair.NaNFilter()
+repairobject = fa.preprocessing.repair.ScipyInterpolation1D()
 
 # Fix defines how to reduce ths base noise.
-filterobject = fa.preprocessing.filtering.SlidingFilter(radius=2, method="nanmean")
+filterobject = fa.preprocessing.filtering.SlidingFilter(radius=5, method="nanmedian")
+
+# Instantiate an object which defines the area of interest.
+crop = fa.preprocessing.resizing.Crop(start_pos=3, end_pos=5)
 
 ## Set the order of the preprocessing tasks.
 tasklist = [
@@ -45,6 +49,7 @@ tasklist = [
 	aggregateobject,
 	repairobject,
 	filterobject,
+	crop,
 ]
 
 # Instantiate the workflowobject (it will call all task objects one after another).
@@ -53,19 +58,14 @@ preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 # Process the raw data according to the ruleset represented by the the preprocesssing object.
 x_processed, times, strain_processed = preprocessingobject.run(x=x, y=times, z=strain_table)
 
-# Instantiate an object which defines the area of interest.
-crop = fa.utils.cropping.Crop(start_pos=3, end_pos=5)
-
-# Crop the data to the area of interest.
-x_cropped, strain_cropped = crop.run(x_processed, strain_processed)
-
 # Show the data, to visually compare raw to pre-processed data. 
 plt.plot(x, strain_table[0], label="raw")
-plt.plot(x_cropped, strain_cropped, label="preprocessed")
+plt.plot(x_processed, strain_processed, label="processed")
+plt.legend(loc="best")
 plt.show()
 
 # Instantiate the strain profile object
-sp = fa.crackmonitoring.strainprofile.Concrete(x=x_cropped, strain=strain_cropped)
+sp = fa.crackmonitoring.strainprofile.Concrete(x=x_processed, strain=strain_processed)
 
 # Calculate crack width
 sp.calculate_crack_widths()
