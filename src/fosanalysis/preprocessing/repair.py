@@ -7,6 +7,7 @@ Those can be used to attempt the reconstruction of more or less heavily destroye
 \date 2022
 """
 
+from abc import abstractmethod
 import copy
 
 import numpy as np
@@ -15,12 +16,16 @@ import scipy.interpolate
 from . import base
 from fosanalysis.utils.interpolation import scipy_interpolate1d
 
-class Repair(base.Task):
+class Repair(base.Base):
 	r"""
 	Base class for algorithms to replace/remove missing data with plausible values.
 	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
 	This is done by replacing the dropouts by plausible values and/or removing dropouts.
-	Because the shape of the arrays might be altered, \ref run() will return both `x` and `strain` data.
+	Because the shape of the arrays might be altered, \ref run() expects
+	and returns
+	- `x`: array of the the positional data along the sensor.
+	- `y`: array of the time stamps, and
+	- `z`: array of the strain data.
 	"""
 
 class NaNFilter(base.Base):
@@ -81,7 +86,7 @@ class NaNFilter(base.Base):
 				y = y[keep_array]
 		return x, y, z
 
-class ScipyInterpolation1D(Repair):
+class ScipyInterpolation1D(base.Task, Repair):
 	r"""
 	Replace dropouts (`NaN`s) with values interpolated by the given method.
 	The following steps are carried out:

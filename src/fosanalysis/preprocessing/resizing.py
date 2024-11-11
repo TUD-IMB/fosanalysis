@@ -9,15 +9,29 @@ Contains functionality for resizing data:
 \date 2024
 """
 
+from abc import abstractmethod
 import datetime
 import numpy as np
 import scipy
 
 from . import base
-from fosanalysis.utils import windows, misc
+from fosanalysis.utils import cropping, misc, windows
 from fosanalysis.utils.interpolation import scipy_interpolate1d
 
-class Aggregate(base.Base):
+
+class Resizing(base.Base):
+	r"""
+	Base class for algorithms to replace/remove missing data with plausible values.
+	The sub-classes will take data containing dropouts (`NaN`s) and will return dropout-free data.
+	This is done by replacing the dropouts by plausible values and/or removing dropouts.
+	Because the shape of the arrays might be altered, \ref run() expects
+	and returns
+	- `x`: array of the the positional data along the sensor.
+	- `y`: array of the time stamps, and
+	- `z`: array of the strain data.
+	"""
+
+class Aggregate(Resizing):
 	r"""
 	Change the dimension of an array using aggregate functions (such as
 	mean, median, min or max).
@@ -184,52 +198,52 @@ class Downsampler(base.Base):
 		## of `radius`, which is equivalent to a rolling window.
 		self.step_size = step_size
 	def run(self,
-			x_orig: np.array,
-			time_orig: np.array,
-			strain_data: np.array,
+			x: np.array,
+			y: np.array,
+			z: np.array,
 			radius: tuple = None,
 			start_pixel: tuple = None,
 			step_size: tuple = None,
 			) -> tuple:
 		r"""
 		This method downsamples 2D and 1D Strain data using specified parameters.
-		\param x_orig Array of x-axis values.
-		\param time_orig Array of time-axis values.
-		\param strain_data 2D array of strain data.
+		\param x Array of x-axis values.
+		\param y Array of time-axis values.
+		\param z 2D array of strain data.
 		\param radius \copydoc radius
 		\param start_pixel \copydoc start_pixel
 		\param step_size \copydoc step_size
-		\return Tuple containing `(target_x_points, target_time_points, new_strain_data)`.
+		\return Tuple containing `(target_x_points, target_time_points, new_z)`.
 		\retval target_x_points The x-axis values after downsampling.
 		\retval target_time_points The time-axis values after downsampling.
-		\retval new_strain_data Array of downsampled strain data.
+		\retval new_z Array of downsampled strain data.
 		"""
-		x_orig = np.array(x_orig)
-		time_orig = np.array(time_orig)
-		strain_data = np.array(strain_data)
+		x = np.array(x)
+		y = np.array(y)
+		z = np.array(z)
 		# Fall back to defaults if these parameters are not given
 		radius = radius if radius is not None else self.radius
 		start_pixel = start_pixel if start_pixel is not None else self.start_pixel
 		step_size = step_size if step_size is not None else self.step_size
 		# Estimate original indices for reduction of x and time arrays
 		moving_params = windows.determine_moving_parameters(
-							strain_data, radius, start_pixel, step_size
+							z, radius, start_pixel, step_size
 							)
 		orig_index_lists, radius, start_pixel, step_size = moving_params
-		target_x = x_orig[orig_index_lists[0]] if x_orig is not None else None
-		if strain_data.ndim == 2:
-			target_time = time_orig[orig_index_lists[1]] if time_orig is not None else None
-		elif strain_data.ndim == 1:
-			target_time = time_orig[orig_index_lists[0]] if time_orig is not None else None
+		target_x = x[orig_index_lists[0]] if x is not None else None
+		if z.ndim == 2:
+			target_time = y[orig_index_lists[1]] if y is not None else None
+		elif z.ndim == 1:
+			target_time = y[orig_index_lists[0]] if y is not None else None
 		else:
-			raise ValueError("Invalid input strain_data.ndim defined")
+			raise ValueError("Invalid input z.ndim defined")
 		# Initialize an array for downsampled strain data
-		new_strain_data = np.zeros([len(l) for l in orig_index_lists], dtype=float)
+		new_z = np.zeros([len(l) for l in orig_index_lists], dtype=float)
 		# Iterate through windows and apply downsampling
-		for orig_pixel, target_pixel, window_content in windows.moving(strain_data, radius, start_pixel, step_size):
+		for orig_pixel, target_pixel, window_content in windows.moving(z, radius, start_pixel, step_size):
 			downsampled_strain = self.aggregator.reduce(window_content, axis=None)
-			new_strain_data[target_pixel] = downsampled_strain
-		return target_x, target_time, new_strain_data
+			new_z[target_pixel] = downsampled_strain
+		return target_x, target_time, new_z
 
 class Resampler(base.Task):
 	r"""
@@ -239,12 +253,12 @@ class Resampler(base.Task):
 	coordinates in space) and irregular spacing along an axis is possible.
 	"""
 	def __init__(self,
-			 target_x: np.array = None,
-			 target_time: np.array = None,
-			 method: str = None,
-			 method_kwargs: dict = None,
-			 timespace: str = "1d_space",
-			 *args, **kwargs):
+			target_x: np.array = None,
+			target_time: np.array = None,
+			method: str = None,
+			method_kwargs: dict = None,
+			timespace: str = "1d_space",
+			*args, **kwargs):
 		r"""
 		Construct a Resampler instance.
 		\param target_x \copydoc target_x

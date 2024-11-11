@@ -35,7 +35,8 @@ class Base(utils.base.Task):
 			make_copy: bool = True,
 			*args, **kwargs) -> tuple:
 		r"""
-		
+		Each preprocessing.Base object has a `run()` method to carry out
+		the preprocessing task and return the preprocessed data.
 		\param x Array of measuring point positions.
 		\param y Array of time stamps.
 		\param z Array of strain data in accordance to `x` and `y`.
@@ -85,7 +86,7 @@ class Task(Base):
 			timespace: str = None,
 			*args, **kwargs) -> tuple:
 		r"""
-		Each preprocessing object has a `run()` method.
+		Each preprocessing.Task object has a `run()` method.
 		The actual operations are reimplemented in \ref _run_1d() and \ref _run_2d().
 		This method decides based on the argument, how is operated over the data.
 		If `z` is a 1D array, the array to pass to \ref _run_1d() is determined:
