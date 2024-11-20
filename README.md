@@ -1,4 +1,5 @@
 ![fosanalysis](./doc/graphics/fosanalysis_logo.svg)
+
 # fosanalyis – A framework to evaluate distributed fiber optic sensor data
 
 Fiber optic sensors make quasi-continuous strain measurements possible, due to their high spatial resolution.
@@ -21,7 +22,7 @@ See [CONTRIBUTING](./CONTRIBUTING.md) for details on how to contribute to `fosan
 
 Overview of news is given in [CHANGELOG](./CHANGELOG.md).
 
-If you use this framework, please cite this paper:
+If you use this framework, you might want to cite these papers:
 
 ```
 @article{Richter_2023_CrackMonitoringConcrete,
@@ -30,13 +31,20 @@ If you use this framework, please cite this paper:
   journaltitle    = {Structural Concrete},
   title           = {Crack monitoring on concrete structures with distributed fiber optic sensors---Toward automated data evaluation and assessment},
   doi             = {10.1002/suco.202300100},
-  issn            = {1751-7648},
   journalsubtitle = {Journal of the fib},
-  language        = {english},
+}
+
+@Article{Richter_2024_Advancesdatapreprocessing,
+  author       = {Richter, Bertram and Ulbrich, Lisa and Herbers, Max and Marx, Steffen},
+  date         = {2024},
+  journaltitle = {Sensors},
+  title        = {Advances in Data Pre-Processing Methods for Distributed Fiber Optic Strain Sensing},
+  publisher    = {MDPI},
 }
 ```
 
 # Licence and Copyright
+
 **Author:** Bertram Richter, more see [CONTRIBUTING](./CONTRIBUTING.md).  
 **Copyright:** Copyright by the authors, 2023—2024.  
 **License:** This software is released under GPLv3, see [LICENSE](./LICENSE) for details.

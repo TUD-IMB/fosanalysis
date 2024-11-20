@@ -1,7 +1,7 @@
 [project]
 name = "fosanalysis"
 
-version = "0.3"
+version = "0.4"
 
 description = "A framework to evaluate distributed fiber optic sensor data"
 
@@ -12,12 +12,12 @@ requires-python = ">=3.7"
 license = {file = "LICENSE"}
 
 keywords = [
-	"crack monitoring",
-	"distributed fiber",
-	"optical sensing",
-	"DFOS",
 	"structural health monitoring",
-	"automated data assessment",
+	"distributed fiber optic sensor",
+	"DFOS",
+	"distributed strain sensing",
+	"pre-processing",
+	"crack monitoring",
 	]
 
 authors = [
@@ -40,6 +40,7 @@ classifiers = [
 	"Programming Language :: Python :: 3.9",
 	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
 	"Programming Language :: Python :: 3 :: Only",
 ]
 
@@ -53,7 +54,7 @@ dependencies = [
 "source" = "https://github.com/TUD-IMB/fosanalysis"
 "issues" = "https://github.com/TUD-IMB/fosanalysis/issues"
 "changelog" = "https://github.com/TUD-IMB/fosanalysis/blob/master/CHANGELOG.md"
-"documentation" = "https://pypi.org/project/fosanalysis/"
+"documentation" = "https://tud-imb.github.io/fosanalysis/"
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]

@@ -7,9 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Add continuous deployment for public documentation
+## [v0.4] – 2024-11-20
 
+This version adds substantial improvements for data preprocessing.
+The way to clean up raw data got completely overhauled.
+
+### Added
+
+- Add continuous deployment for public documentation
+- Introduced new workflow for preprocessing:
+    - New workflow class for preprocessing: `preprocessing.Preprocessing`
+    - New module `preprocessing.Filtering` for noise reduction
+    - New module `preprocessing.Masking` for removal of SRAs introducing new SRA detection algorithms:
+            - `preprocessing.masking.GTM`
+            - `preprocessing.masking.OSCP`
+            - `preprocessing.masking.ZscoreOutlierDetection`
+    - New module `preprocessing.Repair` for removal of dropouts:
+        - `preprocessing.repair.ScipyInterpolation1D` for replacing dropouts with interpolated data
+    - New module `preprocessing.Resizing` for changing data shape with new options:
+        - `Aggregate`
+        - `Crop`
+        - `Downsampling`
+        - `Resampling`
+- `utils.interpolation.scipy_interpolate1d`: interpolation wrapper function around scipy functionality
+- New functions `utils.misc.datetime_to_timestamp()` and `utils.misc.timestamp_to_datetime()`
+- `protocols.ODiSI6100TSVFile`:
+    - New method `.get_data()` for data retrieval
+    - Option to read tsv header data (metadata, gages/segments, tare, x-axis) only
+- Add a dictionary-like interface to `crackmonitoring.crack.Crack`, not set attributes are now always reported as `None`
+- More methods for `CrackList`:
+    - `get_cracks_by_location()` supersedes the removed `CrackList.get_crack()`
+    - `get_cracks_attribute_by_range()`,
+    - `get_cracks_attribute_is_none()`,
+    - `clear_attribute()`
+- Documentation is built continuously and hosted publicly on GitHub.
+
+### Changed
+
+- `utils.cropping.cropping()` is now a standalone function
+- `preprocessing.resizing.Crop` works as a preset wrapper for `utils.cropping.cropping()`
+- Filter and Repair objects now require both x-data and y-data
+- Renamed `fosutils.find_next_neighbor()` &rarr; `fosutils.next_finite_neighbor()`
+- Generalized the functionality and versatility of `preprocessing.filtering.SlidingFilter`, making `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian` obsolete
+- `protocols.ODiSI6100TSVFile.get_time_series`: Change return order form `(time_stamps, time_series, x_value)` to `(x_value, time_stamps, time_series)` for consistency with other data retrival methods
+
+### Fixed
+
+- `protocols.ODiSI6100TSVFile.read_file()` will now skip blank lines instead of crashing
+
+### Removed
+
+- `preprocessing.strip_smooth_crop()` was replaced a new more powerful interface.
+- `protocols.ODiSI6100TSVFile.get_mean_over_y_record()`, the two components of the function got separated:
+	Firstly, use `protocols.ODiSI6100TSVFile.get_data()` for easy data selection.
+	Secondly, the consolidation is now done by a `preprocessing.resizing.Aggregate` object.
+- Preprocessing functionalities and clean up some unused attributes from `strainprofile.StrainProfile`
+- `preprocessing.filtering.SlidingMean` and `preprocessing.filtering.SlidingMedian`, functionality is now in `preprocessing.filtering.SlidingFilter`
+- Ability of ODiSI6100TSVFile to read multiple files, only one file will be supported
+- `CrackList.get_crack()`, superseded by `CrackList.get_cracks_by_location()`
 
 ## [v0.3] – 2023-11-13
 
@@ -80,7 +135,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Empty placeholder package on PyPI
 
 
-[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.3.0..master
+[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.0..master
+[v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.4.0..v0.3.0
 [v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.3.0..v0.2.0
 [v0.2]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.2.0..v0.1.0
 [v0.1]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.1.0

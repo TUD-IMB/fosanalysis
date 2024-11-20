@@ -1,26 +1,24 @@
 
-"""
-\file
+r"""
 Contains class definitions for tension stiffening influences for concrete embedded and reinforcement attached sensors.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.compensation.tensionstiffening \copydoc tensionstiffening.py
 """
 
 from abc import abstractmethod
 
 import numpy as np
 
-from fosanalysis import fosutils
+from fosanalysis.utils import misc
 from . import compensator
 
 class TensionStiffeningCompensator(compensator.Compensator):
-	"""
+	r"""
 	Abstract base class for tension stiffening compensation approaches.
 	"""
 	def __init__(self,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a TensionStiffeningCompensator object.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
@@ -28,20 +26,20 @@ class TensionStiffeningCompensator(compensator.Compensator):
 		super().__init__(*args, **kwargs)
 	@abstractmethod
 	def run(self, x: np.array, strain: np.array, crack_list: list, *args, **kwargs) -> np.array:
-		"""
+		r"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		An array with the compensation values for each measuring point is returned.
 		Every \ref TensionStiffeningCompensator has a \ref run() method, which takes the following parameters:
 		\param x Positional x values.
 		\param strain List of strain values.
-		\param crack_list \ref cracks.CrackList with \ref cracks.Crack objects, that already have assigned locations.
+		\param crack_list \ref fosanalysis.crackmonitoring.cracks.CrackList with \ref fosanalysis.crackmonitoring.cracks.Crack objects, that already have assigned locations.
 		\param *args Additional positional arguments to customize the behavior.
 		\param **kwargs Additional keyword arguments to customize the behavior.
 		"""
 		raise NotImplementedError()
 
 class Berrocal(TensionStiffeningCompensator):
-	"""
+	r"""
 	Implements the tension stiffening approach according to the proposal by \cite Berrocal_2021_Crackmonitoringin.
 	The concrete strain \f$\varepsilon^{\mathrm{ts}}(x)\f$ is assumed to the difference between the real strain profile \f$\varepsilon^{\mathrm{DOFS}}(x)\f$
 	and the linear interpolation between the peaks \f$\hat{\varepsilon}(x)\f$ reduced by the reinforcement ratio \ref rho \f$\rho\f$ and Young's moduli ratio \ref alpha \f$\alpha\f$:
@@ -62,7 +60,7 @@ class Berrocal(TensionStiffeningCompensator):
 			alpha: float,
 			rho: float,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a TensionStiffeningCompensator object with according to the proposal by\cite Berrocal_2021_Crackmonitoringin.
 		\param alpha \copybrief alpha For more, see \ref alpha.
 		\param rho \copybrief rho For more, see \ref rho.
@@ -75,7 +73,7 @@ class Berrocal(TensionStiffeningCompensator):
 		## Reinforcement ratio of steel to concrete \f$\rho = \frac{A_{\mathrm{s}}}{A_{\mathrm{c,ef}}}\f$.
 		self.rho = rho
 	def run(self, x: np.array, strain: np.array, crack_list: list, *args, **kwargs) -> np.array:
-		"""
+		r"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""
 		if not crack_list:
@@ -91,8 +89,8 @@ class Berrocal(TensionStiffeningCompensator):
 			return tension_stiffening_values
 
 class Fischer(TensionStiffeningCompensator):
-	"""
-	Implements the tension stiffening approach based on \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	r"""
+	Implements the tension stiffening approach based on \cite Fischer_2019_Distributedfiberoptic.
 	The calculative tension stiffening strain \f(\varepsilon^{\mathrm{ts}}_{\mathrm{concrete}}\f) is idealized to increase linearly from the crack's position
 	\f[
 		\varepsilon^{\mathrm{TS}}_{\mathrm{concrete}}(x) = \min{\left(\delta_{\varepsilon}(x) \times \varepsilon_{\mathrm{lim}}(x),\: \varepsilon^{\mathrm{DFOS}}(x)\right)}
@@ -119,8 +117,8 @@ class Fischer(TensionStiffeningCompensator):
 	def __init__(self,
 			max_concrete_strain: int = 100,
 			*args, **kwargs):
-		"""
-		Constructs a TensionStiffeningCompensator object with according to the proposal by \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+		r"""
+		Constructs a TensionStiffeningCompensator object with according to the proposal by \cite Fischer_2019_Distributedfiberoptic.
 		\param max_concrete_strain \copybrief max_concrete_strain For more, see \ref max_concrete_strain.
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
@@ -131,13 +129,13 @@ class Fischer(TensionStiffeningCompensator):
 		## Default to 100 µm/m.
 		self.max_concrete_strain = max_concrete_strain
 	def run(self, x: np.array, strain: np.array, crack_list: list, *args, **kwargs) -> np.array:
-		"""
+		r"""
 		\copydoc TensionStiffeningCompensator.run()
 		"""
 		tension_stiffening_values = np.zeros_like(strain)
 		for crack in crack_list:
-			l_i, x_l = fosutils.find_closest_value(x, crack.x_l)
-			r_i, x_r = fosutils.find_closest_value(x, crack.x_r)
+			l_i, x_l = misc.find_closest_value(x, crack.x_l)
+			r_i, x_r = misc.find_closest_value(x, crack.x_r)
 			x_seg = x[l_i:r_i+1]
 			xp = [x_l, crack.location, x_r]
 			fp = np.minimum([strain[l_i], 0, strain[r_i]], self.max_concrete_strain)

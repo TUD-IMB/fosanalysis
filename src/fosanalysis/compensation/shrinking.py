@@ -1,10 +1,8 @@
 
-"""
-\file
+r"""
 Contains functionality to compensate shrinking and creep.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.compensation.shrinking \copydoc shrinking.py
 """
 
 import numpy as np
@@ -13,10 +11,13 @@ import scipy.signal
 from . import compensator
 
 class ShrinkCompensator(compensator.Compensator):
+	r"""
+	Implements compensation for shrink and creeping of concrete.
+	"""
 	def __init__(self,
 			method: str = "mean_min",
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a ShrinkCompensator object.
 		\param method \copybrief method For more, see \ref method.
 		\param args \copybrief args For more, see \ref args.
@@ -33,7 +34,7 @@ class ShrinkCompensator(compensator.Compensator):
 		## By default empty.
 		self.kwargs = kwargs
 	def run(self, x: np.array, strain: np.array, strain_inst: np.array) -> np.array:
-			"""
+			r"""
 			The influence of concrete creep and shrinking is calculated.
 			All of the parameters are assumed to be in sync and sanitized.
 			\param x Positional data.

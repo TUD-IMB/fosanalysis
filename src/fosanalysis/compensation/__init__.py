@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains modules for compensating physical influences on the strain measurements.
 Those are:
 - creep and shrinkage,

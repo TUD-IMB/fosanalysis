@@ -1,47 +1,65 @@
 
-"""
+r"""
 Contains modules for data preprocessing, like:
 - filtering: dealing with noise, e.g. smoothing
 - identification of strain reading anomalies (SRAs),
 - repair, dealing with `NaN`s
 
 \author Bertram Richter
-\date 2022
+\date 2023
 """
 
+from abc import abstractmethod
+import copy
+
+import numpy as np
+
+from fosanalysis import utils
+
+from . import base
 from . import filtering
 from . import masking
 from . import repair
+from . import resizing
 
-from fosanalysis import cropping
-
-def strip_smooth_crop(x,
-					*y_tuple,
-					repair_object = None,
-					filter_object = None,
-					crop = None,
-					start_pos: float = None,
-					end_pos: float = None,
-					offset: float = None,
-					length: float = None,
-					):
+class Preprocessing(base.Base, utils.base.Workflow):
+	r"""
+	Container for several preprocessing task, that are carried out in sequential order.
+	"""
+	def __init__(self,
+			tasklist: list,
+			*args, **kwargs):
+		r"""
+		Constructs a Preprocessing object.
+		\param tasklist \copybrief tasklist For more, see \ref tasklist.
+		\param *args Additional positional arguments, will be passed to the superconstructor.
+		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
-		Sanitize the given arrays.
-		Firstly, `NaN`s are stripped, using \ref repair.NaNFilter.run().
-		Secondly, all data records in `y_tuple` are smoothed using \ref filtering.SlidingMean.run().
-		Finally, `x` and all records in `y_tuple` are cropped using \ref cropping.Crop.run().
-		\return Returns copies of `x` and `y_tuple`.
+		super().__init__(*args, **kwargs)
+		## List of \ref preprocessing.base.Base sub-class objects.
+		## The tasks are executed sequentially, the output of a previous
+		## preprocessing is used as the input to the next one.
+		self.tasklist = tasklist
+	def run(self,
+			x: np.array,
+			y: np.array,
+			z: np.array,
+			make_copy: bool = True,
+			*args, **kwargs) -> np.array:
+		r"""
+		The data is passed sequentially through all preprocessing task objects in \ref tasklist, in that specific order.
+		The output of a previous preprocessing task is used as the input to the next one.
+		\param x Array of measuring point positions.
+		\param y Array of time stamps.
+		\param z Array of strain data in accordance to `x` and `y`.
+		\param make_copy Switch, whether a deepcopy of the passed data should be done.
+			Defaults to `True`.
+		\param *args Additional positional arguments, to customize the behaviour.
+			Will be passed to the `run()` method of all taks objects in \ref tasklist.
+		\param **kwargs Additional keyword arguments to customize the behaviour.
+			Will be passed to the `run()` method of all task objects in \ref tasklist.
 		"""
-		if x is not None and len(y_tuple) > 0 and all([len(y) == len(x) for y in y_tuple]):
-			repair_object = repair_object if repair_object is not None else repair.NaNFilter()
-			filter_object = filter_object if filter_object is not None else filtering.SlidingMean()
-			crop = crop if crop is not None else cropping.Crop()
-			x_strip, *y_tuple_strip = repair_object.run(x, *y_tuple)
-			y_list_smooth = []
-			for y_strip in y_tuple_strip:
-				y_smooth = filter_object.run(y_strip)
-				x_crop, y_crop = crop.run(x_strip, y_smooth, start_pos=start_pos, end_pos=end_pos, length=length, offset=offset)
-				y_list_smooth.append(y_crop)
-			return (x_crop, y_list_smooth[0]) if len(y_list_smooth) == 1 else (x_crop, *y_list_smooth)
-		else:
-			raise ValueError("Either x, any of y_tuple is None or they differ in lengths.")
+		x, y, z = super().run(x, y, z, make_copy=make_copy, *args, **kwargs)
+		for task in self.tasklist:
+			x, y, z = task.run(x, y, z, make_copy=False, *args, **kwargs)
+		return x, y, z

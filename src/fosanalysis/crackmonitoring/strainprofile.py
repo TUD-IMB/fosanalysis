@@ -1,28 +1,24 @@
 
 """
-\file
 Contains class definitions for strain profiles and cracks.
 \author Bertram Richter
 \date 2022
-\package fosanalysis.strainprofile \copydoc strainprofile.py
 """
 
-from abc import abstractmethod
 import copy
 
 import numpy as np
 
-from . import compensation
+from fosanalysis import utils
+from fosanalysis import preprocessing
+from fosanalysis import compensation
+
 from . import cracks
-from . import cropping
 from . import finding
-from . import fosutils
-from . import integration
-from . import preprocessing
 from . import separation
 
-class StrainProfile(fosutils.Base):
-	"""
+class StrainProfile(utils.base.Workflow):
+	r"""
 	Hold the strain data and methods to identify cracks and calculate the crack widths.
 	The crack widths are calculated with the general equation:
 	\f[
@@ -42,10 +38,7 @@ class StrainProfile(fosutils.Base):
 			x: np.array,
 			strain: np.array,
 			strain_inst: np.array = None,
-			tare: np.array = None,
 			crackfinder = None,
-			crop = None,
-			filter_object = None,
 			integrator = None,
 			lengthsplitter = None,
 			name: str = "",
@@ -53,15 +46,12 @@ class StrainProfile(fosutils.Base):
 			suppress_compression: bool = True,
 			ts_compensator = None,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a strain profile object.
 		\param x \copybrief x For more, see \ref x.
 		\param strain \copybrief strain For more, see \ref strain.
 		\param strain_inst \copybrief strain_inst For more, see \ref strain_inst.
-		\param tare \copybrief tare For more, see \ref tare.
 		\param crackfinder \copybrief crackfinder For more, see \ref crackfinder.
-		\param crop \copybrief crop For more, see \ref crop.
-		\param filter_object \copybrief filter_object For more, see \ref filter_object.
 		\param integrator \copybrief integrator For more, see \ref integrator.
 		\param lengthsplitter \copybrief lengthsplitter For more, see \ref lengthsplitter.
 		\param name \copybrief name For more, see \ref name.
@@ -72,14 +62,19 @@ class StrainProfile(fosutils.Base):
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
 		super().__init__(*args, **kwargs)
-		## Original list of location data (x-axis) for the current experiment.
-		self._x_orig = x
-		## Original list of strain data (y-axis) for the current experiment.
-		self._strain_orig = strain
-		## Original list of strain data (y-axis) for the initial load experiment.
-		self._strain_inst_orig = strain_inst
-		## Original tare values for the sensor.
-		self._tare_orig = tare
+		## Location data of the measurement area in accordance to \ref strain.
+		## This data is assumed to be already preprocessed, see \ref preprocessing.Preprocessing.
+		self.x = x
+		## Strain data in the measurement area in accordance to \ref x.
+		## This data is assumed to be already preprocessed, see \ref preprocessing.Preprocessing.
+		self.strain = strain
+		## Strain, from which the crack widths are calculated.
+		## It is reset to \ref strain in \ref calculate_crack_widths().
+		## It is only for inspection/debugging purposes.
+		self._strain_compensated = None
+		## Strain data (y-axis) for the initial load experiment.
+		## This data is assumed to be already preprocessed, see \ref preprocessing.Preprocessing.
+		self.strain_inst = strain_inst
 		## Array of calibration values for the shrinking in the measurement area.
 		## If \ref shrink_compensator is not `None`, it is calculated by \ref compensate_shrink().
 		## Else, it defaults to `np.zeros` of the same length as \ref strain.
@@ -90,9 +85,6 @@ class StrainProfile(fosutils.Base):
 		## List of cracks, see \ref cracks.Crack for documentation.
 		## To restart the calculation again, set to run \ref clean_data() and run \ref calculate_crack_widths() afterwards.
 		self.crack_list = cracks.CrackList()
-		## \ref cropping.Crop object to restrict the data to a desired section of the sensor.
-		## Defaults to the default configuration of \ref cropping.Crop (no restirction applied.
-		self.crop = crop if crop is not None else cropping.Crop()
 		## \ref compensation.shrinking.ShrinkCompensator object to compensate the strain values for concrete shrinking and creep.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.shrink_compensator = shrink_compensator
@@ -105,83 +97,27 @@ class StrainProfile(fosutils.Base):
 		## \ref compensation.tensionstiffening.TensionStiffeningCompensator object used to substract out the influence of tension stiffening on the crack width.
 		## Defaults to `None`, which is equivalent to no compensation.
 		self.ts_compensator = ts_compensator
-		## \ref preprocessing.filtering.Filter object to sanitize the data values and reduce strain reading anomalies.
-		## Defaults to the default configuration of \ref preprocessing.filtering.SlidingMean (no effect).
-		self.filter_object = filter_object if filter_object is not None else preprocessing.filtering.SlidingMean()
-		## \ref integration.Integrator object used to integrate the strain data to estimate the crack widths.
-		## Defaults to the default configuration of \ref integration.Integrator.
-		self.integrator = integrator if integrator is not None else integration.Integrator()
+		## \ref utils.integration.Integrator object used to integrate the strain data to estimate the crack widths.
+		## Defaults to the default configuration of \ref utils.integration.Integrator.
+		self.integrator = integrator if integrator is not None else utils.integration.Integrator()
 		## Name of the strain profile, defaults to `""`.
 		self.name = name
 		## Switch, whether compression (negative strains) should be suppressed, defaults to `True`.
 		## Suppression is done after compensation for shrinking and tension stiffening.
 		self.suppress_compression = suppress_compression
-		
-		# Attributes, that are set automatically
-		
-		## Location data of the measurement area in accordance to \ref strain.
-		## The data is stripped of any `NaN` entries and cropped  according to \ref crop.
-		## The original data is available under \ref _x_orig.
-		self.x = None
-		## Strain data in the measurement area in accordance to \ref x.
-		## The data is stripped of any `NaN` entries, filtered by \ref filter_object and cropped according to \ref crop.
-		## The original data is available under \ref _strain_orig.
-		self.strain = None
-		## Strain data (y-axis) for the initial load experiment.
-		## The data is filtered by \ref filter_object and cropped according to \ref crop.
-		## The original data is available under \ref _strain_inst_orig.
-		self.strain_inst = None
-		## The tare strain values.
-		## Initially, the sensor might report a non-zero strains state.
-		## This is due to the sensor manifacturing process sensor application or environmental influences.
-		## Prior to the maesurement, the sensor can be calibrated in the ODiSI software.
-		## The tare strains have only informative character, as the ODiSI software reports net strain data (corrected by the tare already).
-		## The original (unfiltered and uncropped) data is available under \ref _tare_orig.
-		self.tare = None
-		# Data sanitization
-		data_container_orig = [self._strain_orig]
-		attr_list = ["strain"]
-		if self._strain_inst_orig is not None:
-			data_container_orig.append(self._strain_inst_orig)
-			attr_list.append("strain_inst")
-		if self._tare_orig is not None:
-			data_container_orig.append(self._tare_orig)
-			attr_list.append("tare")
-		assert [len(entry) == len(self._x_orig) for entry in data_container_orig], "The number of entries of data attributes do not match."
-		(self.x, *data_container_out) = preprocessing.strip_smooth_crop(self._x_orig, *data_container_orig, filter_object=self.filter_object, crop=self.crop)
-		for attr, data in zip(attr_list, data_container_out):
-			setattr(self, attr, data)
-	@abstractmethod
-	def _clean_data_prepare(self) -> dict:
-		"""
-		Prepare the data, that is passed into the \ref clean_data.
-		Returns a dictionary, which contains the keyword arguments.
-		"""
-		kwargs = {
-			"x":self._x_orig,
-			"strain": self._strain_orig,
-			"strain_inst": self._strain_inst_orig,
-			"tare": self._tare_orig,
-			"crackfinder": self.crackfinder,
-			"crop": self.crop,
-			"filter_object": self.filter_object,
-			"integrator": self.integrator,
-			"lengthsplitter": self.lengthsplitter,
-			"name": self.name,
-			"shrink_compensator": self.shrink_compensator,
-			"suppress_compression": self.suppress_compression,
-			"ts_compensator": self.ts_compensator,
-			}
-		return kwargs
 	def clean_data(self):
+		r"""
+		Resetting several attributes to it's original state before any calculations.
+		Clears:
+		- \ref crack_list,
+		- \ref shrink_calibration_values
+		- \ref tension_stiffening_values
 		"""
-		Reset the object to it's original state before any calculations.
-		This is a light wrapper around \ref __init__(), which passes most of the attributes.
-		"""
-		kwargs = self._clean_data_prepare()
-		self.__init__(**kwargs)
+		self.crack_list = cracks.CrackList()
+		self.shrink_calibration_values = None
+		self.tension_stiffening_values = None
 	def calculate_crack_widths(self, clean: bool = True) -> cracks.CrackList:
-		"""
+		r"""
 		Returns the crack widths.
 		The following is done:
 		1. Find the crack positions, see \ref find_cracks().
@@ -197,34 +133,37 @@ class StrainProfile(fosutils.Base):
 		"""
 		if clean:
 			self.clean_data()
-		
 		if not self.crack_list:
 			self.find_cracks()
 			self.set_lt()
 		# Compensation
-		strain = self.strain
+		self._strain_compensated = copy.deepcopy(self.strain)
 		if self.shrink_compensator is not None:
-			strain = strain - self.compensate_shrink()
+			self._strain_compensated = self._strain_compensated - self.compensate_shrink()
 		if self.ts_compensator is not None:
-			strain = strain - self.calculate_tension_stiffening()
+			self._strain_compensated = self._strain_compensated - self.calculate_tension_stiffening()
 		# Compression cancelling
 		if self.suppress_compression:
 			f = preprocessing.filtering.Limit(minimum=0.0, maximum=None)
-			strain = f.run(strain)
+			x, y_tmp, self._strain_compensated = f.run(self.x, None, self._strain_compensated)
 		# Crack width calculation
 		for crack in self.crack_list:
-			x_seg, y_seg = self.crop.run(self.x, strain, start_pos=crack.x_l, end_pos=crack.x_r, offset=0)
-			crack.width = self.integrator.integrate_segment(x_seg, y_seg, start_index=None, end_index=None)
+			x_seg, y_seg = utils.cropping.cropping(self.x,
+												self._strain_compensated,
+												start_pos=crack.x_l,
+												end_pos=crack.x_r,
+												offset=0)
+			crack.width = self.integrator.integrate_segment(x_seg, y_seg)
 		return self.crack_list
 	def find_cracks(self):
-		"""
+		r"""
 		Identify cracks, settings are stored in \ref crackfinder.
 		"""
 		self.crack_list = self.crackfinder.run(self.x, self.strain)
 		return self.crack_list
 	def set_lt(self) -> list:
-		"""
-		Estimating transfer length to \ref crack_list, settings are stored in \ref lengthsplitter.
+		r"""
+		Estimate transfer length to \ref crack_list, settings are stored in \ref lengthsplitter.
 		If \ref crack_list is empty, \ref find_cracks() is carried out beforehand.
 		"""
 		if not self.crack_list:
@@ -232,7 +171,7 @@ class StrainProfile(fosutils.Base):
 		self.crack_list = self.lengthsplitter.run(self.x, self.strain, self.crack_list)
 		return self.crack_list
 	def compensate_shrink(self, *args, **kwargs) -> np.array:
-		"""
+		r"""
 		Calculate the shrink influence of the concrete and store it in \ref shrink_calibration_values.
 		It is required to provide the following attributes:
 		- \ref x,
@@ -247,7 +186,7 @@ class StrainProfile(fosutils.Base):
 		else:
 			return self.shrink_calibration_values()
 	def calculate_tension_stiffening(self) -> np.array:
-		"""
+		r"""
 		Compensates for the strain, that does not contribute to a crack, but is located in the uncracked concrete.
 		\return An array with the compensation values for each measuring point is returned.
 		"""
@@ -263,7 +202,7 @@ class StrainProfile(fosutils.Base):
 						*cracks_tuple: tuple,
 						recalculate: bool = True,
 						):
-		"""
+		r"""
 		Use this function to manually add a crack to \ref crack_list at the closest measuring point to `x` after an intial crack identification.
 		It assumes, that \ref find_cracks() is run beforehand at least once.
 		Afterwards, \ref set_lt() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
@@ -278,14 +217,14 @@ class StrainProfile(fosutils.Base):
 		for crack in cracks_tuple:
 			if isinstance(crack, cracks.Crack):
 				crack = copy.deepcopy(crack)
-				index, x_pos = fosutils.find_closest_value(self.x, crack.location)
+				index, x_pos = utils.misc.find_closest_value(self.x, crack.location)
 				crack.index = index
 				crack.location = x_pos
 				crack.max_strain=self.strain[index]
 				crack.x_l = crack.x_l if crack.x_l is not None and crack.x_l < crack.location else None
 				crack.x_r = crack.x_r if crack.x_r is not None and crack.x_r > crack.location else None
 			else: 
-				index, x_pos = fosutils.find_closest_value(self.x, crack)
+				index, x_pos = utils.misc.find_closest_value(self.x, crack)
 				crack = cracks.Crack(location=x_pos,
 								index = index,
 								max_strain=self.strain[index],
@@ -298,7 +237,7 @@ class StrainProfile(fosutils.Base):
 						*cracks_tuple: tuple,
 						recalculate: bool = True,
 						) -> list:
-		"""
+		r"""
 		Use this function to manually delete cracks from \ref crack_list, that were wrongfully identified automatically by \ref find_cracks().
 		After the deletion, \ref set_lt() and \ref calculate_crack_widths() is run, if `recalculate` is set to `True`.
 		\param cracks_tuple Any number of integers (list indexes) of the cracks that should be deleted.
@@ -315,14 +254,14 @@ class StrainProfile(fosutils.Base):
 		return delete_cracks
 
 class Concrete(StrainProfile):
-	"""
+	r"""
 	The strain profile is assumed to be from a sensor embedded directly in the concrete.
-	The crack width calculation is carried out according to \cite Fischer_2019_QuasikontinuierlichefaseroptischeDehnungsmessung.
+	The crack width calculation is carried out according to \cite Fischer_2019_Distributedfiberoptic.
 	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Fischer.
 	"""
 	def __init__(self,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a strain profile object, of a sensor embedded in concrete.
 		\param *args Additional positional arguments, will be passed to \ref StrainProfile.__init__().
 		\param **kwargs Additional keyword arguments, will be passed to \ref StrainProfile.__init__().
@@ -332,15 +271,9 @@ class Concrete(StrainProfile):
 			}
 		default_values.update(kwargs)
 		super().__init__(*args, **default_values)
-	def _clean_data_prepare(self) -> dict:
-		"""
-		\copydoc StrainProfile._clean_data_prepare()
-		"""
-		kwargs = super()._clean_data_prepare()
-		return kwargs
 
 class Rebar(StrainProfile):
-	"""
+	r"""
 	The strain profile is assumed to be from a sensor attached to a reinforcement rebar.
 	The crack width calculation is carried out according to \cite Berrocal_2021_Crackmonitoringin.
 	The tension stiffening component \f$\varepsilon^{\mathrm{TS}}\f$ is provided by \ref compensation.tensionstiffening.Berrocal.
@@ -358,7 +291,7 @@ class Rebar(StrainProfile):
 			alpha: float,
 			rho: float,
 			*args, **kwargs):
-		"""
+		r"""
 		Constructs a strain profile object, of a sensor attached to a reinforcement rebar.
 		\param alpha \copybrief compensation.tensionstiffening.Berrocal.alpha For more, see \ref compensation.tensionstiffening.Berrocal.alpha.
 		\param rho \copybrief compensation.tensionstiffening.Berrocal.rho For more, see \ref compensation.tensionstiffening.Berrocal.rho.
@@ -374,14 +307,3 @@ class Rebar(StrainProfile):
 		self.alpha = alpha
 		## \copydoc compensation.tensionstiffening.Berrocal.rho
 		self.rho = rho
-	def _clean_data_prepare(self) -> dict:
-		"""
-		\copydoc StrainProfile._clean_data_prepare()
-		"""
-		kwargs = super()._clean_data_prepare()
-		addkwargs = {
-			"alpha": self.alpha,
-			"rho": self.rho,
-			}
-		kwargs.update(addkwargs)
-		return kwargs

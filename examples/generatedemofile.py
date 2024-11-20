@@ -1,11 +1,9 @@
 
-"""
-\file
+r"""
 This script generates the `demofile` for [Getting Started](doc/GettingStarted.md).
 The demofile simulates a real file exported by the ODiSI Software by Luna Inc.
 \author Bertram Richter
 \date 2022
-\package examples.generatedemofile \copydoc generatedemofile.py
 """
 
 import datetime
@@ -14,7 +12,7 @@ import os
 import scipy.stats
 
 def generate_header():
-	"""
+	r"""
 	Prints the header file
 	"""
 	file_contents = []
@@ -23,69 +21,77 @@ def generate_header():
 	return file_contents
 	raise NotImplementedError()
 
-def generate_data(start, end, gage_length):
-	"""
+def generate_x(start, end, gage_length):
+	return np.round(np.arange(start, end, gage_length), 5)
+
+def generate_data(x_axis, rng, noise_gain):
+	r"""
 	Generates the body data.
 	"""
-	x_data = np.arange(start, end, gage_length)
-	y_data = []
-	y_base = np.zeros(x_data.shape)
-	nan_array = np.full(x_data.shape, np.nan)
+	y_base = np.zeros(x_axis.shape)
+	nan_array = np.full(x_axis.shape, np.nan)
 	min_noise_ratio = 0.9
 	max_noise_ratio = 1.0
 	
 	# Peaks: location, height, width
 	peaks = [
-		(3.4,	500,	.04),
-		(3.6,	1200,	.02),
-		(3.75,	4050,	.03),
-		(3.88,	5000,	.015),
-		(3.92,	5500,	.015),
-		(4.0,	1200,	.014),
-		(4.15,	5800,	.03),
-		(4.30,	7150,	.015),
-		(4.48,	6050,	.012),
-		(4.7,	3000,	.02),
-		(4.85,	2200,	.01),
-		(5.0,	500,	.01),
+		(3.20,	500,	.04),
+		(3.40,	1200,	.02),
+		(3.55,	4050,	.03),
+		(3.68,	5000,	.015),
+		(3.72,	5500,	.015),
+		(3.80,	1200,	.014),
+		(3.95,	5800,	.03),
+		(4.10,	7150,	.015),
+		(4.28,	6050,	.012),
+		(4.50,	3000,	.02),
+		(4.65,	2200,	.01),
+		(4.80,	500,	.01),
 		]
 	for loc, h, w in peaks:
-		peak = scipy.stats.norm.pdf(x_data, loc, w)
+		peak = scipy.stats.norm.pdf(x_axis, loc, w)
 		y_base =  y_base + peak * h /max(peak)
 	
-	for i in range(5):
-		# Add noise
-		signal_noise = np.random.random(x_data.shape) * (max_noise_ratio - min_noise_ratio) + max_noise_ratio
-		base_noise = np.random.random(x_data.shape) * 100
-		# Round an convert to integers
-		y_record = y_base * signal_noise + base_noise
-		y_record = y_record.astype(np.int32)
-		# Insert NaN at random positions
-		nans_decision = np.random.random(x_data.shape) > 0.1
-		y_record = np.where(nans_decision, y_record, nan_array)
-		y_data.append(y_record)
-	x_data = np.round(x_data, 5)
-	return x_data, y_data
+	# Add noise
+	noise = rng.normal(0, noise_gain, *(x_axis.shape))
+	# Round an convert to integers
+	y_data = y_base + noise
+	y_data = y_data.astype(np.int32)
+	# Insert NaN at random positions
+	nans_decision = np.random.random(x_axis.shape) > 0.1
+	y_data = np.where(nans_decision, y_data, nan_array)
+	return y_data
 
 def main():
-	"""
+	r"""
 	Run the script.
 	"""
 	file = "data/demofile.tsv"
 	if not os.path.exists(os.path.dirname(file)):
 			os.makedirs(os.path.dirname(file))
-	now = datetime.datetime.now()
+	# Start position in m
 	start = 0.08
+	# End position in m
 	end = 5.07925
+	# Distance between consecutive gages in m
 	gage_length = 1.3 / 1000
+	# Timestamp of the first reading
+	start_time = datetime.datetime.now()
+	# Measurement refresh rate in Hz
 	frequency = 1.5625
+	# Time increment betwwen readings
 	dt = datetime.timedelta(seconds=1/frequency)
-	x_data, y_data = generate_data(start, end, gage_length)
+	# Duration of the measurement
+	duration = datetime.timedelta(seconds=10)
+	# Standard deviation of noise
+	noise_gain = 10
+	# Random number generator for reproducible data
+	rng = np.random.default_rng(seed=0)
 	with open(file, "w", encoding="utf-8") as f:
 		f.write("Test name:	Getting Started" + "\n")
 		f.write("Notes:	" + "\n")
 		f.write("Product:	ODiSI 6102" + "\n")
-		f.write("Date:	{}".format(now.isoformat(sep=" ")) + "\n")
+		f.write("Date:	{}".format(start_time.isoformat(sep=" ")) + "\n")
 		f.write("Timezone: 	UTC+0" + "\n")
 		f.write("File Type:	ODiSI 6xxx Data File" + "\n")
 		f.write("File Version:	7" + "\n")
@@ -111,10 +117,16 @@ def main():
 		f.write("Key name:	" + "\n")
 		f.write("Tare name:	" + "\n")
 		f.write("----------------------------------------" + "\n")
-		print("x-axis", "", "", *x_data, sep="\t", end="\n", file=f)
-		for record in y_data:
-			now = now + dt
-			print("{}".format(now.isoformat(sep=" ")), "measurement", "strain", *record, sep="\t", end="\n", file=f)
+		x_axis = generate_x(start, end, gage_length)
+		print("x-axis", "", "", *x_axis, sep="\t", end="\n", file=f)
+		# Strain data
+		step = 0
+		timestamp = start_time
+		while dt * step <= duration:
+			reading = generate_data(x_axis, rng, noise_gain)
+			timestamp = start_time + dt * step
+			print("{}".format(timestamp.isoformat(sep=" ")), "measurement", "strain", *reading, sep="\t", end="\n", file=f)
+			step += 1
 
 if __name__ == "__main__":
 	main()
