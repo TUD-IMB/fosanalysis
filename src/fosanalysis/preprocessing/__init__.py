@@ -2,8 +2,9 @@
 r"""
 Contains modules for data preprocessing, like:
 - filtering: dealing with noise, e.g. smoothing
-- identification of strain reading anomalies (SRAs),
-- repair, dealing with `NaN`s
+- masking: identification of strain reading anomalies (SRAs),
+- repair: dealing with `NaN`s,
+- resizing: changing the shape of the data arrays.
 
 \author Bertram Richter
 \date 2023

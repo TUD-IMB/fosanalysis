@@ -13,7 +13,7 @@ import copy
 
 class Crack():
 	r"""
-	A Crack object presents a in the concrete with its properties.
+	A Crack object presents a crack in concrete with its properties.
 	The attributes of a Crack object are additionally exposed in a
 	special `dict`-like interface
 	The `dict`-like interface should be preferred over calling the
@@ -43,7 +43,7 @@ class Crack():
 		"""
 		## Position index in the sanitized measurement data of \ref strainprofile.StrainProfile (e.g.\ `x`).
 		self.index = index
-		## Absolute location (e.g.\ in meters) along the fibre optical sensor.
+		## Absolute location (e.g.,\ in meters) along the fibre optical sensor.
 		self.location = location
 		## Absolute location left-hand side end of its transfer length.
 		self.x_l = x_l
@@ -105,7 +105,8 @@ class CrackList(list):
 	def __init__(self, *crack_list):
 		r"""
 		Constructs a CrackList.
-		\param crack_list Data, from which the CrackList is constructed. Possible arguments :
+		\param crack_list Data, from which the CrackList is constructed.
+		Possible arguments :
 		- any number of \ref Crack objects,
 		- \ref Crack objects wrapped in a `list`, `tuple` or `set`,
 		- \ref CrackList object (same as above)
@@ -155,7 +156,8 @@ class CrackList(list):
 		\param tol Tolerance in location difference, to take a Crack into account.
 			Only used with `method = "nearest"`.
 			Defaults to `None`, which is turned off.
-		\param method Method, that is used, to use decide, how the cracks are chosen. Available methods:
+		\param method Method how the cracks are selected.
+			Available methods:
 			- `"nearest"` (default): adds the crack to the CrackList,
 				for which the distance between the location of the crack
 				and the entry in `locations` is the smallest among all cracks.
@@ -206,11 +208,11 @@ class CrackList(list):
 			):
 		r"""
 		Get a list of \ref Crack objects according to the given attribute.
-		\param attribute Name of the relevant attribute
-		\param minimum threshold for the minimal accepted value of the attribute
-		\param maximum threshold for the maximal accepted value of the attribute
+		\param attribute Name of the relevant attribute.
+		\param minimum Threshold for the minimum accepted value of the attribute.
+		\param maximum Threshold for the maximum accepted value of the attribute.
 		\param make_copy if true, a deepcopy of the CrackList is returned.
-		\return Returns the \ref CrackList.
+		\return Returns a \ref CrackList.
 			If no crack satisfies the condition, an empty CrackList is returned.
 		"""
 		selected_crack_list = CrackList()
@@ -229,10 +231,10 @@ class CrackList(list):
 			make_copy: bool = True,
 			):
 		r"""
-		Get a list of \ref Crack whose attribute is None.
-		\param attribute Name of the relevant attribute
-		\param make_copy if true, a deepcopy of the CrackList is returned.
-		\return Returns the \ref CrackList.
+		Get a list of \ref Crack whose `attribute` is None.
+		\param attribute Name of the relevant attribute.
+		\param make_copy If true, a deepcopy of the CrackList is returned.
+		\return Returns a \ref CrackList.
 			If no crack satisfies the condition, an empty CrackList is returned.
 		"""
 		selected_crack_list = CrackList()
@@ -263,7 +265,7 @@ class CrackList(list):
 	def sort(self, attribute: str = "location"):
 		r"""
 		Sort the list of \ref Crack according to the given attribute.
-		\param attribute Name of the relevant attribute
+		\param attribute Name of the relevant attribute.
 		"""
 		orig_order = self.get_attribute_list(attribute)
 		index_list = np.argsort(orig_order)

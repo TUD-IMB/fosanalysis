@@ -21,7 +21,7 @@ class CrackLengths(utils.base.Task):
 		Constructs a CrackLength object.
 		\param methods \copybrief methods For more, see \ref methods.
 		"""
-		## Dictionary of methods to restrict the effetice lengths of a crack with their respective options.
+		## Dictionary of methods to restrict the effective lengths of a crack with their respective options.
 		## All given methods are carried out, the transfer length will be the tightest interval (the limit closest to the cracks location wins).
 		## Default is: `{"min": True, "length": 0.2, "reset": "inner"}`.
 		## 
@@ -30,19 +30,20 @@ class CrackLengths(utils.base.Task):
 		## 	The outer limits of the outermost cracks are not changed.
 		## 	This option is activated by the sole existence of the key `"min"` \ref methods.
 		## 	The value assigned to the key is disregarded, as it has no further options. 
-		## - `"middle": <any value>`: Crack segments are split in the middle inbetween crack locations. The outer limits of the outermost cracks are not changed.
+		## - `"middle": <any value>`: Crack segments are split in the middle inbetween crack locations.
+		## 	The outer limits of the outermost cracks are not changed.
 		## 	This option is activated by the sole existence of the key `"middle"` \ref methods.
 		## 	The value assigned to the key is disregarded, as it has no further options. 
 		## - `"threshold": <threshold: float>`: Crack segment is limited at the nearest point of `x`, where the `strain` falls below the `threshold` strain.
 		## - `"length": <length: float>`: (activated by default with `0.2`)
 		## 	Crack segment is limited in its radius by the constant value.
-		## 	The last entry in the `x` data, inside this radius is taken as the limit.
+		## 	The entry in the `x` data, with the largest distance to the crack location, but inside this radius is taken as the limit.
 		## - `"reset": "str" = "<option>"` If provided`, the limits of the transfer lengths are set to \f$-\infty\f$ for the left and \f$\infty\f$ right limit prior to the assignments.
-		## 	In order to purge the information, that is initially provided e.g. by \ref finding.CrackFinder.run(), use this option.
+		## 	In order to purge the information, that is initially provided e.g., by \ref finding.CrackFinder.run(), use this option.
 		## 	Available options:
-		## 	    - `"all"` The limits of all cracks are replaced.
-		## 	    - `"inner"` (default) The outer limits of the outermost cracks are excluded from resetting.
-		## 	    - `"no"` Deactivate reset, leave the data as provided.
+		## 	- `"all"` The limits of all cracks are replaced.
+		## 	- `"inner"` (default) The outer limits of the outermost cracks are excluded from resetting.
+		## 	- `"no"` Deactivate reset, leave the data as provided.
 		self.methods = methods if methods else {"min": True, "length": 0.2, "reset": "inner"}
 	def _first_index_leq_threshold(self, data, threshold) -> int:
 		r"""
@@ -108,4 +109,3 @@ class CrackLengths(utils.base.Task):
 				else:
 					raise ValueError("No such option '{}' known for `method`.".format(method))
 		return crack_list
-	

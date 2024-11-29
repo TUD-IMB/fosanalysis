@@ -1,6 +1,6 @@
 
 r"""
-Contains funtionality to find potential crack locations.
+Contains functionality to find potential crack locations.
 \author Bertram Richter
 \date 2022
 """
@@ -13,7 +13,7 @@ from . import cracks
 
 class CrackFinder(utils.base.Task):
 	r"""
-	Obejct to identify potential crack positions.
+	Object to identify potential crack positions.
 	Core functionality is based on [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html).
 	"""
 	def __init__(self,
@@ -39,7 +39,7 @@ class CrackFinder(utils.base.Task):
 		self.kwargs = kwargs if kwargs else {"height": 100,"prominence": 100}
 	def run(self, x, strain) -> cracks.CrackList:
 		r"""
-		Identifies the positions of cracks using [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) and returns \ref cracks.CrackList object.
+		Identifies the positions of cracks using [`scipy.signal.find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) and returns a \ref cracks.CrackList object.
 		Those \ref cracks.Crack objects are still incomplete.
 		Their effective lengths may need to be recalculated using \ref separation.CrackLengths.run() and the widths \ref strainprofile.StrainProfile.calculate_crack_widths().
 		\param x Positional data.
