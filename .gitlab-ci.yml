@@ -1,3 +1,4 @@
+# This pipeline builds the documentation for the internal branch develop
 pages:
   tags:
     - documentation
@@ -5,6 +6,7 @@ pages:
   before_script:
     - apk update && apk add doxygen graphviz ttf-freefont texlive
   script:
+    - rm -rf ./Documentation
     - doxygen Doxyfile
     - mv Documentation/html/ public/
   artifacts:
