@@ -3,7 +3,7 @@ pages:
     - documentation
   image: alpine
   before_script:
-    - apk update && apk add doxygen graphviz ttf-freefont
+    - apk update && apk add doxygen graphviz ttf-freefont texlive
   script:
     - doxygen Doxyfile
     - mv Documentation/html/ public/

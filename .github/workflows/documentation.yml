@@ -32,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Doxygen Action
-        uses: mattnotmitt/doxygen-action@1.9.8
+        uses: mattnotmitt/doxygen-action@edge
         with:
           # Path to Doxyfile
           doxyfile-path: ./Doxyfile
@@ -41,7 +41,7 @@ jobs:
           # Generate latex documentation
           enable-latex: true
           # Extra alpine packages for the build environment
-          additional-packages: graphviz ttf-freefont
+          additional-packages: graphviz ttf-freefont texlive
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
