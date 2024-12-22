@@ -341,9 +341,11 @@ class Cluster(Filter):
 			x_array: np.array,
 			) -> np.array:
 		r"""
-		Calculate the array of weights for the current position
+		Calculate the array of weights for the current position.
+		The weight \f$w_i\f$ of the \f$i\f$th element on the current
+		element is calculated as
 		\f[
-			w_{i} = \exp\left(-\alpha || x_{i} - x ||^{2}\right)
+			w_{i} = \exp\left(-\alpha || x_{i} - x ||^{2}\right).
 		\f]
 		\param pixel Position (index) of the current datapoint to estimate.
 		\param x_array Array of abscissa data.
@@ -356,7 +358,9 @@ class Cluster(Filter):
 			weights_array: np.array,
 			) -> float:
 		r"""
-		Calculate the locality parameter \f$\beta\f$ based on the local variance is estimated to 
+		Calculate the locality parameter \f$\beta\f$.
+		The locality parameter \f$\beta\f$ is affected on the local variance.
+		It is calculated as
 		\f[
 			\beta^{(t)} = \frac{
 				\sum_{i} w_{i}
@@ -388,7 +392,8 @@ class Cluster(Filter):
 			z_t: float,
 			) -> float:
 		r"""
-		Calculate the next estimate \f$z^{(t+1)}_{k}\f$ for by
+		Calculate the next iteration estimate.
+		The next estimate \f$z^{(t+1)}_{k}\f$ is calculated as
 		\f[
 			z^{(t+1)}_{k} = \frac{
 				\sum_{i} z_{i} w_{i} \exp\left(- \beta^{(t)} \left(z_{i} - z^{(t)}_{k}\right)^{2}\right)
@@ -415,6 +420,7 @@ class Cluster(Filter):
 			):
 		r"""
 		Calculate the weight falloff parameter \f$\alpha\f$, see \ref alpha.
+		It is calculated as
 		\f[
 			\alpha = -\frac{\ln w}{l^2}
 		\f]
