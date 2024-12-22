@@ -38,6 +38,7 @@ def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
 	The returned array has the same shape as `arr`.
 	
 	Example:
+	
 	```.py
 	>>> arr = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
@@ -47,11 +48,13 @@ def last_finite_index(arr: np.array, axis: int = -1) -> np.array:
 	
 	The first element is assumed to be a finite value.
 	All indices before the first finite entry will be `0`.
+	
 	```.py
 	>>> arr = np.array(["nan","nan", "inf", 5], dtype=float)
 	array([nan, nan, inf, 5.])
 	>>> last_finite_index(arr)
 	array([0, 0, 0, 3])
+	```
 	
 	\param arr Array like.
 	\param axis Axis along which to apply the indexing.
@@ -69,13 +72,16 @@ def nan_diff_1d(arr: np.array) -> np.array:
 	r"""
 	Calculate the difference to the previous finite entry.
 	This is similar to `np.diff()`, but skipping `NaN` or `inf` entries.
+	
 	Example:
+	
 	```.py
 	>>> arr = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
 	>>> nan_diff_1d(arr)
 	array([1., nan, -inf, 3.])
 	```
+	
 	\param arr Array like, needs to be 1D.
 	"""
 	arr = np.array(arr)
@@ -91,12 +97,14 @@ def nan_diff(arr: np.array, axis: int = -1) -> np.array:
 	This function is a wrapper around \ref nan_diff_1d().
 	
 	Example:
+	
 	```.py
 	>>> arr = np.array([1.,2.,"nan", "inf", 5], dtype=float)
 	array([1., 2., nan, inf, 5.])
 	>>> nan_diff(arr)
 	array([1., nan, -inf, 3.])
 	```
+	
 	\param arr Array like.
 	\param axis Axis along which to calculate the incremental difference.
 		Defaults to the last axis.
