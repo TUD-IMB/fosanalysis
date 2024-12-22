@@ -70,23 +70,22 @@ class Aggregate(Resizing):
 			method: str or callable,
 			module = np):
 		r"""
-		Set the method for data processing.
-		This method allows setting the data processing method, which can
-		be either a string representing a NumPy function or a custom callable function.
+		Set the \ref kernel method for data processing, which can be
+		either a string representing function name in a given namespace
+		\ref module or a custom callable function.
 		If `"method"` is a string, retrieve the corresponding function from the specified module.
 		If `"method"` is a custom callable function, directly set it as the processing method.
 		\param method \copydoc method 
 		\param module \copydoc module
 		"""
-		## Could be either a `callable` and \ref kernel would set directly
-		## to this function or a string representing a function name in
-		## the namespace  of \ref module.
+		## Could be either a `callable` (function object) or a string
+		## representing a function name in the namespace of \ref module.
 		self.method = method
 		## A Python module or namespace in which \ref method is looked up
 		## when \ref method is not a `callable`. Defaults to Numpy (`np`).
 		self.module = module
-		## Kernel function, this actually carries out the aggregation
-		## of the data. It is settable via \ref setup.
+		## Callable function used to aggregate the data.
+		## Use \ref setup to set it.
 		self.kernel = method if callable(method) else getattr(module, method)
 	def run(self,
 			x: np.array,
@@ -113,10 +112,10 @@ class Aggregate(Resizing):
 			timespace is as follows:
 			
 			|`"timespace"`|       x        |       y        |           z            |
-			|:----------:|:--------------:|:--------------:|:----------------------:|
-			|`"1d_space"`|       x        |`np.array(None)`|1d array, same size as x|
-			|`"1d_time"` |`np.array(None)`|       y        |1d array, same size as y|
-			|   `"2d"`   |`np.array(None)`|`np.array(None)`|    np.array(float)     |
+			|:----------: |:--------------:|:--------------:|:----------------------:|
+			|`"1d_space"` |       x        |`np.array(None)`|1d array, same size as x|
+			|`"1d_time"`  |`np.array(None)`|       y        |1d array, same size as y|
+			|   `"2d"`    |`np.array(None)`|`np.array(None)`|    np.array(float)     |
 		"""
 		x, y, z = super().run(x, y, z, make_copy=make_copy, *args, **kwargs)
 		timespace = timespace if timespace is not None else self.timespace
@@ -139,7 +138,7 @@ class Aggregate(Resizing):
 			axis: int,
 			*args, **kwargs) -> np.array:
 		r"""
-		Reduce current 2D array of data to a 1D array.
+		Reduce the given array using the \ref kernel funcition.
 		\param data Array of data with functional data according to `data`.
 		\param axis Axis in which the data should be consolidated.
 			This is in accordance with the `numpy` axis definitions.
@@ -245,6 +244,7 @@ class Downsampler(Resizing):
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
+		super().__init__(*args, **kwargs)
 		## Aggregator to use, see \ref Aggregate.
 		self.aggregator = aggregator
 		## Inradius of the window's rectangle.
