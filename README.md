@@ -25,13 +25,18 @@ Overview of news is given in [CHANGELOG](./CHANGELOG.md).
 If you use this framework, you might want to cite these papers:
 
 ```
-@article{Richter_2023_CrackMonitoringConcrete,
+@Article{Richter_2023_CrackMonitoringConcrete,
   author          = {Richter, Bertram and Herbers, Max and Marx, Steffen},
   date            = {2023},
   journaltitle    = {Structural Concrete},
   title           = {Crack monitoring on concrete structures with distributed fiber optic sensors---Toward automated data evaluation and assessment},
   doi             = {10.1002/suco.202300100},
+  issn            = {1751-7648},
   journalsubtitle = {Journal of the fib},
+  number          = {2},
+  pages           = {1465--1480},
+  volume          = {25},
+  publisher       = {John Wiley \& Sons Ltd},
 }
 
 @Article{Richter_2024_Advancesdatapreprocessing,
@@ -39,6 +44,11 @@ If you use this framework, you might want to cite these papers:
   date         = {2024},
   journaltitle = {Sensors},
   title        = {Advances in Data Pre-Processing Methods for Distributed Fiber Optic Strain Sensing},
+  doi          = {10.3390/s24237454},
+  eid          = {7454},
+  issn         = {1424-8220},
+  number       = {23},
+  volume       = {24},
   publisher    = {MDPI},
 }
 ```
