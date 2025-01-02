@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix bug in GTM, where strain reading anomalies in the last element of an array are not detected
+- Fixes in documentation an continuous documentation deployment
+
 ## [v0.4] – 2024-11-20
 
 This version adds substantial improvements for data preprocessing.
