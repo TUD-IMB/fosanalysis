@@ -155,8 +155,8 @@ class GTM(AnomalyMasker):
 		## most recently trusted entry, a forward neighbor comparison is triggered.
 		## Then, the number of neighbors exceeding \ref delta_max to the candidate is counted.
 		## The ratio of this number dividedy by \ref forward_comparison_range is compared to the tolerance ratio.
-		## Setting this to `0.0`, rejects the point, when at least a single neigbor violates \ref delta_max.
-		## Setting this to `1.0`, would reaccept every point, rendering the whole prodecure useless.
+		## Setting this to `0.0` rejects the point when at least a single neighbor violates \ref delta_max.
+		## Setting this to `1.0` would reaccept every point, rendering the whole procedure useless.
 		## The default parameter combination is equivalent to comparing the candidate to both its direct neighbors:
 		## | Parameter                     | Value |
 		## | :---                          | :---: |
@@ -177,29 +177,27 @@ class GTM(AnomalyMasker):
 			to_left: bool,
 			) -> bool:
 		r"""
-		Evaluate, if the candidate keeps its SRA flag by comparing it to its succeeding neighbors.
-		The candidate keeps its flag, if
+		Evaluate, if the candidate keeps its SRA flag by comparing it to
+		its succeeding neighbors. The candidate keeps its flag, if
 		\f[
-			r_{\mathrm{tol}} \cdot n_{\mathrm{tot}} > n_{\mathrm{ex}}
+			r_{\mathrm{tol}} \cdot n_{\mathrm{tot}} < n_{\mathrm{ex}}
 		\f]
 		with the \ref tolerance ratio \f$r_{\mathrm{tol}}\f$,
-		the number of considered succeeding neighbors \f$n_{\mathrm{tot}}\f$ \ref forward_comparison_range and 
-		the number of considered neighbors \f$n_{\mathrm{ex}}\f$, which differ to the candidate greater than \ref delta_max.
+		the number of considered succeeding neighbors \f$n_{\mathrm{tot}}\f$,
+		which is the minimum of \ref forward_comparison_range and the
+		remaining elements to the end of the the `z` array, and
+		the number of considered neighbors \f$n_{\mathrm{ex}}\f$,
+		whose absolute difference to the candidate exceeds \ref delta_max.
 		\param z Array of strain data.
 		\param to_left \copybrief to_left For more, see \ref to_left.
 		\param index Current index of the flagged entry.
 		\return Returns, whether the candidate keeps ist SRA flag.
 		"""
-		if self.forward_comparison_range == 0:
-			return True
-		# counter for the comparison with a percentual acceptance
+		# Counter for the comparison with a percentual acceptance
 		exceeding_amount = 0
-		# differentiation between directions
-		if not to_left:
-			maximum_range = len(z) - (index + 1)
-		else:
-			maximum_range = index
-		for nth_neighbor in range(min(self.forward_comparison_range, maximum_range)):
+		# Number of finite neighbors actually considered
+		actual_neighbor_number = 0
+		for nth_neighbor in range(self.forward_comparison_range):
 			n_i, neighbor = misc.next_finite_neighbor(array=z,
 													index=index,
 													to_left=to_left,
@@ -207,9 +205,12 @@ class GTM(AnomalyMasker):
 			if neighbor is None:
 				# no neighbor in this direction found
 				break
+			actual_neighbor_number = actual_neighbor_number + 1
 			if abs(z[index] - neighbor) > self.delta_max:
 				exceeding_amount = exceeding_amount + 1
-		return (self.forward_comparison_range * self.tolerance < exceeding_amount)
+		if actual_neighbor_number == 0:
+			return True
+		return (actual_neighbor_number * self.tolerance < exceeding_amount)
 	def _run_1d(self,
 			x: np.array,
 			z: np.array,
