@@ -92,7 +92,7 @@ This operation already reduces noise and the number of `NaN` entries.
 However, the resulting array might still contain `NaN` entries.
 
 ```.py
-aggregateobject = fa.preprocessing.aggregate.Median()
+aggregateobject = fa.preprocessing.resizing.Aggregate(method="nanmedian")
 ```
 
 Dropouts are readings without a finite value (not a number (NaN)).
@@ -130,7 +130,7 @@ tasklist=[
 	aggregateobject,
 	repairobject,
 	filterobject,
-	crop,
+	cropobject,
 	]
 preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 ```

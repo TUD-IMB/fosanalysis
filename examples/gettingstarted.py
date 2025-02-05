@@ -26,9 +26,9 @@ x, times, strain_table = sd.get_data()
 # Generate objects for the preprocessing workflow.
 # Convert strain reading anomalies to dropouts
 maskingobject = fa.preprocessing.masking.GTM(delta_max=400,
-											 forward_comparison_range=1,
-											 activate_reverse_sweep=False,
-											 )
+											forward_comparison_range=1,
+											activate_reverse_sweep=False,
+											)
 
 # Combine multiple readings of data into a 1D array.
 aggregateobject = fa.preprocessing.resizing.Aggregate(method="nanmedian")
@@ -41,7 +41,7 @@ repairobject = fa.preprocessing.repair.ScipyInterpolation1D()
 filterobject = fa.preprocessing.filtering.SlidingFilter(radius=5, method="nanmedian")
 
 # Instantiate an object which defines the area of interest.
-crop = fa.preprocessing.resizing.Crop(start_pos=3, end_pos=5)
+cropobject = fa.preprocessing.resizing.Crop(start_pos=3, end_pos=5)
 
 ## Set the order of the preprocessing tasks.
 tasklist = [
@@ -49,10 +49,10 @@ tasklist = [
 	aggregateobject,
 	repairobject,
 	filterobject,
-	crop,
+	cropobject,
 ]
 
-# Instantiate the workflowobject (it will call all task objects one after another).
+# Instantiate the workflow object (it will call all task objects one after another).
 preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 
 # Process the raw data according to the ruleset represented by the the preprocesssing object.
