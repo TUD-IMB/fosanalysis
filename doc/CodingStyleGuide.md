@@ -112,6 +112,7 @@ Comments are essential to build a codebase that others can understand. Doxygen i
 - Comments must be up to date. For code changes, update your comments to match the current code function.
 - Write code comments in English.
 - Use # and a single space as start for a single line comment.
+- Use ## and a single space for class variables to tell Doxygen to parse this area.
 - Inline comments should be used sparingly.
 - Conventions for good documentation strings are defined at the [Doxygen](https://www.doxygen.nl/manual/docblocks.html) page.
 - Define the correct documentation for doxygen (use `r"""` for opened documentation to prevent warnings)
@@ -134,8 +135,11 @@ class PyClass:
     r"""
     Documentation for a class.
     """
-    def __init__(self):
-        r""" The constructor. """
+    def __init__(self, filename: str):
+        r""" The class initializer. """
+        ## Name of the file
+        self.filename = filename
+        ## Private member variable
         self._memVar = 0;
 ```
 
@@ -151,5 +155,8 @@ class PyClass:
 - Absolute paths are recommended.
 ```python
 from myclass import MyClass, SpecialClass
+
 from foo.bar.yourclass import YourClass
+
+from fosanalysis.utils import FosClass
 ```
