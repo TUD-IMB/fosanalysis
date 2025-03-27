@@ -7,7 +7,7 @@ Coding standards helps to create code that is readable, maintainable and accessi
 
 PEP stands for Python Enhancement Proposal, which is a style guide document about Python coding guidelines and best practices and builds consistency within code structure and design.
 
-This document describes the formatting, structure and design for python code in the **fosanalysis** project.
+This document describes the formatting, structure and design for python code in the **fosanalysis** project. The style guide will mainly outline differences to PEP8.
 
 ## Naming conventions
 
@@ -22,8 +22,8 @@ Write all new modules and package names according to the following standards to 
 
 ## Indentation
 
-- Spaces are the preferred indentation method.
-- Use 4 spaces for each indentation level.
+- Tabs are the preferred indentation method.
+- Use 4 spaces for each tab.
 - Continuation lines should align wrapped elements either vertically inside parentheses, brackets and braces.
 - When using hanging indent, there should be no arguments on the first line.
 
@@ -33,9 +33,13 @@ foo = long_function_name(var_one, var_two,
                          var_three, var_four)
 
 # Add 4 spaces (extra indentation) to distinguish arguments from the rest.
+# For more than one argument separate each parameter into its own line
 def long_function_name(
-        var_one, var_two, var_three,
-        var_four):
+        var_one: bool, 
+        var_two: list, 
+        var_three: list,
+        var_four: dict = {}
+) -> bool:
     print(var_one)
 
 # Hanging indents should add a level.
@@ -46,7 +50,7 @@ foo = long_function_name(
 
 ## Maximum Line Length
 
-- Limit all lines to a maximum of 89 characters.
+- Limit all lines to a maximum of 79 characters.
 - Comments and docstrings should be limited to 72 characters.
 - Long lines can be broken over multiple lines by wrapping expressions in parentheses.
 - Backslashes where acceptable for cases where parentheses cannot be used.
@@ -74,7 +78,8 @@ with open('/path/to/some/file/you/want/to/read') as file_1, \
 spam(ham[1], {eggs: 2})
 
 # Immediately before a comma, semicolon or colon
-if x == 4: print(x, y)
+if x == 4: 
+    print(x, y)
 ```
 
 - Surround binary operators with a single space on either side
@@ -93,6 +98,11 @@ def munge(input: str, sep: str = None, limit=1000) -> int:
 ```
 
 - Multiple statements on the same line are prohibited.
+- Nested / overlay complex statements are forbidden, should be broken up into single line statements
+```python
+data = df.to_list()
+data_array = np.array(data)
+```
 
 ## Comments
 
@@ -101,17 +111,18 @@ Comments are essential to build a codebase that others can understand. Doxygen i
 - Comments must be written in complete sentences.
 - Comments must be up to date. For code changes, update your comments to match the current code function.
 - Write code comments in English.
-- Use # and a single space as start for a block comment.
+- Use # and a single space as start for a single line comment.
 - Inline comments should be used sparingly.
 - Conventions for good documentation strings are defined at the [Doxygen](https://www.doxygen.nl/manual/docblocks.html) page.
 - Define the correct documentation for doxygen (use `r"""` for opened documentation to prevent warnings)
+- Use the backslash `\\` instead of the `@` symbol for doxygen special commands (e.g. `\param`, `\return`)
  ```python
-r"""\package module_name
+r"""
 Documentation for this module.
 More details.
 """
 
-def func(x: float):
+def func(x: float) -> float:
     r"""
     Documentation for a function.
     \param x Value for x.
