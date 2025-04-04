@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add [Coding Style Guide](/doc/CodingStyleGuide.md)
+
 ### Fixed
 
 - Fix bug in GTM, where strain reading anomalies in the last element of an array are not detected
