@@ -25,30 +25,21 @@ Write all new modules and package names according to the following standards to 
 ## Indentation
 
 - Tabs are the preferred indentation method, not spaces like in PEP 8.
-- Set the tab size to 4 characters.
-- Continuation lines should align wrapped elements either vertically inside parentheses, brackets or braces.
+- Set the dispay tab size of your editor to 4 characters.
+- Continuation lines should align wrapped elements either vertically inside parentheses, brackets, or braces.
 - When using hanging indent, there should be no arguments on the first line.
-    
-    ```python
-    # Aligned with opening delimiter.
-    foo = long_function_name(var_one, var_two,
-    						var_three, var_four)
-    
-    # Add 4 spaces (extra indentation) to distinguish arguments from the rest.
-    # For more than one argument separate each parameter into its own line
-    def long_function_name(
-    		var_one: bool, 
-    		var_two: list, 
-    		var_three: list,
-    		var_four: dict = {}
-    		) -> bool:
-    	print(var_one)
-    
-    # Hanging indents should add a level.
-    foo = long_function_name(
-    	var_one, var_two,
-    	var_three, var_four)
-    ```
+- For more than one or two arguments, separate each parameter into its own line.
+    In this case, add one extra indentation level to distinguish arguments from the rest.
+
+```python
+def long_function_name(
+		var_one: bool, 
+		var_two: list, 
+		var_three: list,
+		var_four: dict = {},
+		) -> bool:
+	print(var_one)
+```
 
 ## Maximum Line Length
 
@@ -85,6 +76,7 @@ Write all new modules and package names according to the following standards to 
     if x == 4:
     	print(x, y)
     ```
+
 - Surround binary operators with a single space on either side
     
     ```python
@@ -103,7 +95,8 @@ Write all new modules and package names according to the following standards to 
     ```
 
 - Multiple statements on the same line are prohibited.
-- Nested/overly complex statements are forbidden and should be broken up into single line statements
+     Nested/overly complex statements are forbidden.
+     Instead, the several steps should be broken up into single line statements.
     
     ```python
     data = df.to_list()
@@ -113,16 +106,17 @@ Write all new modules and package names according to the following standards to 
 ## Comments
 
 Comments are essential to build a codebase that others can understand.
-Doxygen is our documentation generator tool, so write your source code comments in the correct format to produce standardized output.
+[Doxygen](https://www.doxygen.nl) is our documentation generator tool.
+Write your source code documentation accordingly in the correct format to produce standardized output.
 
 - Comments must be written in complete sentences.
 - Comments must be up to date. For code changes, update your comments to match the current code function.
 - Write code comments in English.
-- Use `#` and a single space as start for a single line comment.
-- Use `##` and a single space for class variables to tell Doxygen to parse this area.
-- Inline comments should be used sparingly.
+- Use `# ` (one hash symbol followed by a single space) as start for a single line comment.
+    Such inline comments should be used sparingly.
+- Use `## ` (two hash symbols followed by a single space) before variables that should be documented by Doxygen.
 - Conventions for good documentation strings are defined at the [Doxygen](https://www.doxygen.nl/manual/docblocks.html) page.
-- Define the correct documentation for doxygen (use `r""" <Documentation here> """` for docstrings to prevent warnings by Python 3.12+)
+- Use raw docstrings `r""" <Documentation here> """` to prevent warnings by Python 3.12+)
 - Use the backslash `\` instead of the `@` symbol for doxygen special commands (e.g., `\param`, `\return`)
 
 ```python
@@ -154,7 +148,7 @@ class PyClass:
 ## Imports
 
 - Imports should usually be on separate lines.
-- Imports always put at the top of the file, just after any module comments and docstrings and before module globals and constants.
+- Imports are always put at the top of the file, just after any module comments and docstrings and before module globals and constants.
 - Imports should be grouped in the following order, separated with a blank line:
     1. Standard library imports.
     2. Related third party imports.
