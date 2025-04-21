@@ -146,7 +146,9 @@ The way to clean up raw data got completely overhauled.
 - Empty placeholder package on PyPI
 
 
-[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.0..master
+[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.1..master
+[v0.4.1]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.1..v0.4.0
+[v0.4]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.0..v0.3.0
 [v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.4.0..v0.3.0
 [v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.3.0..v0.2.0
 [v0.2]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.2.0..v0.1.0
