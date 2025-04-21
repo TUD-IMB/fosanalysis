@@ -1,7 +1,7 @@
 [project]
 name = "fosanalysis"
 
-version = "0.4"
+version = "0.4.1"
 
 description = "A framework to evaluate distributed fiber optic sensor data"
 
@@ -15,6 +15,7 @@ keywords = [
 	"structural health monitoring",
 	"distributed fiber optic sensor",
 	"DFOS",
+	"data evaluation",
 	"distributed strain sensing",
 	"pre-processing",
 	"crack monitoring",
@@ -35,8 +36,6 @@ classifiers = [
 	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 	
 	"Programming Language :: Python :: 3",
-	"Programming Language :: Python :: 3.7",
-	"Programming Language :: Python :: 3.8",
 	"Programming Language :: Python :: 3.9",
 	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
