@@ -15,14 +15,14 @@ from . import utils
 
 class SensorRecord(dict):
 	r"""
-	A single record of the fibre optical sensor.
+	A single record of the distributed fiber optic strain sensing data.
 	"""
 	def __init__(self,
 				data: list,
 				**kwargs):
 		r"""
 		Constructs a SensorRecord object.
-		As a dictinary, such an object may hold further information.
+		Being adictionary, it may hold further information.
 		\param data The actual data of the record.
 		\param **kwargs Any other properties can be passes as `kwargs`, such as `name`, or `timestamp`.
 		"""
@@ -39,7 +39,7 @@ class SensorRecord(dict):
 
 class Protocol(utils.base.Base):
 	r"""
-	Abstract class, which specifies the basic interfaces, a protocol must implement.
+	Abstract class, which specifies the basic interfaces a protocol must implement.
 	"""
 	@abstractmethod
 	def __init__(self, *args, **kwargs):
@@ -79,8 +79,7 @@ class ODiSI6100TSVFile(Protocol):
 		\param file \copydoc file
 			It is immediately read by \ref read_file().
 		\param only_header \copydoc only_header
-		\param itemsep String, which separates items (columns) in the file.
-			Defaults to `"\t"` (tab).
+		\param itemsep \copydoc file 
 		\param *args Additional positional arguments, will be passed to the superconstructor.
 		\param **kwargs Additional keyword arguments, will be passed to the superconstructor.
 		"""
@@ -104,11 +103,12 @@ class ODiSI6100TSVFile(Protocol):
 		self.gages = OrderedDict()
 		## Dictionary, which stores metadata with the fieldname as key.
 		self.metadata = {}
-		## Fully specified file path), from which the data is read.
+		## Fully specified file path, from which the data is read.
 		## The file is parsed at instantiation on a ODiSI6100TSVFile object,
 		## but can be re-read with \ref read_file().
 		self.file = file
-		## Stores the given item separator.
+		## String, which separates items (columns) in the file.
+		## Defaults to `"\t"` (tab).
 		self.itemsep = itemsep
 		## Switch to omit processing the complete file.
 		## Default is `False` (read whole file).
@@ -408,8 +408,8 @@ class ODiSI6100TSVFile(Protocol):
 		\copydetails _get_dict()
 		\param position Position of the data. Available options:
 			- `"closest"` (default) get the entry, which is closest to the given value.
-			- `"searchsorted"` get the entry, as reported by `np.searchsorted`.
-				If the time_stamp is larger that any time stamp,the last
+			- `"searchsorted"` get the entry as reported by `np.searchsorted`.
+				If the time_stamp is larger that any time stamp, the last
 				record is returned but the index is equal to the length
 				of the time stamp list (does not have a corresponding value).
 		
@@ -443,7 +443,7 @@ class ODiSI6100TSVFile(Protocol):
 		
 		Both `start` and `end` can be of the following types and be combined arbitrarily.
 		- `int`: Index of the record according to Python indexing logic.
-		- `datetime.datetime`: The first record after the given`datetime.datetime`
+		- `datetime.datetime`: The first record after the given `datetime.datetime`
 			is included for `start` and excluded for `end`.
 		- `datetime.timedelta`: Time duration, in relation to the other parameter.
 			If the parameter is `None`, it defaults to the first/last reading time.
