@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New function `extract_part`, that extracts the time intervals which are of interest and writes them in a smaller .tsv file, to `protocols.py`.
+- New function `protocols.extract_time_intervals()` to extract time interval partitions of measurement data to smaller `.tsv` files.
 
 ## [v0.4.1] – 2025-04-21
 

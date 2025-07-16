@@ -575,24 +575,37 @@ class ODiSI6100TSVFile(Protocol):
 		"""
 		return self.metadata
 
-def extract_part(input_file:str, output_file:str, list_of_time_intervals:list):
-	r"""
-	Extracts the time intervals which are of interest and writes them in a (temporary) smaller .tsv file.
-	A line is included in the output file if its timestamp falls within at least one of the given time intervals:
-	f$t_s \leq t \leq t_ef$
-	Overlapping intervals are supported.
 
+def extract_time_intervals(
+		input_file: str,
+		output_file: str,
+		list_of_time_intervals: list,
+		) -> None:
+	r"""
+	Extracts the parts of the measurement data into smaller `.tsv` files.
+	The parts are given by time intervals.
+	The file header is copied as is.
+	A measurement line is copied to the `output_file` if its timestamp
+	\f$t\f$ falls within at least one of the given time intervals:
+	\f$t_{\mathrm{s}} \leq t \leq t_{\mathrm{e}}\f$.
+	Overlapping intervals are supported.
+	
+	\note The `output_file` is overwritten without asking for confirmation!
+	
 	\param input_file String with the path of the input file (.tsv)
 	\param output_file String with the path of the output file (.tsv)
-	\param list_of_time_intervals List of tupels like (start_time, end_time), where both are datetime.datetime or None.
-		None means no restriction (open interval) in that direction.
+	\param list_of_time_intervals List of time intervals.
+		Each interval is given as tuple of its the limits
+		(start time \f$t_{\mathrm{s}}\f$, end time \f$t_{\mathrm{e}}\f$).
+		Both limits can be either `datetime.datetime` or `None`.
+		Setting one or both of the limits to `None` results in an (half) unlimited open interval.
 		It is not necessary that the exact interval boundaries appear in the data.
 	"""
-	with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
+	with open(input_file, "r") as infile, open(output_file, "w") as outfile:
 		for line in infile:
 			entries = line.split("\t")
 			try:
-				timestamp = datetime.datetime.strptime(entries[0].strip(), '%Y-%m-%d %H:%M:%S.%f')
+				timestamp = datetime.datetime.fromisoformat(entries[0].strip())
 				for start_time, end_time in list_of_time_intervals:
 					if (start_time is None or timestamp >= start_time) and (end_time is None or timestamp <= end_time):
 						outfile.write(line)
