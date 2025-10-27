@@ -161,7 +161,7 @@ def np_to_python(data):
 		return data.item() if isinstance(data, np.generic) else data
 
 def datetime_to_timestamp(datetime_array: np.array) -> np.array:
-	"""
+	r"""
 	Converts an array of datetime entries to an array of Unix timestamps.
 	\param datetime_array  Array of datetime objects.
 	\return Returns an array of Unix timestamps.
@@ -169,7 +169,7 @@ def datetime_to_timestamp(datetime_array: np.array) -> np.array:
 	return np.vectorize(datetime.datetime.timestamp)(datetime_array)
 
 def timestamp_to_datetime(timestamp_array: np.array) -> np.array:
-	"""
+	r"""
 	Converts an array of Unix timestamps to an array of datetime entries.
 	\param timestamp_array  Array of `float`s, representing Unix timestamps.
 	\return Returns an array of `datetime.datetime` objects.

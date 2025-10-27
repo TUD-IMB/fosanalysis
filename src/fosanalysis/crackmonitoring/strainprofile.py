@@ -1,5 +1,5 @@
 
-"""
+r"""
 Contains class definitions for strain profiles and cracks.
 \author Bertram Richter
 \date 2022
