@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `datahandling` package brings a completely new data importing interface:
+    - The generic storage format of the Luna ODiSI 610x series (`.dat` files) is now suported.
+    - Arbitrary large measurement files are supported.
+    	The files can now be read chunkwise, which removes the previous limit that the complete data needed to fit into RAM.
+    - Objects for reading measurement files (`filereader`) and requesting data (`filehandler`) are now separated.
+    - New function `datahandling.tsvutils.tsv_print_metadata_table()` to quickly get an overview over the content a bunch of TSV in a given directory.
+
+### Deprecated
+
+- `protocols` is deprecated and superseded by the `datahandling` package and the `filereader` and `filehandler` modules.
+- Moved function `protocols.extract_time_intervals()` to `datahandling.tsvutils.tsv_extract_time_intervals()`.
+
 
 ## [v0.4.2] – 2026-01-23
 
