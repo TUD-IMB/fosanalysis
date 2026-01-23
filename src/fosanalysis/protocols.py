@@ -1,17 +1,25 @@
 r"""
 Contains functionality for interfacing files and network ports.
 \author Bertram Richter
-\date 2023
+\date 2023--2025
 """
 
 from abc import abstractmethod
 from collections import OrderedDict
 import copy
 import datetime
+import warnings
 
 import numpy as np
 
 from . import utils
+
+warnings.warn(
+	"The fosanalysis.protocols module is deprecated. " +
+	"This interface will be removed in the next release. " +
+	"Please update to the new interface: fosanalysis.datahandling.",
+	category=DeprecationWarning
+	)
 
 class SensorRecord(dict):
 	r"""
@@ -40,6 +48,9 @@ class SensorRecord(dict):
 class Protocol(utils.base.Base):
 	r"""
 	Abstract class, which specifies the basic interfaces a protocol must implement.
+	
+	\deprecated This class and its subclasses are deprecated and will be removed in the next release.
+	Please update to the new interface, see \ref datahandling.
 	"""
 	@abstractmethod
 	def __init__(self, *args, **kwargs):
@@ -50,6 +61,12 @@ class Protocol(utils.base.Base):
 		super().__init__(*args, **kwargs)
 		## Dictionary containting metadata information.
 		self.metadata = {}
+		warnings.warn(
+			"The fosanalysis.protocols.Protocol classes are deprecated. " +
+			"This interface will be removed in the next release. " +
+			"Please update to the new interface: fosanalysis.datahandling.",
+			#category=DeprecationWarning
+			)
 	@abstractmethod
 	def get_x_values(self) -> np.array:
 		r"""
@@ -68,6 +85,9 @@ class ODiSI6100TSVFile(Protocol):
 	Data inferface for the `.tsv` measurement files exported by the
 	ODiSI 6100 series interrogators by Luna Inc \cite LunaInnovations2020.
 	Both gage files (`*_gages.tsv`) and full (`*_full.tsv`) are supported.
+	
+	\deprecated This class and its subclasses are deprecated and will be removed in the next release.
+	Please update to the new interface, see \ref datahandling.
 	"""
 	def __init__(self,
 			file: str,
@@ -592,6 +612,9 @@ def extract_time_intervals(
 	
 	\note The `output_file` is overwritten without asking for confirmation!
 	
+	\deprecated This function is deprecated and was moved to `fosanalysis.datahandling.tsvustils.extract_time_intervals()`.
+	Please use the updated function call
+	
 	\param input_file String with the path of the input file (.tsv)
 	\param output_file String with the path of the output file (.tsv)
 	\param list_of_time_intervals List of time intervals.
@@ -601,6 +624,12 @@ def extract_time_intervals(
 		Setting one or both of the limits to `None` results in an (half) unlimited open interval.
 		It is not necessary that the exact interval boundaries appear in the data.
 	"""
+	warnings.warn(
+			"This function is deprecated and was moved to `fosanalysis.datahandling.tsvustils.extract_time_intervals()`. " +
+			"This interface will be removed in the next release. " +
+			"Please update to the new interface.",
+			#category=DeprecationWarning
+			)
 	with open(input_file, "r") as infile, open(output_file, "w") as outfile:
 		for line in infile:
 			entries = line.split("\t")
