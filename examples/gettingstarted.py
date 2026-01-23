@@ -18,10 +18,15 @@ plt.rcParams.update({
 })
 
 # Loading data from file
-sd = fa.protocols.ODiSI6100TSVFile("data/demofile.tsv")
+filepath = "data/demofile.tsv"
+handle = fa.datahandling.filehandler.FileHandler(filepath)
 
-# Retrieving data
-x, times, strain_table = sd.get_data()
+# Retrieving data for one sensor
+x_axis = handle.sensors[0].x_axis
+times, strain_data = handle.get_measurements(handle.sensors[0].channel)
+
+x_axis = strain_data["All"]["x_axis"]
+strains = strain_data["All"]["strain"]
 
 # Generate objects for the preprocessing workflow.
 # Convert strain reading anomalies to dropouts
@@ -56,10 +61,10 @@ tasklist = [
 preprocessingobject = fa.preprocessing.Preprocessing(tasklist=tasklist)
 
 # Process the raw data according to the ruleset represented by the the preprocesssing object.
-x_processed, times, strain_processed = preprocessingobject.run(x=x, y=times, z=strain_table)
+x_processed, times, strain_processed = preprocessingobject.run(x=x_axis, y=times, z=strains)
 
 # Show the data, to visually compare raw to pre-processed data. 
-plt.plot(x, strain_table[0], label="raw")
+plt.plot(x_axis, strains[0], label="raw")
 plt.plot(x_processed, strain_processed, label="processed")
 plt.legend(loc="best")
 plt.show()
