@@ -11,5 +11,6 @@ from . import utils
 from . import compensation
 from . import preprocessing
 from . import crackmonitoring
+from . import datahandling
 # Modules
 from . import protocols

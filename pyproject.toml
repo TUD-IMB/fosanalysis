@@ -46,6 +46,7 @@ classifiers = [
 dependencies = [
 	"numpy",
 	"scipy",
+	"brplotviz",
 ]
 
 [project.urls]
