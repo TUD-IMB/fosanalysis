@@ -19,7 +19,6 @@ def generate_header():
 	file_contents
 	
 	return file_contents
-	raise NotImplementedError()
 
 def generate_x(start, end, gage_length):
 	return np.round(np.arange(start, end, gage_length), 5)
@@ -64,7 +63,7 @@ def generate_data(x_axis, rng, noise_gain):
 
 def main():
 	r"""
-	Run the script.
+	Runs the script and generate demo file.
 	"""
 	file = "data/demofile.tsv"
 	if not os.path.exists(os.path.dirname(file)):
@@ -79,7 +78,7 @@ def main():
 	start_time = datetime.datetime.now()
 	# Measurement refresh rate in Hz
 	frequency = 1.5625
-	# Time increment betwwen readings
+	# Time increment between readings
 	dt = datetime.timedelta(seconds=1/frequency)
 	# Duration of the measurement
 	duration = datetime.timedelta(seconds=10)
@@ -89,7 +88,7 @@ def main():
 	rng = np.random.default_rng(seed=0)
 	with open(file, "w", encoding="utf-8") as f:
 		f.write("Test name:	Getting Started" + "\n")
-		f.write("Notes:	" + "\n")
+		f.write("Notes:	Generated demo file for getting started with fosanalysis" + "\n")
 		f.write("Product:	ODiSI 6102" + "\n")
 		f.write("Date:	{}".format(start_time.isoformat(sep=" ")) + "\n")
 		f.write("Timezone: 	UTC+0" + "\n")
@@ -105,6 +104,8 @@ def main():
 		f.write("Standoff Cable Length (m):	50" + "\n")
 		f.write("Temperature offset:	0.0" + "\n")
 		f.write("Performance Mode:	Full Optimization" + "\n")
+		f.write("Spatial Average Window Size (gages):	0" + "\n")
+		f.write("Temporal Average Window Size (gages):	0" + "\n")
 		f.write("Channel:	1" + "\n")
 		f.write("Sensor Name:	GettingStartedSensor" + "\n")
 		f.write("Sensor Serial Number:	FS2022CUSTOM_ 123456789_123456789" + "\n")
