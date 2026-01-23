@@ -5,11 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
+
+
+## [v0.4.2] – 2026-01-23
 
 ### Added
 
 - New function `protocols.extract_time_intervals()` to extract time interval partitions of measurement data to smaller `.tsv` files.
+
+### Fixed
+
+- Minor fixes in documentation
+- Fix Unicode warnings for Python 3.13
+
 
 ## [v0.4.1] – 2025-04-21
 
@@ -21,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix bug in GTM, where strain reading anomalies in the last element of an array are not detected
 - Fixes in documentation and continuous documentation deployment
+
 
 ## [v0.4] – 2024-11-20
 
@@ -81,6 +92,7 @@ The way to clean up raw data got completely overhauled.
 - Ability of ODiSI6100TSVFile to read multiple files, only one file will be supported
 - `CrackList.get_crack()`, superseded by `CrackList.get_cracks_by_location()`
 
+
 ## [v0.3] – 2023-11-13
 
 ### Added
@@ -121,6 +133,7 @@ The way to clean up raw data got completely overhauled.
 - Unused NetworkStream class
 - Obsolete `x_data` and `y_record_list` of `protocol.Protocol`
 
+
 ## [v0.2] – 2022-08-16
 
 ### Added
@@ -137,11 +150,13 @@ The way to clean up raw data got completely overhauled.
 
 - Several bug fixes
 
+
 ## [v0.1] – 2022-07-18
 
 ### Added
 
 - First version with an example script.
+
 
 ## [v0.0] – 2023-02-10
 
@@ -150,7 +165,8 @@ The way to clean up raw data got completely overhauled.
 - Empty placeholder package on PyPI
 
 
-[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.1..master
+[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..master
+[v0.4.2]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..v0.4.1
 [v0.4.1]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.1..v0.4.0
 [v0.4]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.0..v0.3.0
 [v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.4.0..v0.3.0
