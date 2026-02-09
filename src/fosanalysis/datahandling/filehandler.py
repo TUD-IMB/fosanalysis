@@ -113,7 +113,8 @@ class FileHandler():
 					meas_dict['All']['strain'] = strain
 					meas_dict['All']['x_axis'] = sensor.x_axis
 					meas_dict['All']['tare'] = sensor.tare
-				meas_dict['All']['strain'].extend(strain)
+				else:
+					meas_dict['All']['strain'].extend(strain)
 			timestamps.extend(times)
 			
 		return timestamps, meas_dict
