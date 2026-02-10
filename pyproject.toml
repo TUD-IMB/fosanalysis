@@ -1,7 +1,7 @@
 [project]
 name = "fosanalysis"
 
-version = "0.4.2"
+version = "0.5"
 
 description = "A framework to evaluate distributed fiber optic sensor data"
 
@@ -9,7 +9,8 @@ readme = "README.md"
 
 requires-python = ">=3.7"
 
-license = {file = "LICENSE"}
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 
 keywords = [
 	"structural health monitoring",
@@ -33,14 +34,13 @@ classifiers = [
 	"Intended Audience :: Developers",
 	"Intended Audience :: Science/Research",
 	
-	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-	
 	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only",
 	"Programming Language :: Python :: 3.9",
 	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
 	"Programming Language :: Python :: 3.12",
-	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: 3.13",
 ]
 
 dependencies = [
@@ -57,5 +57,5 @@ dependencies = [
 "documentation" = "https://tud-imb.github.io/fosanalysis/"
 
 [build-system]
-requires = ["setuptools>=43.0.0", "wheel"]
+requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"

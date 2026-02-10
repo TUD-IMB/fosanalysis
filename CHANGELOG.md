@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [v0.5] – 2026-02-10
+
 ### Added
 
 - The `datahandling` package brings a completely new data importing interface:
@@ -19,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- `protocols` is deprecated and superseded by the `datahandling` package and the `filereader` and `filehandler` modules.
+- `protocols` is deprecated and superseded by the `datahandling` package with the `filereader` and `filehandler` modules.
 - Moved function `protocols.extract_time_intervals()` to `datahandling.tsvutils.tsv_extract_time_intervals()`.
 
 
@@ -179,7 +182,8 @@ The way to clean up raw data got completely overhauled.
 - Empty placeholder package on PyPI
 
 
-[unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..master
+[Unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.5..master
+[v0.5]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..v0.5
 [v0.4.2]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..v0.4.1
 [v0.4.1]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.1..v0.4.0
 [v0.4]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.0..v0.3.0
