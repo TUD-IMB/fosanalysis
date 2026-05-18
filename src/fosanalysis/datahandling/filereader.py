@@ -425,8 +425,15 @@ class DatReader(FileReader):
 		self.file.seek(0) # reset the file pointer
 		sensor_list = []
 		metadata = {}
+		lc = 0
 		for line in self.file:
-			line_dict = json.loads(line)
+			lc += 1
+			try:
+				line_dict = json.loads(line)
+			except json.JSONDecodeError as ex:
+				print(f"Error decoding line {lc} in {self.file}! Skipping line.")
+				print(ex)
+				continue
 			if 'sensors' in line_dict:
 				metadata, sensor_list = self._read_metadata(line_dict)
 				self.file_version = metadata.get('file version', 
@@ -508,8 +515,15 @@ class DatReader(FileReader):
 			return None, None
 		for data_file in self.measurement_files:
 			with open(data_file) as f:
+				lc = 0
 				for line in f:
-					line_dict = json.loads(line)
+					lc += 1
+					try:
+						line_dict = json.loads(line)
+					except json.JSONDecodeError as ex:
+						print(f"Error decoding line {lc} in {data_file}! Skipping line.")
+						print(ex)
+						continue
 					if (line_dict.get('channel', None) == channel
 					and line_dict.get('record type', '') == 'measurement'
 					and 'data' in line_dict):
@@ -532,10 +546,16 @@ class DatReader(FileReader):
 							for each channel in file.
 		"""
 		data_dict = {}
-
+		lc = 0
 		with open(dat_file) as f:
 			for line in f:
-				line_dict = json.loads(line)
+				lc += 1
+				try:
+					line_dict = json.loads(line)
+				except json.JSONDecodeError as ex:
+					print(f"Error decoding line {lc} in {dat_file}! Skipping line.")
+					print(ex)
+					continue
 				channel = line_dict.get('channel', None)
 				if (line_dict.get('record type', '') == 'measurement'
 					and 'data' in line_dict):
