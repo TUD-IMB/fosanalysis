@@ -217,14 +217,14 @@ class StrainProfile(utils.base.Workflow):
 		for crack in cracks_tuple:
 			if isinstance(crack, cracks.Crack):
 				crack = copy.deepcopy(crack)
-				index, x_pos = utils.misc.find_closest_value(self.x, crack.location)
+				index, x_pos = utils.misc.find_closest_value_in_sorted_array(self.x, crack.location)
 				crack.index = index
 				crack.location = x_pos
 				crack.max_strain=self.strain[index]
 				crack.x_l = crack.x_l if crack.x_l is not None and crack.x_l < crack.location else None
 				crack.x_r = crack.x_r if crack.x_r is not None and crack.x_r > crack.location else None
 			else: 
-				index, x_pos = utils.misc.find_closest_value(self.x, crack)
+				index, x_pos = utils.misc.find_closest_value_in_sorted_array(self.x, crack)
 				crack = cracks.Crack(location=x_pos,
 								index = index,
 								max_strain=self.strain[index],

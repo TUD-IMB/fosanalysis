@@ -8,27 +8,30 @@ Contains miscellaneous standalone functions.
 import datetime
 import numpy as np
 
-def find_closest_value(arr: np.array, v: float) -> tuple:
+def find_closest_value_in_sorted_array(arr: np.array, v: np.array) -> tuple:
 	r"""
 	Returns index and value in `arr`, that is closest to the given `v`.
 	In case of equal distance of `v` to both neighbors, the smaller one is chosen.
-	\param arr Array like (1D) of values in ascending order.
-	\param v The target value, to which the distance should be minimized.
+	\param arr Arraylike (1D) of values in ascending order.
+	\param v The target value(s), to which the distance should be minimized.
+		`v` can be a `float` or an arraylike.
 	\return `(<index>, <entry>)`
+	\retval index Index positions of the returned value(s). Same dimensions as `v`.
+	\retval entry `np.array` of the value(s) of `arr` closest to the value(s) of `v`. Same dimensions as `v`.
 	"""
 	arr = np.array(arr)
 	i = np.searchsorted(arr, v)
-	if i == 0:
-		# v is smaller than any entry of the array
-		pass
-	elif i == arr.shape[0]:
-		# v is larger than any entry of the array
-		i = i-1
-	else:
-		# v between some array entries
-		dist_l = np.abs(v - arr[i-1])
-		dist_r = np.abs(v - arr[i])
-		i = i if dist_r < dist_l else i-1
+	
+	# restrict i to actually available indices if v is larger than any element of arr
+	i = np.minimum(i, arr.shape[0]-1)
+	# get the item left to the position and prevent an an underflow (-1 flips to the last element)
+	i_left = np.maximum(i-1, 0)
+	# v between some array entries
+	dist_l = np.abs(v - arr[i_left])
+	dist_r = np.abs(v - arr[i])
+	i = np.where(dist_l >= dist_r, i, i-1)
+	if np.size(i) == 1:
+		i = i.item()
 	return i, arr[i]
 
 def last_finite_index(arr: np.array, axis: int = -1) -> np.array:

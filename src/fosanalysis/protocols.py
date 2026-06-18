@@ -440,7 +440,7 @@ class ODiSI6100TSVFile(Protocol):
 		target = self._get_dict(name, is_gage)
 		timestamps = self.get_time_stamps(name, is_gage)
 		if position == "closest":
-			index, accurate_time_stamp = utils.misc.find_closest_value(timestamps, time_stamp)
+			index, accurate_time_stamp = utils.misc.find_closest_value_in_sorted_array(timestamps, time_stamp)
 		elif position == "searchsorted":
 			index = np.searchsorted(timestamps, time_stamp)
 		if index == len(timestamps):
@@ -586,7 +586,7 @@ class ODiSI6100TSVFile(Protocol):
 			x_value = x_values
 			time_series = y_data
 		else:
-			index, x_value = utils.misc.find_closest_value(x_values, x)
+			index, x_value = utils.misc.find_closest_value_in_sorted_array(x_values, x)
 			time_series = np.array([data[index] for data in y_data])
 		return x_value, time_stamps, time_series
 	def get_metadata(self) -> dict:
