@@ -113,15 +113,7 @@ class FileReader(utils.base.Base):
 		Returns single measurement of the strain data.
 		"""
 		raise NotImplementedError()
-	
-	@abstractmethod
-	def read_dat_file(self, dat_file, *args, **kwargs) -> tuple:
-		r"""
-		Reads only single file and returns
-		all measurement data separated by channels.
-		"""
-		pass
-	
+
 
 class TsvReader(FileReader):
 	r"""
@@ -144,17 +136,17 @@ class TsvReader(FileReader):
 		self.filename = filepath
 		## Stores the item separator, for tsv files it is `"\t"`.
 		self.itemsep = "\t"
-
+		
 		## Checks if both files (_full and _gage) are available, 
 		## if not it is an empty string.
 		self.other_tsv = self._locate_full_or_gage_file()
-
+		
 		## Create a file pointer to the TSV file
 		if 'full' in self.other_tsv:
 			self.file = open(self.other_tsv)
 		else:
 			self.file = open(filepath)
-		
+	
 	def read_meta_infos(self) -> tuple[list, dict]:
 		r"""
 		Method to get sensor data from file.
@@ -205,9 +197,7 @@ class TsvReader(FileReader):
 					metadata[fieldname] = ""
 		return metadata
 	
-	def _read_base_data(
-			self
-	) -> tuple[list, list, OrderedDict, OrderedDict]:
+	def _read_base_data(self) -> tuple[list, list, OrderedDict, OrderedDict]:
 		r"""
 		Get the base data for all measurements.
 		It reads the segments, gages, x-axis and tare of the file.
@@ -225,12 +215,12 @@ class TsvReader(FileReader):
 		segments = OrderedDict()
 		if self.other_tsv != '': # both files (full + gages) are in the folder
 			x_axis, tare = self._read_base_from_file(segments, gages)
-
+			
 			if '_gage' in self.other_tsv:
 				gage_file = open(self.other_tsv)
 			else:
 				gage_file = open(self.filename)
-
+				
 			for line in gage_file:
 				line_list = line.strip().split(self.itemsep)
 				if len(line_list) > 3:
@@ -244,9 +234,8 @@ class TsvReader(FileReader):
 														 gages)
 		else: 
 			x_axis, tare = self._read_base_from_file(segments, gages)
-			
 		return x_axis, tare, segments, gages
-
+	
 	def read_next_measurement(self, 
 			start_time: datetime = None, 
 			end_time: datetime = None,
@@ -271,10 +260,7 @@ class TsvReader(FileReader):
 					yield timestamp, np.array(line_list[3:], dtype=float)
 				elif start_time is None:
 					yield timestamp, np.array(line_list[3:], dtype=float)
-
-	def read_dat_file(self, dat_file):
-		raise NotImplementedError("Can't use 'read_dat_file' on TsvReader")
-
+	
 	def _read_base_from_file(self, 
 			segments: OrderedDict, 
 			gages: OrderedDict) -> tuple[list, list]:
@@ -307,7 +293,7 @@ class TsvReader(FileReader):
 				elif line_list[0].lower() == 'tare':
 					tare = list(map(float, line_list[3:]))
 		return x_axis, tare
-
+	
 	def _read_gage_segments_info(self, 
 			data: list, 
 			segments: OrderedDict, 
@@ -334,7 +320,7 @@ class TsvReader(FileReader):
 		if segment_name is not None:
 			segments[segment_name]['length'] = (len(data)
 								- segments[segment_name]['index'])
-			
+	
 	def _set_pos_for_segments_gages(self, 
 			data: list, 
 			segments: OrderedDict, 
@@ -362,7 +348,7 @@ class TsvReader(FileReader):
 			if start_gage is not None and end_gage is not None:
 				segments[part]['start_gage'] = start_gage
 				segments[part]['end_gage'] = end_gage
-		
+	
 	def _locate_full_or_gage_file(self) -> str:
 		r"""
 		Private method to look for both files (_full and _gage) in folder. 
@@ -382,7 +368,7 @@ class TsvReader(FileReader):
 		if os.path.exists(path_2):
 			other_tsv = path_2
 		return other_tsv
-	
+
 
 class DatReader(FileReader):
 	r"""
