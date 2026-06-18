@@ -8,13 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed `utils.misc.find_closest_value()` to `utils.misc.find_closest_value_in_sorted_array()` for a more descriptive function name. It now accepts arbitrarily many values to find in the sorted array.
+- Improved stability and performance for parsing .dat files.
+
 
 ## [v0.5] – 2026-02-10
 
 ### Added
 
 - The `datahandling` package brings a completely new data importing interface:
-    - The generic storage format of the Luna ODiSI 610x series (`.dat` files) is now suported.
+    - The generic storage format of the Luna ODiSI 610x series (`.dat` files) is now supported.
     - Arbitrary large measurement files are supported.
     	The files can now be read chunkwise, which removes the previous limit that the complete data needed to fit into RAM.
     - Objects for reading measurement files (`filereader`) and requesting data (`filehandler`) are now separated.
