@@ -42,7 +42,7 @@ class SensorInfo():
 			segments: OrderedDict, 
 			x_axis: list = None, 
 			tare: list = None
-	):
+			):
 		r"""
 		Constructs a sensor info object with information.
 		\param name Name of the sensor.
@@ -83,6 +83,18 @@ class SensorInfo():
 		"""
 		return (self.name == other.name and
 				self.serial_number == other.serial_number)
+	
+	def __getitem__(self, key):
+		return getattr(self, key, None)
+	
+	def __setitem__(self, key, value):
+		return setattr(self, key, value)
+	
+	def __delitem__(self, key):
+		try:
+			delattr(self, key)
+		except:
+			pass
 
 
 class FileReader(utils.base.Base):
