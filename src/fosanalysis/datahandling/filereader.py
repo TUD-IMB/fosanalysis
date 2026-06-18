@@ -518,6 +518,11 @@ class DatReader(FileReader):
 				lc = 0
 				for line in f:
 					lc += 1
+					if not f'"channel":{channel}' in line:
+						# Check whether it is worth to parse the line.
+						# If the line does not contain the channel number,
+						# we skip parsing and conversion to save time.
+						continue
 					try:
 						line_dict = json.loads(line)
 					except json.JSONDecodeError as ex:
@@ -528,13 +533,10 @@ class DatReader(FileReader):
 					and line_dict.get('record type', '') == 'measurement'
 					and 'data' in line_dict):
 						time = datetime.fromisoformat(line_dict['timestamp'])
-						if (end_time is not None 
-								  and end_time < time):
+						if (end_time is not None and end_time < time):
+							# we can assume that the measurements are stored in chronolical order
 							break
-						if (start_time is not None 
-								  and start_time <= time):
-							yield time, self._parse_data(line_dict['data'])
-						elif start_time is None:
+						if (start_time is None or start_time <= time):
 							yield time, self._parse_data(line_dict['data'])
 	
 	def read_dat_file(self, dat_file):
@@ -608,14 +610,12 @@ class DatReader(FileReader):
 		\return Array with converted strain values according to file version.
 		"""
 		if type(strain_data) is list:
-			nan_list = self._replace_none(strain_data)
 			if self.file_version >= 9:
-				return np.asarray(nan_list, dtype=float) * 0.1
+				return np.asarray(strain_data, dtype=float) * 0.1
 			else:
-				return np.asarray(nan_list, dtype=float)
+				return np.asarray(strain_data, dtype=float)
 		if self.file_version == 7 and type(strain_data) is str:
-			int_array = np.frombuffer(bytearray.fromhex(strain_data), 
-									  np.uint8)
+			int_array = np.frombuffer(bytearray.fromhex(strain_data), np.uint8)
 			strain_list = []
 			for index in range(0, len(int_array), 2):
 				factor = int_array[index]
@@ -632,12 +632,3 @@ class DatReader(FileReader):
 				strain_list.append(strain)
 			return np.asarray(strain_list, dtype=float)
 		return np.asarray(strain_data)
-
-	def _replace_none(self, values: list) -> list:
-		r"""
-		Private method to replace all 'None' values as NaN values.
-		\param values List with strain data.
-		\return List with np.nan values instead of 'None'.
-		"""
-		replaced_list = [np.nan if x is None else x for x in values]
-		return replaced_list
