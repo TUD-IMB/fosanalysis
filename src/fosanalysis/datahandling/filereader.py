@@ -406,8 +406,14 @@ class DatReader(FileReader):
 		self.filename = filepath
 		## Stores the item separator, for dat files the "," is used.
 		self.itemsep = ","
-		## List of files where the measurement data stores.
-		self.measurement_files = []
+		## List `dict`s containing information on the data chunk files.
+		## Each entry is has the following keys:
+		## - `"start time"`: Time stamp (`datetime.datetime` object) of the first reading in this chunk file
+		## - `"end time"`: Time stamp (`datetime.datetime` object) object of the last reading in this chunk file
+		## - `"filename"`: Absloute path the to chunk file.
+		## - '"record type"': usually `"data file"`
+		## - `"index"` Byte position of the the beginnings of each reading in the chunk file.
+		self.measurement_files_info = []
 		## Stores the file version of .dat file.
 		self.file_version = self.DEFAULT_FILE_VERSION
 		## Create a file pointer to the raw data .hdr file
@@ -439,9 +445,11 @@ class DatReader(FileReader):
 			elif 'data' in line_dict:
 				self._read_base_data(line_dict, sensor_list)
 			elif 'filename' in line_dict:
-				self.measurement_files.append(
-					os.path.join(os.path.dirname(self.file.name), 
-								 line_dict['filename']))
+				line_dict["start time"] = datetime.fromisoformat(line_dict["start time"])
+				line_dict["end time"] = datetime.fromisoformat(line_dict["end time"])
+				line_dict['filename'] = os.path.join(os.path.dirname(self.file.name), line_dict['filename'])
+				self.measurement_files_info.append(line_dict)
+				
 		return sensor_list, metadata
 		
 	def _read_metadata(self, meta_dict: dict) -> dict:
@@ -511,7 +519,11 @@ class DatReader(FileReader):
 		"""
 		if channel is None:
 			return None, None
-		for data_file in self.measurement_files:
+		for data_file_info in self.measurement_files_info:
+			if start_time is not None and start_time > data_file_info["end time"]:
+				# Skip this file, the requested time is in a later chunk
+				continue
+			data_file = data_file_info['filename']
 			with open(data_file) as f:
 				lc = 0
 				for line in f:
@@ -566,7 +578,6 @@ class DatReader(FileReader):
 					else:
 						data_dict[channel]['timestamps'].append(timestamp)
 						data_dict[channel]['datas'].append(data)
-
 		return data_dict
 
 	def _extract_segments_gages(
