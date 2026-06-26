@@ -49,7 +49,7 @@ class SensorInfo():
 		\param serial_number Serial number of the sensor.
 		\param part_number Part number of the sensor.
 		\param channel Channel of the sensor.
-		\param sensor_type Type of the sensor, e.g. temperature or strain.
+		\param sensor_type Type of the sensor, e.g., temperature or strain.
 		\param length Sensor length in meter.
 		\param y_axis_unit Unit of the sensor values as string.
 		\param x_axis_unit Unit of the x-axis values as string.
@@ -61,20 +61,35 @@ class SensorInfo():
 		\param x_axis X-axis values of the measurement as array, optional.
 		\param tare Tare values of the measurement as array, optional.
 		"""
+		## Name of the sensor.
 		self.name = name
+		## Serial number of the sensor.
 		self.serial_number = serial_number
+		## Part number of the sensor.
 		self.part_number = part_number
+		## Channel of the sensor.
 		self.channel = channel
+		## Type of the sensor, e.g., temperature or strain.
 		self.sensor_type = sensor_type
+		## Sensor length in meter.
 		self.length = length
+		## Unit of the sensor values as string.
 		self.y_axis_unit = y_axis_unit
+		## Unit of the x-axis values as string.
 		self.x_axis_unit = x_axis_unit
+		## Patch cord length as float.
 		self.patch_cord = patch_cord
+		## Name of the sensor key, defined by initialization.
 		self.key_name = key_name
+		## Current tare name of the sensor.
 		self.tare_name = tare_name
+		## Dictionary with all defined gage names and x-position.
 		self.gages = gages
+		## Dictionary with all defined segments.
 		self.segments = segments
+		## X-axis values of the measurement as array, optional.
 		self.x_axis = x_axis
+		## Tare values of the measurement as array, optional.
 		self.tare = tare
 	
 	def __eq__(self, other) -> bool:
@@ -148,11 +163,9 @@ class TsvReader(FileReader):
 		self.filename = filepath
 		## Stores the item separator, for tsv files it is `"\t"`.
 		self.itemsep = "\t"
-		
 		## Checks if both files (_full and _gage) are available, 
 		## if not it is an empty string.
 		self.other_tsv = self._locate_full_or_gage_file()
-		
 		## Create a file pointer to the TSV file
 		if 'full' in self.other_tsv:
 			self.file = open(self.other_tsv)
