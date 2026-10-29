@@ -1,5 +1,7 @@
 ![fosanalysis](./doc/graphics/fosanalysis_logo.svg)
 
+[![DOI](https://zenodo.org/badge/599942932.svg)](https://doi.org/10.5281/zenodo.23759302)
+
 # fosanalysis – A framework to evaluate distributed fiber optic sensor data
 
 Fiber optic sensors make quasi-continuous strain measurements possible, due to their high spatial resolution.
