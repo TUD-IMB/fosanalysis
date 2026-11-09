@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+### Changed
+
+- Refactor `datahandling.tsvutils.tsv_print_metadata_table()` to reduce package dependency.
+
+
 ## [v0.5] – 2026-02-10
 
 ### Added

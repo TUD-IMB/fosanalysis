@@ -14,7 +14,6 @@ In order to obtain one of the development versions:
 - install the required dependencies:
     - `scipy`, see [scipy.org](https://scipy.org) for the documentation.
     - `numpy`, see [numpy.org](https://numpy.org) for the documentation.
-    - `brplotviz`, see [brplotviz](https://github.com/bertramrichter/brplotviz).
 - make the modules available by adding the directory where `fosanalysis` is stored to the `$PYTHONPATH` system variable.
 
 ## Software Architecture

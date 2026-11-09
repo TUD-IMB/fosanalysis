@@ -1,5 +1,5 @@
 
-"""
+r"""
 Utility functions for Luna ODiSI 6100 TSV files.
 
 \author Bertram Richter
@@ -9,8 +9,6 @@ Utility functions for Luna ODiSI 6100 TSV files.
 import datetime
 import glob
 import os
-
-import brplotviz
 
 from . import filereader
 
@@ -55,7 +53,7 @@ def tsv_print_metadata_table(
 		root_dir: str,
 		pattern: str = "*",
 		keys: list = ["Channel", "Sensor Name", "Sensor Serial Number", "Length (m)", "Date"],
-		table_style: str = "Markdown",
+		col_sep: str = "\t",
 		):
 	r"""
 	Read the metadata from all files matching the `pattern` in a given
@@ -64,14 +62,12 @@ def tsv_print_metadata_table(
 	Use this function to quickly gain an overview over the content of a
 	directory with measurement files exported to TSV format by Luna ODiSI.
 	The file filtering is done with Python built-in module `glob`.
-	The table formatting is done with `brplotviz`.
 	\param root_dir Directory to scan for TSV files matching the `pattern`.
 	\param pattern File name pattern to select TSV files, according to
 		the specification of the Python `glob` module.
 	\param keys List of dictionary keys to extract.
 		These are the description texts in the file header.
-	\param table_style Table output style supported by `brplotviz`.
-		Please consider the `brplotviz` documentation for available options.
+	\param col_sep Column separator for the outputted table.
 	"""
 	table = []
 	for file in glob.glob(pattern, root_dir=root_dir):
@@ -83,7 +79,7 @@ def tsv_print_metadata_table(
 			row.append(metadata.get(key, ""))
 		table.append(row)
 	head_row = ["File"] + keys
-	brplotviz.table.print_table(table,
-							style=table_style,
-							head_row=head_row,
-							)
+	print(col_sep.join(head_row))
+	for row in table:
+		print(col_sep.join(row))
+		

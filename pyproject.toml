@@ -23,11 +23,11 @@ keywords = [
 	]
 
 authors = [
-	{name = "Bertram Richter", email = "bertram.richter@tu-dresden.de" }
+	{name = "Bertram Richter", email = "bertram.richter@tu-dresden.de"}
 ]
 
 maintainers = [
-	{name = "Bertram Richter", email = "bertram.richter@tu-dresden.de" }
+	{name = "Bertram Richter", email = "bertram.richter@tu-dresden.de"}
 ]
 
 classifiers = [
@@ -46,7 +46,6 @@ classifiers = [
 dependencies = [
 	"numpy",
 	"scipy",
-	"brplotviz",
 ]
 
 [project.urls]
