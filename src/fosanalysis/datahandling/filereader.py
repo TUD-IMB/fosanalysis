@@ -207,7 +207,7 @@ class TsvReader(FileReader):
 	
 	def _read_base_data(
 			self
-	) -> tuple[list, list, OrderedDict, OrderedDict]:
+			) -> tuple[list, list, OrderedDict, OrderedDict]:
 		r"""
 		Get the base data for all measurements.
 		It reads the segments, gages, x-axis and tare of the file.
@@ -255,7 +255,7 @@ class TsvReader(FileReader):
 		Returns only single entry of measurement as generator 
 		to request for multiple times for parts or the whole file.
 		\param start_time Read measurements from given timestamp.
-		\param end_time	Read measurements till given timestamp.
+		\param end_time Read measurements till given timestamp.
 		\return Datetime object of current line.
 		\return Strain values of the current line as array.
 		"""
@@ -300,9 +300,7 @@ class TsvReader(FileReader):
 				elif line_list[0].lower() == 'x-axis':
 					x_axis = list(map(float, line_list[3:]))
 					if '_gage' in Path(self.filename).name:
-						self._set_pos_for_segments_gages(x_axis, 
-														 segments, 
-														 gages)
+						self._set_pos_for_segments_gages(x_axis, segments, gages)
 					break
 				elif line_list[0].lower() == 'tare':
 					tare = list(map(float, line_list[3:]))
@@ -354,11 +352,11 @@ class TsvReader(FileReader):
 		for part in segments:
 			index = segments[part]['index']
 			x_pos_start = data[index]
-			x_pos_end = data[index + segments[part]['length']]
+			x_pos_end = data[index + segments[part]['length'] - 1]
 			start_gage = next((name for name, pos in gages.items() 
-							   if pos == x_pos_start), None)
+								if pos == x_pos_start), None)
 			end_gage = next((name for name, pos in gages.items() 
-							 if pos == x_pos_end), None)
+								if pos == x_pos_end), None)
 			if start_gage is not None and end_gage is not None:
 				segments[part]['start_gage'] = start_gage
 				segments[part]['end_gage'] = end_gage
@@ -552,7 +550,7 @@ class DatReader(FileReader):
 	def _extract_segments_gages(
 			self, 
 			sensor_dict: dict
-	) -> tuple[OrderedDict, OrderedDict]:
+			) -> tuple[OrderedDict, OrderedDict]:
 		r"""
 		Private method to extract the gages and segments 
 		from metadata dictionary.
@@ -570,10 +568,10 @@ class DatReader(FileReader):
 		# Read segments
 		for segment in sensor_dict.get('segments', []):
 			name = segment['segment name']
-			segments[name] = {'index':segment['index'],
-							  'length':segment['size'],
-							  'start_gage': segment['start gage'], 
-							  'end_gage': segment['end gage'],}
+			segments[name] = {'index': segment['index'],
+								'length': segment['size'],
+								'start_gage': segment['start gage'], 
+								'end_gage': segment['end gage'],}
 		return segments, gages
 	
 	def _parse_data(self, strain_data) -> np.array:
