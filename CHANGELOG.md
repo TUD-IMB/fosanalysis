@@ -8,10 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add DOI link badge to enable citing versions.
+
 
 ### Changed
 
 - Refactor `datahandling.tsvutils.tsv_print_metadata_table()` to reduce package dependency.
+
+
+### Fixed
+
+- Fixed off-by-one error that lead to crash when parsing TSV files.
 
 
 ## [v0.5] – 2026-02-10
@@ -55,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixes in documentation and continuous documentation deployment
 
 
-## [v0.4] – 2024-11-20
+## [v0.4.0] – 2024-11-20
 
 This version adds substantial improvements for data preprocessing.
 The way to clean up raw data got completely overhauled.
@@ -115,7 +124,7 @@ The way to clean up raw data got completely overhauled.
 - `CrackList.get_crack()`, superseded by `CrackList.get_cracks_by_location()`
 
 
-## [v0.3] – 2023-11-13
+## [v0.3.0] – 2023-11-13
 
 ### Added
 
@@ -156,7 +165,7 @@ The way to clean up raw data got completely overhauled.
 - Obsolete `x_data` and `y_record_list` of `protocol.Protocol`
 
 
-## [v0.2] – 2022-08-16
+## [v0.2.0] – 2022-08-16
 
 ### Added
 
@@ -188,12 +197,12 @@ The way to clean up raw data got completely overhauled.
 
 
 [Unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.5..master
-[v0.5]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..v0.5
-[v0.4.2]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.2..v0.4.1
-[v0.4.1]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.1..v0.4.0
-[v0.4]: https://github.com/TUD-IMB/fosanalysis/compare/v0.4.0..v0.3.0
-[v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.4.0..v0.3.0
-[v0.3]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.3.0..v0.2.0
-[v0.2]: https://github.com/TUD-IMB/fosanalysis/releases/compare/v0.2.0..v0.1.0
-[v0.1]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.1.0
-[v0.0]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.0.0
+[v0.5]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.5
+[v0.4.2]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.4.2
+[v0.4.1]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.4.1
+[v0.4.0]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.4.0
+[v0.3.0]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.3.0
+[v0.2.0]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.2.0
+[v0.1.0]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.1.0
+[v0.0]: https://https://github.com/TUD-IMB/fosanalysis/tree/v0.0
+
