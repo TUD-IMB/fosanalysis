@@ -8,17 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [v0.5.1] – 2026-11-13
+
 ### Added
 
 - Add DOI link badge to enable citing versions.
-
 
 ### Changed
 
 - Renamed `utils.misc.find_closest_value()` to `utils.misc.find_closest_value_in_sorted_array()` for a more descriptive function name. It now accepts arbitrarily many values to find in the sorted array.
 - Improved stability and performance for parsing .dat files.
 - Refactor `datahandling.tsvutils.tsv_print_metadata_table()` to reduce package dependency.
-
 
 ### Fixed
 
@@ -198,7 +199,8 @@ The way to clean up raw data got completely overhauled.
 - Empty placeholder package on PyPI
 
 
-[Unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.5..master
+[Unreleased]: https://github.com/TUD-IMB/fosanalysis/compare/v0.5.1..master
+[v0.5.1]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.5.1
 [v0.5]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.5
 [v0.4.2]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.4.2
 [v0.4.1]: https://github.com/TUD-IMB/fosanalysis/releases/tag/v0.4.1
