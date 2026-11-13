@@ -42,14 +42,14 @@ class SensorInfo():
 			segments: OrderedDict, 
 			x_axis: list = None, 
 			tare: list = None
-	):
+			):
 		r"""
 		Constructs a sensor info object with information.
 		\param name Name of the sensor.
 		\param serial_number Serial number of the sensor.
 		\param part_number Part number of the sensor.
 		\param channel Channel of the sensor.
-		\param sensor_type Type of the sensor, e.g. temperature or strain.
+		\param sensor_type Type of the sensor, e.g., temperature or strain.
 		\param length Sensor length in meter.
 		\param y_axis_unit Unit of the sensor values as string.
 		\param x_axis_unit Unit of the x-axis values as string.
@@ -61,20 +61,35 @@ class SensorInfo():
 		\param x_axis X-axis values of the measurement as array, optional.
 		\param tare Tare values of the measurement as array, optional.
 		"""
+		## Name of the sensor.
 		self.name = name
+		## Serial number of the sensor.
 		self.serial_number = serial_number
+		## Part number of the sensor.
 		self.part_number = part_number
+		## Channel of the sensor.
 		self.channel = channel
+		## Type of the sensor, e.g., temperature or strain.
 		self.sensor_type = sensor_type
+		## Sensor length in meter.
 		self.length = length
+		## Unit of the sensor values as string.
 		self.y_axis_unit = y_axis_unit
+		## Unit of the x-axis values as string.
 		self.x_axis_unit = x_axis_unit
+		## Patch cord length as float.
 		self.patch_cord = patch_cord
+		## Name of the sensor key, defined by initialization.
 		self.key_name = key_name
+		## Current tare name of the sensor.
 		self.tare_name = tare_name
+		## Dictionary with all defined gage names and x-position.
 		self.gages = gages
+		## Dictionary with all defined segments.
 		self.segments = segments
+		## X-axis values of the measurement as array, optional.
 		self.x_axis = x_axis
+		## Tare values of the measurement as array, optional.
 		self.tare = tare
 	
 	def __eq__(self, other) -> bool:
@@ -83,6 +98,18 @@ class SensorInfo():
 		"""
 		return (self.name == other.name and
 				self.serial_number == other.serial_number)
+	
+	def __getitem__(self, key):
+		return getattr(self, key, None)
+	
+	def __setitem__(self, key, value):
+		return setattr(self, key, value)
+	
+	def __delitem__(self, key):
+		try:
+			delattr(self, key)
+		except:
+			pass
 
 
 class FileReader(utils.base.Base):
@@ -113,15 +140,7 @@ class FileReader(utils.base.Base):
 		Returns single measurement of the strain data.
 		"""
 		raise NotImplementedError()
-	
-	@abstractmethod
-	def read_dat_file(self, dat_file, *args, **kwargs) -> tuple:
-		r"""
-		Reads only single file and returns
-		all measurement data separated by channels.
-		"""
-		pass
-	
+
 
 class TsvReader(FileReader):
 	r"""
@@ -144,17 +163,15 @@ class TsvReader(FileReader):
 		self.filename = filepath
 		## Stores the item separator, for tsv files it is `"\t"`.
 		self.itemsep = "\t"
-
 		## Checks if both files (_full and _gage) are available, 
 		## if not it is an empty string.
 		self.other_tsv = self._locate_full_or_gage_file()
-
 		## Create a file pointer to the TSV file
 		if 'full' in self.other_tsv:
 			self.file = open(self.other_tsv)
 		else:
 			self.file = open(filepath)
-		
+	
 	def read_meta_infos(self) -> tuple[list, dict]:
 		r"""
 		Method to get sensor data from file.
@@ -205,9 +222,7 @@ class TsvReader(FileReader):
 					metadata[fieldname] = ""
 		return metadata
 	
-	def _read_base_data(
-			self
-			) -> tuple[list, list, OrderedDict, OrderedDict]:
+	def _read_base_data(self) -> tuple[list, list, OrderedDict, OrderedDict]:
 		r"""
 		Get the base data for all measurements.
 		It reads the segments, gages, x-axis and tare of the file.
@@ -225,12 +240,12 @@ class TsvReader(FileReader):
 		segments = OrderedDict()
 		if self.other_tsv != '': # both files (full + gages) are in the folder
 			x_axis, tare = self._read_base_from_file(segments, gages)
-
+			
 			if '_gage' in self.other_tsv:
 				gage_file = open(self.other_tsv)
 			else:
 				gage_file = open(self.filename)
-
+				
 			for line in gage_file:
 				line_list = line.strip().split(self.itemsep)
 				if len(line_list) > 3:
@@ -244,9 +259,8 @@ class TsvReader(FileReader):
 														 gages)
 		else: 
 			x_axis, tare = self._read_base_from_file(segments, gages)
-			
 		return x_axis, tare, segments, gages
-
+	
 	def read_next_measurement(self, 
 			start_time: datetime = None, 
 			end_time: datetime = None,
@@ -271,10 +285,7 @@ class TsvReader(FileReader):
 					yield timestamp, np.array(line_list[3:], dtype=float)
 				elif start_time is None:
 					yield timestamp, np.array(line_list[3:], dtype=float)
-
-	def read_dat_file(self, dat_file):
-		raise NotImplementedError("Can't use 'read_dat_file' on TsvReader")
-
+	
 	def _read_base_from_file(self, 
 			segments: OrderedDict, 
 			gages: OrderedDict) -> tuple[list, list]:
@@ -305,7 +316,7 @@ class TsvReader(FileReader):
 				elif line_list[0].lower() == 'tare':
 					tare = list(map(float, line_list[3:]))
 		return x_axis, tare
-
+	
 	def _read_gage_segments_info(self, 
 			data: list, 
 			segments: OrderedDict, 
@@ -332,7 +343,7 @@ class TsvReader(FileReader):
 		if segment_name is not None:
 			segments[segment_name]['length'] = (len(data)
 								- segments[segment_name]['index'])
-			
+	
 	def _set_pos_for_segments_gages(self, 
 			data: list, 
 			segments: OrderedDict, 
@@ -360,7 +371,7 @@ class TsvReader(FileReader):
 			if start_gage is not None and end_gage is not None:
 				segments[part]['start_gage'] = start_gage
 				segments[part]['end_gage'] = end_gage
-		
+	
 	def _locate_full_or_gage_file(self) -> str:
 		r"""
 		Private method to look for both files (_full and _gage) in folder. 
@@ -380,7 +391,7 @@ class TsvReader(FileReader):
 		if os.path.exists(path_2):
 			other_tsv = path_2
 		return other_tsv
-	
+
 
 class DatReader(FileReader):
 	r"""
@@ -406,8 +417,14 @@ class DatReader(FileReader):
 		self.filename = filepath
 		## Stores the item separator, for dat files the "," is used.
 		self.itemsep = ","
-		## List of files where the measurement data stores.
-		self.measurement_files = []
+		## List `dict`s containing information on the data chunk files.
+		## Each entry is has the following keys:
+		## - `"start time"`: Time stamp (`datetime.datetime` object) of the first reading in this chunk file
+		## - `"end time"`: Time stamp (`datetime.datetime` object) object of the last reading in this chunk file
+		## - `"filename"`: Absloute path the to chunk file.
+		## - '"record type"': usually `"data file"`
+		## - `"index"` Byte position of the the beginnings of each reading in the chunk file.
+		self.measurement_files_info = []
 		## Stores the file version of .dat file.
 		self.file_version = self.DEFAULT_FILE_VERSION
 		## Create a file pointer to the raw data .hdr file
@@ -423,8 +440,15 @@ class DatReader(FileReader):
 		self.file.seek(0) # reset the file pointer
 		sensor_list = []
 		metadata = {}
+		lc = 0
 		for line in self.file:
-			line_dict = json.loads(line)
+			lc += 1
+			try:
+				line_dict = json.loads(line)
+			except json.JSONDecodeError as ex:
+				print(f"Error decoding line {lc} in {self.file}! Skipping line.")
+				print(ex)
+				continue
 			if 'sensors' in line_dict:
 				metadata, sensor_list = self._read_metadata(line_dict)
 				self.file_version = metadata.get('file version', 
@@ -432,9 +456,11 @@ class DatReader(FileReader):
 			elif 'data' in line_dict:
 				self._read_base_data(line_dict, sensor_list)
 			elif 'filename' in line_dict:
-				self.measurement_files.append(
-					os.path.join(os.path.dirname(self.file.name), 
-								 line_dict['filename']))
+				line_dict["start time"] = datetime.fromisoformat(line_dict["start time"])
+				line_dict["end time"] = datetime.fromisoformat(line_dict["end time"])
+				line_dict['filename'] = os.path.join(os.path.dirname(self.file.name), line_dict['filename'])
+				self.measurement_files_info.append(line_dict)
+				
 		return sensor_list, metadata
 		
 	def _read_metadata(self, meta_dict: dict) -> dict:
@@ -504,21 +530,34 @@ class DatReader(FileReader):
 		"""
 		if channel is None:
 			return None, None
-		for data_file in self.measurement_files:
+		for data_file_info in self.measurement_files_info:
+			if start_time is not None and start_time > data_file_info["end time"]:
+				# Skip this file, the requested time is in a later chunk
+				continue
+			data_file = data_file_info['filename']
 			with open(data_file) as f:
+				lc = 0
 				for line in f:
-					line_dict = json.loads(line)
+					lc += 1
+					if not f'"channel":{channel}' in line:
+						# Check whether it is worth to parse the line.
+						# If the line does not contain the channel number,
+						# we skip parsing and conversion to save time.
+						continue
+					try:
+						line_dict = json.loads(line)
+					except json.JSONDecodeError as ex:
+						print(f"Error decoding line {lc} in {data_file}! Skipping line.")
+						print(ex)
+						continue
 					if (line_dict.get('channel', None) == channel
 					and line_dict.get('record type', '') == 'measurement'
 					and 'data' in line_dict):
 						time = datetime.fromisoformat(line_dict['timestamp'])
-						if (end_time is not None 
-								  and end_time < time):
+						if (end_time is not None and end_time < time):
+							# we can assume that the measurements are stored in chronolical order
 							break
-						if (start_time is not None 
-								  and start_time <= time):
-							yield time, self._parse_data(line_dict['data'])
-						elif start_time is None:
+						if (start_time is None or start_time <= time):
 							yield time, self._parse_data(line_dict['data'])
 	
 	def read_dat_file(self, dat_file):
@@ -530,10 +569,16 @@ class DatReader(FileReader):
 							for each channel in file.
 		"""
 		data_dict = {}
-
+		lc = 0
 		with open(dat_file) as f:
 			for line in f:
-				line_dict = json.loads(line)
+				lc += 1
+				try:
+					line_dict = json.loads(line)
+				except json.JSONDecodeError as ex:
+					print(f"Error decoding line {lc} in {dat_file}! Skipping line.")
+					print(ex)
+					continue
 				channel = line_dict.get('channel', None)
 				if (line_dict.get('record type', '') == 'measurement'
 					and 'data' in line_dict):
@@ -544,7 +589,6 @@ class DatReader(FileReader):
 					else:
 						data_dict[channel]['timestamps'].append(timestamp)
 						data_dict[channel]['datas'].append(data)
-
 		return data_dict
 
 	def _extract_segments_gages(
@@ -586,14 +630,12 @@ class DatReader(FileReader):
 		\return Array with converted strain values according to file version.
 		"""
 		if type(strain_data) is list:
-			nan_list = self._replace_none(strain_data)
 			if self.file_version >= 9:
-				return np.asarray(nan_list, dtype=float) * 0.1
+				return np.asarray(strain_data, dtype=float) * 0.1
 			else:
-				return np.asarray(nan_list, dtype=float)
+				return np.asarray(strain_data, dtype=float)
 		if self.file_version == 7 and type(strain_data) is str:
-			int_array = np.frombuffer(bytearray.fromhex(strain_data), 
-									  np.uint8)
+			int_array = np.frombuffer(bytearray.fromhex(strain_data), np.uint8)
 			strain_list = []
 			for index in range(0, len(int_array), 2):
 				factor = int_array[index]
@@ -610,12 +652,3 @@ class DatReader(FileReader):
 				strain_list.append(strain)
 			return np.asarray(strain_list, dtype=float)
 		return np.asarray(strain_data)
-
-	def _replace_none(self, values: list) -> list:
-		r"""
-		Private method to replace all 'None' values as NaN values.
-		\param values List with strain data.
-		\return List with np.nan values instead of 'None'.
-		"""
-		replaced_list = [np.nan if x is None else x for x in values]
-		return replaced_list

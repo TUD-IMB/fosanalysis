@@ -125,11 +125,12 @@ class FileHandler():
 		Reads all values of the file and separate it to the channels.
 		\return Dict with all measurement data (timestamps, strain) by channel.
 		"""
-		if not self.reader.measurement_files:
+		if not self.reader.measurement_files_info:
 			return {}
 	
-		for dat_file in self.reader.measurement_files:
-			data_dict = self.reader.read_dat_file(dat_file)
+		for data_file_info in self.reader.measurement_files_info:
+			data_file = os.path.join(os.path.dirname(self.reader.file.name), data_file_info['filename'])
+			data_dict = self.reader.read_dat_file(data_file)
 			yield data_dict
 	
 	def yield_measurements_in_chunks(

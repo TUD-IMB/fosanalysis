@@ -134,8 +134,8 @@ class Fischer(TensionStiffeningCompensator):
 		"""
 		tension_stiffening_values = np.zeros_like(strain)
 		for crack in crack_list:
-			l_i, x_l = misc.find_closest_value(x, crack.x_l)
-			r_i, x_r = misc.find_closest_value(x, crack.x_r)
+			l_i, x_l = misc.find_closest_value_in_sorted_array(x, crack.x_l)
+			r_i, x_r = misc.find_closest_value_in_sorted_array(x, crack.x_r)
 			x_seg = x[l_i:r_i+1]
 			xp = [x_l, crack.location, x_r]
 			fp = np.minimum([strain[l_i], 0, strain[r_i]], self.max_concrete_strain)
