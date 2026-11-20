@@ -1,6 +1,8 @@
 # Getting Started
 
+
 ## Installation
+
 `fosanalysis` is developed under Python 3.9 and is available in the
 [Python Package Index (PyPI)](https://pypi.org/project/fosanalysis/).
 To install the latest stable version, please run
@@ -16,16 +18,20 @@ In order to obtain one of the development versions:
     - `numpy`, see [numpy.org](https://numpy.org) for the documentation.
 - make the modules available by adding the directory where `fosanalysis` is stored to the `$PYTHONPATH` system variable.
 
+
 ## Software Architecture
+
 Modularity is the design principle of `fosanalysis`.
-Each module dedicated to a single specific functionality.
+Each module is dedicated to a single specific functionality.
 Two major types of components exist: workflows and task components.
 Task components implement algorithmic approaches for a specific task, e.g., integration or data loading.
 Alternative approaches for the same task are interchangeable, as they implement the same interface.
 Workflow components combine several such task components in a plug and play manner to construct complex workflows.
 This enables fine-grained, easy to understand algorithm configuration.
 
+
 ## Getting Started
+
 Assuming a successful installation, you can follow this short tutorial.
 For this, we need two scripts:
 - `generatedemofile.py` writes some artificial data, to `./data/demofile.tsv` relative to the working directory, when executed.
@@ -63,7 +69,7 @@ The `data` object is a dictionary which contains relevant data for the whole mea
 
 ```.py
 times, data = handle.get_measurements(handle.sensors[0].channel)
-x_axis = data['All'].get('x_axis', np.array())
+x_axis = data['All'].get('x_axis', [])
 strain = data['All'].get('strain', [])
 ```
 
@@ -72,7 +78,7 @@ Either by direct access using the record's index (as shown) or via a timestamp.
 Note, this data is still raw and can be preprocessed by the workflow, which is described later.
 The `x_axis` object is an array of floating point numbers.
 The `times` object is a list with datetime entries.
-The `strain_table` object is a list of floating point arrays, with same length of times list.
+The `strain` object is a list of floating point arrays, with same length of times list.
 We want to process it further and calculate the crack widths.
 To enable the subsequent crack width calculation, the data has to be pre-processed.
 The order of the preprocesing is flexible and can be adapted to the current data.
@@ -150,13 +156,13 @@ Now the raw data will be pre-processed with the previously defined ruleset.
 The output of each task is passed as the input to the next task.
 
 ```.py
-x_processed, times, strain_processed = preprocessingobject.run(x=x_axis, y=times, z=strain_table)
+x_processed, times, strain_processed = preprocessingobject.run(x=x_axis, y=times, z=strain)
 ```
 
 Plot the raw data and the pre-processed data for visual comparison.
 
 ```.py
-plt.plot(x_axis, strain_table[0], label="raw")
+plt.plot(x_axis, strain[0], label="raw")
 plt.plot(x_processed, strain_processed, label="processed")
 plt.legend(loc="best")
 plt.show()
